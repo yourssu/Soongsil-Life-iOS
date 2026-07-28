@@ -1,6 +1,6 @@
 # Soongsil Life iOS
 
-숭실대학교 학사 정보를 한곳에서 확인하기 위한 SwiftUI 프로젝트입니다.
+`Soongsil Life iOS`는 숭실대학교 학사 정보를 한곳에서 확인하기 위한 SwiftUI 프로젝트입니다.
 
 - iOS 17+
 - SwiftUI + Observation(`@Observable`)
