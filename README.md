@@ -8,10 +8,46 @@
 - LMS-API 1.6.1
 - 한국어 현지화
 
+## Git Flow 및 브랜치 규칙
+
+### 상시 브랜치
+
+| 브랜치 | 역할 |
+| --- | --- |
+| `main` | 실제 배포 버전만 유지합니다. 직접 작업하거나 푸시하지 않습니다. |
+| `dev` | 다음 배포에 포함할 변경 사항을 통합합니다. 모든 작업 브랜치의 기준이자 병합 대상입니다. |
+
+### 작업 브랜치
+
+- 작업 브랜치는 최신 `dev`에서 생성합니다.
+- 브랜치 이름은 `{Prefix}/#{이슈번호}` 형식을 사용합니다.
+  예: `Feat/#153`, `Fix/#204`, `Design/#87`
+- Prefix는 PR 템플릿에 정의된 `Add`, `Chore`, `Comment`, `Del`,
+  `Design`, `Docs`, `Feat`, `Fix`, `Merge`, `Refactor`, `Remove`,
+  `Setting`, `Test` 중 하나를 사용합니다.
+- 하나의 브랜치에서는 하나의 이슈만 작업합니다.
+- PR의 base 브랜치는 `dev`로 지정합니다.
+- 리뷰와 검증을 마쳐 `dev`에 병합한 작업 브랜치는 원격과 로컬에서
+  모두 삭제합니다.
+- `#`가 포함된 브랜치 이름을 터미널에서 사용할 때는
+  `git switch -c 'Feat/#153'`처럼 따옴표로 감쌉니다.
+
+### Release
+
+- 배포할 때 최신 `dev`에서 `release/{배포버전}` 브랜치를 생성합니다.
+  예: `release/1.2.0`
+- release 브랜치에서는 배포 전 QA와 버그 수정만 진행합니다.
+- 배포 준비가 끝나면 release 브랜치를 `main`과 `dev`에 각각
+  병합하고, `main`을 기준으로 배포합니다.
+- 배포 커밋에는 `v{배포버전}` 형식의 태그를 생성하고 GitHub Release에
+  변경 사항을 기록합니다. 예: `v1.2.0`
+- `release/*` 브랜치는 삭제하지 않고 태그 및 GitHub Release와 함께
+  배포 이력으로 유지합니다.
+
 ## 프로젝트 구조
 
 ```text
-AppSource
+Soongsil-Life-iOS/AppSource
 ├── App                         앱 진입점, 로그인/메인 화면 전환
 ├── Core/DIContainer            실제/Mock 의존성 조립
 ├── Common
@@ -35,6 +71,9 @@ AppSource
 │   └── Views                   SwiftUI View와 Preview
 └── Resource/Localization       L10n과 언어별 Localizable.strings
 ```
+
+이후 문서의 `API/...`, `Module/...`, `Repository/...` 경로는
+`Soongsil-Life-iOS/AppSource`를 기준으로 합니다.
 
 화면은 `Module/Login`, `Home`, `Semester`, `Chapel`, `Notification`,
 `Setting`, `MainTab`, `Timetable`, `GraduationAudit`, `Tuition`처럼
@@ -182,10 +221,10 @@ Preview 타깃은 `LmsApi` 패키지에 링크하지 않고
 자동 사용합니다.
 
 ```text
-API/Authentication/AuthenticationService.swift
-API/Student/StudentService.swift
-API/Grade/GradeService.swift
-API/Chapel/ChapelService.swift
+Soongsil-Life-iOS/AppSource/API/Authentication/AuthenticationService.swift
+Soongsil-Life-iOS/AppSource/API/Student/StudentService.swift
+Soongsil-Life-iOS/AppSource/API/Grade/GradeService.swift
+Soongsil-Life-iOS/AppSource/API/Chapel/ChapelService.swift
 ```
 
 SwiftUI Preview를 볼 때는 상단 스킴을
@@ -200,7 +239,7 @@ Xcode 프로젝트의 File System Synchronized Group으로 연결해 메인 타�
 Preview 타깃이 함께 사용합니다.
 
 ```text
-Soongsil-Life-iOS/Resource/Assets Catalog
+Soongsil-Life-iOS/Soongsil-Life-iOS/Resource/Assets Catalog
 ├── Assets.xcassets
 │   ├── AppIcon
 │   ├── AccentColor
@@ -224,7 +263,8 @@ Soongsil-Life-iOS/Resource/Assets Catalog
 아이콘은 `Image("ic_home")`처럼 기존 이름을 그대로 사용합니다. 컬러는
 `SoomsilDesignSystem.swift`에서 `Color("blue_600")` 같은 원본 에셋을
 `soomsilBlue600`, `soomsilBackground`, `soomsilPrimaryText` 등으로
-래핑합니다. 에셋을 `AppSource` 안에 중복 복사하면 같은 이름의 리소스가
+래핑합니다. 에셋을 `Soongsil-Life-iOS/AppSource` 안에 중복 복사하면
+같은 이름의 리소스가
 두 번 포함될 수 있으므로 기존 카탈로그를 단일 원본으로 유지합니다.
 
 ## Localization
@@ -233,7 +273,7 @@ Soongsil-Life-iOS/Resource/Assets Catalog
 접근합니다. 현재 지원 언어와 기본 언어는 한국어입니다.
 
 ```text
-AppSource/Resource/Localization
+Soongsil-Life-iOS/AppSource/Resource/Localization
 ├── L10n.swift
 └── ko.lproj/Localizable.strings
 ```
@@ -252,7 +292,7 @@ Localizations에도 언어를 등록합니다.
 
 ## 처음 실행하기
 
-1. `Soongsil-Life-iOS.xcodeproj`를 엽니다.
+1. `Soongsil-Life-iOS/Soongsil-Life-iOS.xcodeproj`를 엽니다.
 2. Xcode가 LMS-API 1.6.1을 Resolve할 때까지 기다립니다.
 3. 실제 API를 확인할 때는 `Soongsil-Life-iOS` 스킴과 실제 iPhone/iPad를
    선택합니다.
