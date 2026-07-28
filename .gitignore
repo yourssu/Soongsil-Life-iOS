@@ -1,0 +1,49 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Xcode user-specific data
+**/xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+
+# Build products
+DerivedData/
+build/
+.build/
+*.xcarchive
+*.ipa
+*.dSYM
+*.dSYM.zip
+/tmp/
+
+# Swift Package Manager local state
+.swiftpm/
+
+# Local environment and sensitive configuration
+.env
+.env.*
+!.env.example
+*.xcconfig
+GoogleService-Info.plist
+**/Secrets.swift
+**/LocalConfig.swift
+**/Secrets.plist
+**/Secrets.json
+
+# Signing credentials and provisioning profiles
+*.p8
+*.p12
+*.cer
+*.der
+*.pem
+*.key
+*.mobileprovision
+*.provisionprofile
+
+# Local source remnants outside the current Xcode targets
+/Soongsil-Life-iOS/Soongsil-Life-iOS/App/
+/Soongsil-Life-iOS/Soongsil-Life-iOS/Common/
+/Soongsil-Life-iOS/Soongsil-Life-iOS/Module/
+/Soongsil-Life-iOS/Soongsil-Life-iOS/ContentView.swift
+/Soongsil-Life-iOS/Soongsil-Life-iOS/Resource/Font/

@@ -1,0 +1,15 @@
+{
+  "originHash" : "0e616f7b0613fb0e1c84a8654ab821a70e95458021a25c84ef1e200f9c61d71c",
+  "pins" : [
+    {
+      "identity" : "lms-api",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/chlwhdtn03/LMS-API",
+      "state" : {
+        "revision" : "127e5789432962100cc3c19f6a88df93ad483b5f",
+        "version" : "1.6.1"
+      }
+    }
+  ],
+  "version" : 3
+}

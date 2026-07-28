@@ -1,0 +1,272 @@
+import SwiftUI
+
+struct SettingView: View {
+    @State var viewModel: SettingViewModel
+    @AppStorage("gradeAnnouncementNotificationEnabled")
+    private var isGradeNotificationEnabled = true
+    @AppStorage("chapelNotificationEnabled")
+    private var isChapelNotificationEnabled = true
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(L10n.Common.my)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundStyle(Color.soomsilPrimaryText)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 18)
+                .padding(.bottom, 8)
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    SettingSection(title: L10n.Soomsil.account) {
+                        SettingActionRow(
+                            title: L10n.Settings.logout,
+                            accessory: .chevron
+                        ) {
+                            Task {
+                                await viewModel.transform(input: .logoutButtonTapped)
+                            }
+                        }
+                    }
+
+                    SettingSection(title: L10n.Soomsil.notificationSection) {
+                        SettingToggleRow(
+                            title: L10n.Soomsil.gradeNotifications,
+                            isOn: $isGradeNotificationEnabled
+                        )
+                        SettingDivider()
+                        SettingToggleRow(
+                            title: L10n.Soomsil.chapelNotifications,
+                            isOn: $isChapelNotificationEnabled
+                        )
+                    }
+
+                    SettingSection(title: L10n.Soomsil.agreements) {
+                        SettingActionRow(
+                            title: L10n.Settings.terms,
+                            accessory: .chevron
+                        ) {
+                            openURL(AppConfig.termsURL)
+                        }
+                        SettingDivider()
+                        SettingActionRow(
+                            title: L10n.Settings.privacy,
+                            accessory: .chevron
+                        ) {
+                            openURL(AppConfig.privacyURL)
+                        }
+                        SettingDivider()
+                        SettingActionRow(
+                            title: L10n.Settings.openSource,
+                            accessory: .chevron
+                        ) {
+                            guard let url = URL(string: AppConfig.lmsPackageURL) else { return }
+                            openURL(url)
+                        }
+                    }
+
+                    SettingSection(title: L10n.Soomsil.versionInfo) {
+                        SettingActionRow(
+                            title: L10n.Soomsil.versionInfo,
+                            accessory: .text(
+                                L10n.Soomsil.appVersion(viewModel.output.appVersion)
+                            ),
+                            action: nil
+                        )
+                    }
+                }
+                .padding(.bottom, 24)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.soomsilBackground)
+    }
+}
+
+struct LogoutDialogView: View {
+    let cancel: () -> Void
+    let confirm: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.35)
+                .ignoresSafeArea()
+                .onTapGesture(perform: cancel)
+
+            VStack(spacing: 26) {
+                VStack(spacing: 9) {
+                    Text(L10n.Soomsil.logoutTitle)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(Color.soomsilPrimaryText)
+
+                    Text(L10n.Soomsil.logoutMessage)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(3)
+                }
+
+                HStack(spacing: 12) {
+                    Button(action: cancel) {
+                        Text(L10n.Soomsil.cancel)
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(Color.soomsilPrimaryText)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(Color.soomsilMutedSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(action: confirm) {
+                        Text(L10n.Settings.logout)
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(Color.soomsilBlue600)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.top, 40)
+            .padding(.horizontal, 34)
+            .padding(.bottom, 28)
+            .background(Color.soomsilSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .padding(.horizontal, 34)
+        }
+    }
+}
+
+private struct SettingSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    init(title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.soomsilSecondaryText)
+                .padding(.horizontal, 2)
+
+            VStack(spacing: 0) {
+                content
+            }
+            .soomsilCard(cornerRadius: 10)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 18)
+    }
+}
+
+private struct SettingDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color.soomsilBorder)
+            .frame(height: 1)
+            .padding(.horizontal, 16)
+    }
+}
+
+private enum SettingAccessory {
+    case chevron
+    case text(String)
+}
+
+private struct SettingActionRow: View {
+    let title: String
+    let accessory: SettingAccessory
+    let action: (() -> Void)?
+
+    var body: some View {
+        Group {
+            if let action {
+                Button(action: action) {
+                    rowContent
+                }
+                .buttonStyle(SettingRowButtonStyle())
+            } else {
+                rowContent
+            }
+        }
+        .frame(height: 58)
+    }
+
+    private var rowContent: some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.soomsilPrimaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            switch accessory {
+            case .chevron:
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.soomsilSecondaryText)
+            case let .text(value):
+                Text(value)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.soomsilSecondaryText)
+            }
+        }
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+    }
+}
+
+private struct SettingToggleRow: View {
+    let title: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.soomsilPrimaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .tint(Color.soomsilBlue600)
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 58)
+    }
+}
+
+private struct SettingRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                configuration.isPressed
+                    ? Color.soomsilMutedSurface
+                    : Color.clear
+            )
+    }
+}
+
+#Preview {
+    let container = DIContainer.preview
+    SettingView(
+        viewModel: SettingViewModel(
+            repository: container.authenticationRepository,
+            appFlow: AppFlowViewModel(
+                repository: container.authenticationRepository
+            )
+        )
+    )
+}
+
+#Preview("Logout dialog") {
+    LogoutDialogView(cancel: {}, confirm: {})
+}
