@@ -187,3 +187,28 @@ struct Dashboard: Sendable {
         semesters.reduce(0) { $0 + $1.earnedCredits }
     }
 }
+
+struct GraduationAudit: Sendable {
+    let items: [GraduationAuditItem]
+
+    var isGraduatable: Bool {
+        items.allSatisfy(\.isSatisfied)
+    }
+}
+
+struct GraduationAuditItem: Identifiable, Sendable {
+    var id: String {
+        "\(classification)-\(requirement)"
+    }
+
+    let classification: String
+    let requirement: String
+    let standardValue: String
+    let calculatedValue: String
+    let difference: String
+    let result: String
+
+    var isSatisfied: Bool {
+        result == "충족"
+    }
+}

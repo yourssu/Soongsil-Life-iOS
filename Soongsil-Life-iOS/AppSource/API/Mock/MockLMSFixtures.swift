@@ -63,6 +63,112 @@ enum MockLMSFixtures {
             totalRank: "12/220"
         )
     ]
+    
+    static let graduate_table = GraduationAudit(
+        items: [
+            GraduationAuditItem(
+                classification: "졸업필수 요건",
+                requirement: "학부-졸업학점 133",
+                standardValue: "133",
+                calculatedValue: "131.0",
+                difference: "-2.0",
+                result: "부족"
+            ),
+            GraduationAuditItem(
+                classification: "졸업필수 요건",
+                requirement: "학부-편입 요이수 지정과목",
+                standardValue: "",
+                calculatedValue: "",
+                difference: "",
+                result: "충족"
+            ),
+            GraduationAuditItem(
+                classification: "졸업필수 요건",
+                requirement: "학부-졸업논문/졸업시험 이수",
+                standardValue: "",
+                calculatedValue: "",
+                difference: "",
+                result: "부족"
+            ),
+            GraduationAuditItem(
+                classification: "졸업필수 요건",
+                requirement: "학부-졸업확정신고 여부",
+                standardValue: "",
+                calculatedValue: "",
+                difference: "",
+                result: "부족"
+            ),
+            GraduationAuditItem(
+                classification: "졸업필수 요건",
+                requirement: "학부-기독교과목 3학점 이상 (23 이후)",
+                standardValue: "3",
+                calculatedValue: "1.0",
+                difference: "-2.0",
+                result: "부족"
+            ),
+
+            GraduationAuditItem(
+                classification: "교양필수",
+                requirement: "학부-교양필수 19",
+                standardValue: "19",
+                calculatedValue: "4.0",
+                difference: "-15.0",
+                result: "부족"
+            ),
+
+            GraduationAuditItem(
+                classification: "교양선택",
+                requirement: "Balance (교양선택) 3개 영역 이상 이수",
+                standardValue: "",
+                calculatedValue: "",
+                difference: "",
+                result: "충족"
+            ),
+            GraduationAuditItem(
+                classification: "교양선택",
+                requirement: "학부-교양선택 9",
+                standardValue: "9",
+                calculatedValue: "7.0",
+                difference: "-2.0",
+                result: "부족"
+            ),
+
+            GraduationAuditItem(
+                classification: "전공기초",
+                requirement: "학부-전기-AI소프트 12",
+                standardValue: "12",
+                calculatedValue: "6.0",
+                difference: "-6.0",
+                result: "부족"
+            ),
+
+            GraduationAuditItem(
+                classification: "전공",
+                requirement: "학부-전필-AI소프트 12",
+                standardValue: "12",
+                calculatedValue: "",
+                difference: "-12.0",
+                result: "부족"
+            ),
+            GraduationAuditItem(
+                classification: "전공",
+                requirement: "학부-전필+전선-AI소프트 72",
+                standardValue: "72",
+                calculatedValue: "3.0",
+                difference: "-69.0",
+                result: "부족"
+            ),
+
+            GraduationAuditItem(
+                classification: "채플",
+                requirement: "학부-채플(신입 6회, 편입2혹은4회)",
+                standardValue: "",
+                calculatedValue: "",
+                difference: "",
+                result: "부족"
+            )
+        ]
+    )
 
     static let courses = [
         CourseGrade(courseCode: "CHAPEL", title: "비전채플", classification: "교양필수", credits: 0.5, grade: "P", gradePoint: "0", professor: "박영수"),

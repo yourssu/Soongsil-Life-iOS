@@ -4,15 +4,18 @@ struct DIContainer {
     let authenticationRepository: AuthenticationRepositoryProtocol
     let homeRepository: HomeRepositoryProtocol
     let gradeRepository: GradeRepositoryProtocol
+    let graduationAuditRepository: GraduationAuditRepositoryProtocol
 
     init(
         authenticationRepository: AuthenticationRepositoryProtocol,
         homeRepository: HomeRepositoryProtocol,
-        gradeRepository: GradeRepositoryProtocol
+        gradeRepository: GradeRepositoryProtocol,
+        graduationAuditRepository: GraduationAuditRepositoryProtocol
     ) {
         self.authenticationRepository = authenticationRepository
         self.homeRepository = homeRepository
         self.gradeRepository = gradeRepository
+        self.graduationAuditRepository = graduationAuditRepository
     }
 
     static let mock = makeMockContainer()
@@ -31,6 +34,7 @@ struct DIContainer {
 #else
         let authenticationService = AuthenticationService()
         let gradeService = GradeService()
+        let graduationAuditService = GraduationAuditService()
 
         return DIContainer(
             authenticationRepository: AuthenticationRepository(
@@ -41,7 +45,10 @@ struct DIContainer {
                 gradeService: gradeService,
                 chapelService: ChapelService()
             ),
-            gradeRepository: GradeRepository(service: gradeService)
+            gradeRepository: GradeRepository(service: gradeService),
+            graduationAuditRepository: GraduationAuditRepository(
+                service: graduationAuditService
+            )
         )
 #endif
     }
@@ -55,6 +62,10 @@ struct DIContainer {
             delayNanoseconds: delayNanoseconds
         )
         let gradeService = MockGradeService(
+            delayNanoseconds: delayNanoseconds
+        )
+        
+        let graduationAuditService = MockGraduationAuditService(
             delayNanoseconds: delayNanoseconds
         )
 
@@ -71,7 +82,10 @@ struct DIContainer {
                     delayNanoseconds: delayNanoseconds
                 )
             ),
-            gradeRepository: GradeRepository(service: gradeService)
+            gradeRepository: GradeRepository(service: gradeService),
+            graduationAuditRepository: GraduationAuditRepository(
+                service: graduationAuditService
+            )
         )
     }
 }
