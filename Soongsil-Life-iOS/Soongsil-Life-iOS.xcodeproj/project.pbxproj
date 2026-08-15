@@ -22,6 +22,7 @@
 				API/Authentication/AuthenticationService.swift,
 				API/Chapel/ChapelService.swift,
 				API/Grade/GradeService.swift,
+				API/GraduationAudit/GraduationAuditService.swift,
 				API/Student/StudentService.swift,
 			);
 			target = B10000000000000000000006 /* Soongsil-Life-iOS-Preview */;
