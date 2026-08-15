@@ -78,6 +78,7 @@
 "graduation_audit.major" = "전공";
 "graduation_audit.chapel" = "채플";
 "graduation_audit.result" = "졸업사정결과";
+"graduation_audit.loading" = "불러오는 중...";
 "graduation_audit.eligible" = "가능";
 "graduation_audit.ineligible" = "불가능";
 "graduation_audit.hide_course_status" = "과목상태 숨기기";

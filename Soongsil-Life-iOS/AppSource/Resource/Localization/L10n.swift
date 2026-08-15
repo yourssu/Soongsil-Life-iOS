@@ -151,6 +151,7 @@ enum L10n {
         static let chapel = text("graduation_audit.chapel")
         
         static let result = text("graduation_audit.result")
+        static let loading = text("graduation_audit.loading")
         static let eligible = text("graduation_audit.eligible")
         static let ineligible = text("graduation_audit.ineligible")
         static let hideCourseStatus = text("graduation_audit.hide_course_status")

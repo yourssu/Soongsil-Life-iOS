@@ -74,10 +74,17 @@ struct GraduationAuditView: View {
             Text("\(L10n.GraduationAudit.result) · ")
                 .font(.system(size: 13))
                 .foregroundStyle(Color.soomsilSecondaryText)
-            Text(isGraduatable ? L10n.GraduationAudit.eligible : L10n.GraduationAudit.ineligible)
+            Text(
+                viewModel.output.isLoading
+                ? L10n.GraduationAudit.loading
+                : isGraduatable
+                ? L10n.GraduationAudit.eligible
+                : L10n.GraduationAudit.ineligible)
                 .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(
-                    isGraduatable
+                    viewModel.output.isLoading
+                    ? Color.soomsilPrimaryText
+                    : isGraduatable
                     ? Color.soomsilGreen500
                     : Color.soomsilRed500
                 )
