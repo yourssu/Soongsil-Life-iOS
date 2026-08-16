@@ -23,6 +23,7 @@
 				API/Chapel/ChapelService.swift,
 				API/Grade/GradeService.swift,
 				API/Student/StudentService.swift,
+				API/Tuition/TuitionService.swift,
 			);
 			target = B10000000000000000000006 /* Soongsil-Life-iOS-Preview */;
 		};

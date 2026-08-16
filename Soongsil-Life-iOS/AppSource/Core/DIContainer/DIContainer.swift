@@ -4,15 +4,18 @@ struct DIContainer {
     let authenticationRepository: AuthenticationRepositoryProtocol
     let homeRepository: HomeRepositoryProtocol
     let gradeRepository: GradeRepositoryProtocol
+    let tuitionRepository: TuitionRepositoryProtocol
 
     init(
         authenticationRepository: AuthenticationRepositoryProtocol,
         homeRepository: HomeRepositoryProtocol,
-        gradeRepository: GradeRepositoryProtocol
+        gradeRepository: GradeRepositoryProtocol,
+        tuitionRepository: TuitionRepositoryProtocol
     ) {
         self.authenticationRepository = authenticationRepository
         self.homeRepository = homeRepository
         self.gradeRepository = gradeRepository
+        self.tuitionRepository = tuitionRepository
     }
 
     static let mock = makeMockContainer()
@@ -22,6 +25,7 @@ struct DIContainer {
         if ProcessInfo.processInfo.arguments.contains("-useMockData") {
             return .mock
         }
+
         return makeAppContainer()
     }
 
@@ -41,7 +45,8 @@ struct DIContainer {
                 gradeService: gradeService,
                 chapelService: ChapelService()
             ),
-            gradeRepository: GradeRepository(service: gradeService)
+            gradeRepository: GradeRepository(service: gradeService),
+            tuitionRepository: TuitionRepository(service: TuitionService())
         )
 #endif
     }
@@ -71,7 +76,10 @@ struct DIContainer {
                     delayNanoseconds: delayNanoseconds
                 )
             ),
-            gradeRepository: GradeRepository(service: gradeService)
+            gradeRepository: GradeRepository(service: gradeService),
+            tuitionRepository: TuitionRepository(
+                service: MockTuitionService(delayNanoseconds: delayNanoseconds)
+            )
         )
     }
 }

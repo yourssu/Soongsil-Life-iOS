@@ -6,6 +6,7 @@ struct MainTabView: View {
     @State private var settingViewModel: SettingViewModel
     @State private var isHomeNavigationActive = false
     private let gradeRepository: GradeRepositoryProtocol
+    private let tuitionRepository: TuitionRepositoryProtocol
 
     init(
         viewModel: MainTabViewModel? = nil,
@@ -13,6 +14,7 @@ struct MainTabView: View {
         appFlow: AppFlowViewModel
     ) {
         gradeRepository = container.gradeRepository
+        tuitionRepository = container.tuitionRepository
         _viewModel = State(
             initialValue: viewModel ?? MainTabViewModel()
         )
@@ -67,6 +69,7 @@ struct MainTabView: View {
             HomeView(
                 viewModel: homeViewModel,
                 gradeRepository: gradeRepository,
+                tuitionRepository: tuitionRepository,
                 onNavigationDepthChanged: {
                     isHomeNavigationActive = $0
                 }

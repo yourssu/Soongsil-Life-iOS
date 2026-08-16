@@ -60,6 +60,14 @@
 "chapel.seat_ordinal_10" = "열 번째";
 "chapel.seat_ordinal_format" = "%1$d번째";
 
+"tuition.tuition_tab" = "등록금 내역";
+"tuition.scholarship_tab" = "장학금 내역";
+"tuition.no_tuition_records" = "등록금 내역이 없어요";
+"tuition.no_scholarship_records" = "장학금 내역이 없어요";
+"tuition.retry" = "다시 불러오기";
+"tuition.tuition_date" = "등록일자";
+"tuition.reduction" = "사전감면";
+
 "academic_semester.first" = "1학기";
 "academic_semester.summer" = "여름학기";
 "academic_semester.second" = "2학기";
@@ -119,4 +127,6 @@
 "error.grades_failed" = "성적을 불러오지 못했습니다.";
 "error.profile_failed" = "학생 정보를 불러오지 못했습니다.";
 "error.semesters_failed" = "학기 성적을 불러오지 못했습니다.";
+"error.tuition_failed" = "등록금 내역을 불러오지 못했습니다.";
+"error.scholarship_failed" = "장학금 내역을 불러오지 못했습니다.";
 "error.invalid_response" = "서버 응답을 불러오지 못했습니다.";
