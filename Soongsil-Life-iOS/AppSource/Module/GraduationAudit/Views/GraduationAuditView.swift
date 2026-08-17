@@ -267,7 +267,7 @@ struct GraduationAuditView: View {
         viewModel.output.graduationAudit?
             .items
             .filter {
-                $0.classification == classification.identifier
+                $0.classification == classification.label
             } ?? []
     }
     
@@ -279,7 +279,7 @@ struct GraduationAuditView: View {
         case major
         case chapel
         
-        var identifier: String {
+        var label: String {
             switch self {
             case .graduationRequired:
                 return "졸업필수 요건"
