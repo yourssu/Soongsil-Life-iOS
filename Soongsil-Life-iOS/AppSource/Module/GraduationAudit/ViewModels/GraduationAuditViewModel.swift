@@ -46,6 +46,9 @@ final class GraduationAuditViewModel: BaseViewModel {
     }
 
     private func fetchGraduateTable() async {
+        guard !output.isLoading else {
+            return
+        }
 
         output.isLoading = true
         output.errorMessage = nil
