@@ -7,6 +7,7 @@ final class GraduationAuditViewModel: BaseViewModel {
 
     enum Input {
         case onAppear
+        case retry
         case toggleCourseDetail
     }
 
@@ -34,7 +35,7 @@ final class GraduationAuditViewModel: BaseViewModel {
     @discardableResult
     func transform(input: Input) async -> Output {
         switch input {
-        case .onAppear:
+        case .onAppear, .retry:
             await fetchGraduateTable()
 
         case .toggleCourseDetail:

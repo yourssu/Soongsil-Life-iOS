@@ -17,43 +17,16 @@ struct GraduationAuditView: View {
             
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 11) {
-                    resultGraduate
-                    
-                    requirementCard(
-                        title: L10n.GraduationAudit.graduationRequired,
-                        items: items(for: .graduationRequired)
-                    )
-                    
-                    requirementCard(
-                        title: L10n.GraduationAudit.liberalArtsRequired,
-                        items: items(for: .liberalArtsRequired)
-                    )
-                    
-                    requirementCard(
-                        title: L10n.GraduationAudit.liberalArtsElective,
-                        items: items(for: .liberalArtsElective)
-                    )
-                    
-                    requirementCard(
-                        title: L10n.GraduationAudit.majorBasic,
-                        items: items(for: .majorBasic)
-                    )
-                    
-                    requirementCard(
-                        title: L10n.GraduationAudit.major,
-                        items: items(for: .major)
-                    )
-                    
-                    requirementCard(
-                        title: L10n.GraduationAudit.chapel,
-                        items: items(for: .chapel)
-                    )
-                    
                     if viewModel.output.isLoading {
                         ProgressView()
                             .tint(Color.soomsilBlue600)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 32)
+                    } else if let error = viewModel.output.errorMessage {
+                        errorCard(error)
+                    } else {
+                        resultGraduate
+                        requirementCards
                     }
                 }
                 .padding(.horizontal, 20)
@@ -75,16 +48,12 @@ struct GraduationAuditView: View {
                 .font(.system(size: 13))
                 .foregroundStyle(Color.soomsilSecondaryText)
             Text(
-                viewModel.output.isLoading
-                ? L10n.GraduationAudit.loading
-                : isGraduatable
+                isGraduatable
                 ? L10n.GraduationAudit.eligible
                 : L10n.GraduationAudit.ineligible)
                 .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(
-                    viewModel.output.isLoading
-                    ? Color.soomsilPrimaryText
-                    : isGraduatable
+                    isGraduatable
                     ? Color.soomsilGreen500
                     : Color.soomsilRed500
                 )
@@ -113,6 +82,39 @@ struct GraduationAuditView: View {
         .frame(maxWidth: .infinity)
         .background(Color.soomsilMutedSurface)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+    
+    @ViewBuilder
+    private var requirementCards: some View {
+        requirementCard(
+            title: L10n.GraduationAudit.graduationRequired,
+            items: items(for: .graduationRequired)
+        )
+        
+        requirementCard(
+            title: L10n.GraduationAudit.liberalArtsRequired,
+            items: items(for: .liberalArtsRequired)
+        )
+        
+        requirementCard(
+            title: L10n.GraduationAudit.liberalArtsElective,
+            items: items(for: .liberalArtsElective)
+        )
+        
+        requirementCard(
+            title: L10n.GraduationAudit.majorBasic,
+            items: items(for: .majorBasic)
+        )
+        
+        requirementCard(
+            title: L10n.GraduationAudit.major,
+            items: items(for: .major)
+        )
+        
+        requirementCard(
+            title: L10n.GraduationAudit.chapel,
+            items: items(for: .chapel)
+        )
     }
     
     @ViewBuilder
@@ -269,6 +271,25 @@ struct GraduationAuditView: View {
             .filter {
                 $0.classification == classification.label
             } ?? []
+    }
+    
+    private func errorCard(_ message: String) -> some View {
+        VStack(spacing: 12) {
+            Text(message)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.soomsilSecondaryText)
+                .multilineTextAlignment(.center)
+            Button(L10n.Home.retryDescription) {
+                Task {
+                    await viewModel.transform(input: .retry)
+                }
+            }
+            .font(.system(size: 13, weight: .bold))
+            .foregroundStyle(Color.soomsilBlue600)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(24)
+        .soomsilCard(cornerRadius: 16)
     }
     
     enum requirementTitle {
