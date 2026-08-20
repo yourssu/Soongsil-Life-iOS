@@ -131,7 +131,7 @@
 
 "error.login_failed" = "로그인에 실패했습니다.";
 "error.grades_failed" = "성적을 불러오지 못했습니다.";
-"error.graduate_table_failed" = "졸업사정표를 불러오지 못했습니다";
+"error.graduate_table_failed" = "졸업사정표를 불러오지 못했습니다.";
 "error.profile_failed" = "학생 정보를 불러오지 못했습니다.";
 "error.semesters_failed" = "학기 성적을 불러오지 못했습니다.";
 "error.invalid_response" = "서버 응답을 불러오지 못했습니다.";
