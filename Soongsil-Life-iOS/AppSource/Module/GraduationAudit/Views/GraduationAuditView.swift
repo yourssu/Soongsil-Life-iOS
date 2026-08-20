@@ -267,7 +267,7 @@ struct GraduationAuditView: View {
         viewModel.output.graduationAudit?
             .items
             .filter {
-                $0.classification == classification.label
+                $0.classification == classification.rawValue
             } ?? []
     }
     
@@ -290,30 +290,13 @@ struct GraduationAuditView: View {
         .soomsilCard(cornerRadius: 16)
     }
     
-    enum GraduationAuditClassification {
-        case graduationRequired
-        case liberalArtsRequired
-        case liberalArtsElective
-        case majorBasic
-        case major
-        case chapel
-        
-        var label: String {
-            switch self {
-            case .graduationRequired:
-                return "졸업필수 요건"
-            case .liberalArtsRequired:
-                return "교양필수"
-            case .liberalArtsElective:
-                return "교양선택"
-            case .majorBasic:
-                return "전공기초"
-            case .major:
-                return "전공"
-            case .chapel:
-                return "채플"
-            }
-        }
+    enum GraduationAuditClassification: String {
+        case graduationRequired = "졸업필수 요건"
+        case liberalArtsRequired = "교양필수"
+        case liberalArtsElective = "교양선택"
+        case majorBasic = "전공기초"
+        case major = "전공"
+        case chapel = "채플"
     }
 }
 
