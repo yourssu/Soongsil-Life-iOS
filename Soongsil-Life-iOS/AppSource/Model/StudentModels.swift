@@ -207,8 +207,17 @@ struct GraduationAuditItem: Identifiable, Sendable {
     let calculatedValue: String
     let difference: String
     let result: String
+    
+    var status: GraduationAuditStatus? {
+        GraduationAuditStatus(rawValue: result)
+    }
 
     var isSatisfied: Bool {
-        result == "충족"
+        status == .satisfied
+    }
+    
+    enum GraduationAuditStatus: String, Sendable {
+        case satisfied = "충족"
+        case insufficient = "부족"
     }
 }
