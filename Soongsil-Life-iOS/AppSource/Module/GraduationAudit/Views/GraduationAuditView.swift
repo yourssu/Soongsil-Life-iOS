@@ -132,13 +132,8 @@ struct GraduationAuditView: View {
                     Spacer()
                 }
 
-                ForEach(
-                    Array(items.enumerated()),
-                    id: \.element.id
-                ) { index, item in
-
+                ForEach(items) { item in
                     Divider()
-
                     requirementRow(item)
                 }
             }
