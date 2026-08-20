@@ -24,9 +24,12 @@ struct GraduationAuditView: View {
                             .padding(.vertical, 32)
                     } else if let error = viewModel.output.errorMessage {
                         errorCard(error)
-                    } else {
+                    } else if let graduationAudit =
+                        viewModel.output.graduationAudit {
                         resultGraduate
                         requirementCards
+                    } else {
+                        EmptyView()
                     }
                 }
                 .padding(.horizontal, 20)
