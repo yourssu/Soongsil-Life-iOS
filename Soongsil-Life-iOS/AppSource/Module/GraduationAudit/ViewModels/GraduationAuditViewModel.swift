@@ -35,17 +35,7 @@ final class GraduationAuditViewModel: BaseViewModel {
     func transform(input: Input) async -> Output {
         switch input {
         case .onAppear:
-            output.isLoading = true
-
-            do {
-                output.graduationAudit =
-                    try await repository.fetchGraduateTable()
-                output.errorMessage = nil
-            } catch {
-                output.errorMessage = error.localizedDescription
-            }
-
-            output.isLoading = false
+            await fetchGraduateTable()
 
         case .toggleCourseDetail:
             output.isCourseDetailExpanded.toggle()
