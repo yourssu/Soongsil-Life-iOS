@@ -64,7 +64,7 @@ enum MockLMSFixtures {
         )
     ]
     
-    static let graduate_table = GraduationAudit(
+    static let graduateTable = GraduationAudit(
         items: [
             GraduationAuditItem(
                 classification: "졸업필수 요건",

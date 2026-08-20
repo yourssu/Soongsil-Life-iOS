@@ -10,7 +10,7 @@ final class MockGraduationAuditService: GraduationAuditServiceProtocol {
     func fetchGraduateTable() async throws -> GraduationAudit {
         await delay()
         
-        return MockLMSFixtures.graduate_table
+        return MockLMSFixtures.graduateTable
     }
     
     private func delay() async {

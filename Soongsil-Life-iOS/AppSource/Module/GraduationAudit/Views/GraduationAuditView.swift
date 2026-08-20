@@ -259,7 +259,7 @@ struct GraduationAuditView: View {
     }
 
     private func items(
-        for classification: requirementTitle
+        for classification: GraduationAuditClassification
     ) -> [GraduationAuditItem] {
         viewModel.output.graduationAudit?
             .items
@@ -287,7 +287,7 @@ struct GraduationAuditView: View {
         .soomsilCard(cornerRadius: 16)
     }
     
-    enum requirementTitle {
+    enum GraduationAuditClassification {
         case graduationRequired
         case liberalArtsRequired
         case liberalArtsElective
