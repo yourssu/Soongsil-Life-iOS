@@ -73,8 +73,10 @@ struct GraduationAuditView: View {
                     .padding(.vertical, 8)
                     .background(Color.soomsilSurface)
                     .clipShape(Capsule())
+                    .transaction {
+                        $0.animation = nil
+                    }
             }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
