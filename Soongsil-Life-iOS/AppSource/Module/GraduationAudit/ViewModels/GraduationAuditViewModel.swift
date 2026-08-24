@@ -8,7 +8,6 @@ final class GraduationAuditViewModel: BaseViewModel {
     enum Input {
         case onAppear
         case retry
-        case toggleCourseDetail
     }
 
 
@@ -16,7 +15,6 @@ final class GraduationAuditViewModel: BaseViewModel {
         var graduationAudit: GraduationAudit?
 
         var isLoading: Bool = false
-        var isCourseDetailExpanded: Bool = false
         var errorMessage: String?
     }
 
@@ -37,11 +35,8 @@ final class GraduationAuditViewModel: BaseViewModel {
         switch input {
         case .onAppear, .retry:
             await fetchGraduateTable()
-
-        case .toggleCourseDetail:
-            output.isCourseDetailExpanded.toggle()
         }
-
+        
         return output
     }
 
