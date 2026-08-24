@@ -201,8 +201,9 @@ struct GraduationAuditView: View {
                 }
             }
 
-            if viewModel.output.isCourseDetailExpanded {
-                courseDetailPlaceholder
+            if viewModel.output.isCourseDetailExpanded,
+               !item.usedSubjects.isEmpty {
+                courseDetail(item.usedSubjects)
             }
         }
     }
@@ -227,19 +228,23 @@ struct GraduationAuditView: View {
             .clipShape(Capsule())
     }
 
-    private var courseDetailPlaceholder: some View {
+    private func courseDetail(
+        _ subjects: [String]
+    ) -> some View {
         ScrollView(
             .horizontal,
             showsIndicators: false
         ) {
             HStack(spacing: 6) {
-                Text("이수 과목")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.soomsilSecondaryText)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.soomsilSurface)
-                    .clipShape(Capsule())
+                ForEach(subjects, id: \.self) { subject in
+                    Text(subject)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.soomsilSurface)
+                        .clipShape(Capsule())
+                }
             }
         }
         .scrollBounceBehavior(

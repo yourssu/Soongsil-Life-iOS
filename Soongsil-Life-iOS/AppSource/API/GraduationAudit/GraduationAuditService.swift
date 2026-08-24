@@ -6,7 +6,7 @@ final class GraduationAuditService: GraduationAuditServiceProtocol {
 
     func fetchGraduateTable() async throws -> GraduationAudit {
         try await withCheckedThrowingContinuation { continuation in
-            api.getGraduateTable { result in
+            api.getGraduateTable(completion: { result in
                 guard result.success,
                 let table = result.graduateTable else {
                     continuation.resume(
@@ -24,7 +24,8 @@ final class GraduationAuditService: GraduationAuditServiceProtocol {
                         standardValue: $0.standardValue,
                         calculatedValue: $0.calculatedValue,
                         difference: $0.difference,
-                        result: $0.result
+                        result: $0.result,
+                        usedSubjects: $0.usedSubjects
                     )
                 }
 
@@ -33,7 +34,8 @@ final class GraduationAuditService: GraduationAuditServiceProtocol {
                         items: items
                     )
                 )
-            }
+            })
         }
     }
 }
+

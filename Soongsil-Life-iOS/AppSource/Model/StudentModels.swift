@@ -207,6 +207,7 @@ struct GraduationAuditItem: Identifiable, Sendable {
     let calculatedValue: String
     let difference: String
     let result: String
+    let usedSubjects: [String]
     
     var status: GraduationAuditStatus? {
         GraduationAuditStatus(rawValue: result)

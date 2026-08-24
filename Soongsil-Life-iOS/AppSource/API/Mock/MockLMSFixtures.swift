@@ -72,7 +72,8 @@ enum MockLMSFixtures {
                 standardValue: "133",
                 calculatedValue: "131.0",
                 difference: "-2.0",
-                result: "부족"
+                result: "부족",
+                usedSubjects: ["(AI소프트)기초AI수", "(AI소프트)이산수학", "(AI소프트)프로그래밍", "(교선)디지털인문학", "(교필)비판적사고와학술", "(교필)컴퓨팅적사고와알", "(일선)AI와데이터리터", "비전채플", "섬김의리더십", "음향의이해와활용"]
             ),
             GraduationAuditItem(
                 classification: "졸업필수 요건",
@@ -80,7 +81,8 @@ enum MockLMSFixtures {
                 standardValue: "",
                 calculatedValue: "",
                 difference: "",
-                result: "충족"
+                result: "충족",
+                usedSubjects: []
             ),
             GraduationAuditItem(
                 classification: "졸업필수 요건",
@@ -88,7 +90,8 @@ enum MockLMSFixtures {
                 standardValue: "",
                 calculatedValue: "",
                 difference: "",
-                result: "부족"
+                result: "부족",
+                usedSubjects: []
             ),
             GraduationAuditItem(
                 classification: "졸업필수 요건",
@@ -96,7 +99,8 @@ enum MockLMSFixtures {
                 standardValue: "",
                 calculatedValue: "",
                 difference: "",
-                result: "부족"
+                result: "부족",
+                usedSubjects: []
             ),
             GraduationAuditItem(
                 classification: "졸업필수 요건",
@@ -104,7 +108,8 @@ enum MockLMSFixtures {
                 standardValue: "3",
                 calculatedValue: "1.0",
                 difference: "-2.0",
-                result: "부족"
+                result: "부족",
+                usedSubjects: ["섬김의리더십"]
             ),
 
             GraduationAuditItem(
@@ -113,7 +118,8 @@ enum MockLMSFixtures {
                 standardValue: "19",
                 calculatedValue: "4.0",
                 difference: "-15.0",
-                result: "부족"
+                result: "부족",
+                usedSubjects: ["(교필)비판적사고와학술", "(교필)컴퓨팅적사고와알"]
             ),
 
             GraduationAuditItem(
@@ -122,7 +128,8 @@ enum MockLMSFixtures {
                 standardValue: "",
                 calculatedValue: "",
                 difference: "",
-                result: "충족"
+                result: "충족",
+                usedSubjects: ["(교선)디지털인문학", "섬김의리더십", "음향의이해와활용"]
             ),
             GraduationAuditItem(
                 classification: "교양선택",
@@ -130,7 +137,8 @@ enum MockLMSFixtures {
                 standardValue: "9",
                 calculatedValue: "7.0",
                 difference: "-2.0",
-                result: "부족"
+                result: "부족",
+                usedSubjects: ["(교선)디지털인문학", "섬김의리더십", "음향의이해와활용"]
             ),
 
             GraduationAuditItem(
@@ -139,7 +147,8 @@ enum MockLMSFixtures {
                 standardValue: "12",
                 calculatedValue: "6.0",
                 difference: "-6.0",
-                result: "부족"
+                result: "부족",
+                usedSubjects: ["(AI소프트)이산수학", "(AI소프트)프로그래밍"]
             ),
 
             GraduationAuditItem(
@@ -148,7 +157,8 @@ enum MockLMSFixtures {
                 standardValue: "12",
                 calculatedValue: "",
                 difference: "-12.0",
-                result: "부족"
+                result: "부족",
+                usedSubjects: []
             ),
             GraduationAuditItem(
                 classification: "전공",
@@ -156,7 +166,8 @@ enum MockLMSFixtures {
                 standardValue: "72",
                 calculatedValue: "3.0",
                 difference: "-69.0",
-                result: "부족"
+                result: "부족",
+                usedSubjects: ["(AI소프트)기초AI수"]
             ),
 
             GraduationAuditItem(
@@ -165,7 +176,8 @@ enum MockLMSFixtures {
                 standardValue: "",
                 calculatedValue: "",
                 difference: "",
-                result: "부족"
+                result: "부족",
+                usedSubjects: ["비전채플"]
             )
         ]
     )
