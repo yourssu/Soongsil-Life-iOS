@@ -499,8 +499,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/chlwhdtn03/LMS-API";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.6.1;
+				kind = revision;
+				revision = 014b325fea9bcd234a21edaf0f8e41b0debadcba;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
