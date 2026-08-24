@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/chlwhdtn03/LMS-API",
       "state" : {
-        "revision" : "87799ee208fac686428729c698432406e488bdb9",
-        "version" : "1.6.4"
+        "revision" : "7d9c5d2f39a735fae018a501af44453bbe1ac23a",
+        "version" : "1.6.6"
       }
     }
   ],
