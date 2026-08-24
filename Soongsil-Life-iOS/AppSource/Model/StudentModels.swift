@@ -192,7 +192,7 @@ struct GraduationAudit: Sendable {
     let items: [GraduationAuditItem]
 
     var isGraduatable: Bool {
-        items.allSatisfy(\.isSatisfied)
+        !items.isEmpty && items.allSatisfy(\.isSatisfied)
     }
 }
 

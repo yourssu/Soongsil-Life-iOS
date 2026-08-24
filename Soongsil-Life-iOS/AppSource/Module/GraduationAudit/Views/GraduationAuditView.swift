@@ -2,6 +2,7 @@ import SwiftUI
 
 struct GraduationAuditView: View {
     @State private var viewModel: GraduationAuditViewModel
+    @State private var isCourseDetailExpanded = false
 
     init(
         viewModel: GraduationAuditViewModel
@@ -63,13 +64,9 @@ struct GraduationAuditView: View {
             Spacer()
             
             Button {
-                Task {
-                    await viewModel.transform(
-                        input: .toggleCourseDetail
-                    )
-                }
+                isCourseDetailExpanded.toggle()
             } label: {
-                Text(viewModel.output.isCourseDetailExpanded ? L10n.GraduationAudit.hideCourseStatus : L10n.GraduationAudit.showCourseStatus)
+                Text(isCourseDetailExpanded ? L10n.GraduationAudit.hideCourseStatus : L10n.GraduationAudit.showCourseStatus)
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(Color.soomsilPrimaryText)
                     .padding(.horizontal, 12)
@@ -200,7 +197,7 @@ struct GraduationAuditView: View {
                 }
             }
 
-            if viewModel.output.isCourseDetailExpanded,
+            if isCourseDetailExpanded,
                !item.usedSubjects.isEmpty {
                 courseDetail(item.usedSubjects)
             }
