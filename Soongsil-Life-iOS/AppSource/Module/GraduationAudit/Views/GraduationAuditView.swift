@@ -24,8 +24,7 @@ struct GraduationAuditView: View {
                             .padding(.vertical, 32)
                     } else if let error = viewModel.output.errorMessage {
                         errorCard(error)
-                    } else if let graduationAudit =
-                        viewModel.output.graduationAudit {
+                    } else if viewModel.output.graduationAudit != nil {
                         resultGraduate
                         requirementCards
                     } else {
@@ -227,30 +226,111 @@ struct GraduationAuditView: View {
             )
             .clipShape(Capsule())
     }
+    
+    private struct FlowLayout: Layout {
+        let spacing: CGFloat
+        
+        init(spacing: CGFloat = 0) {
+            self.spacing = spacing
+        }
+
+        func sizeThatFits(
+            proposal: ProposedViewSize,
+            subviews: Subviews,
+            cache: inout ()
+        ) -> CGSize {
+            let availableWidth = proposal.width ?? .infinity
+
+            var currentRowWidth: CGFloat = 0
+            var currentRowHeight: CGFloat = 0
+            var totalHeight: CGFloat = 0
+            var contentWidth: CGFloat = 0
+
+            for subview in subviews {
+                let size = subview.sizeThatFits(.unspecified)
+
+                let requiredWidth =
+                    currentRowWidth == 0
+                    ? size.width
+                    : currentRowWidth + spacing + size.width
+
+                if requiredWidth > availableWidth,
+                   currentRowWidth > 0 {
+                    totalHeight += currentRowHeight + spacing
+                    currentRowWidth = size.width
+                    currentRowHeight = size.height
+                } else {
+                    currentRowWidth = requiredWidth
+                    currentRowHeight = max(
+                        currentRowHeight,
+                        size.height
+                    )
+                }
+
+                contentWidth = max(
+                    contentWidth,
+                    currentRowWidth
+                )
+            }
+
+            totalHeight += currentRowHeight
+
+            return CGSize(
+                width: proposal.width ?? contentWidth,
+                height: totalHeight
+            )
+        }
+
+        func placeSubviews(
+            in bounds: CGRect,
+            proposal: ProposedViewSize,
+            subviews: Subviews,
+            cache: inout ()
+        ) {
+            var x = bounds.minX
+            var y = bounds.minY
+            var currentRowHeight: CGFloat = 0
+
+            for subview in subviews {
+                let size = subview.sizeThatFits(.unspecified)
+
+                if x > bounds.minX,
+                   x + size.width > bounds.maxX {
+                    x = bounds.minX
+                    y += currentRowHeight + spacing
+                    currentRowHeight = 0
+                }
+
+                subview.place(
+                    at: CGPoint(x: x, y: y),
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(size)
+                )
+
+                x += size.width + spacing
+                currentRowHeight = max(
+                    currentRowHeight,
+                    size.height
+                )
+            }
+        }
+    }
+
 
     private func courseDetail(
         _ subjects: [String]
     ) -> some View {
-        ScrollView(
-            .horizontal,
-            showsIndicators: false
-        ) {
-            HStack(spacing: 6) {
-                ForEach(subjects, id: \.self) { subject in
-                    Text(subject)
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.soomsilSecondaryText)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.soomsilSurface)
-                        .clipShape(Capsule())
-                }
+        FlowLayout(spacing: 6) {
+            ForEach(Array(subjects.enumerated()), id: \.offset) { _, subject in
+                Text(subject)
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.soomsilSecondaryText)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.soomsilSurface)
+                    .clipShape(Capsule())
             }
         }
-        .scrollBounceBehavior(
-            .basedOnSize,
-            axes: .horizontal
-        )
     }
 
     private var isGraduatable: Bool {
