@@ -8,9 +8,11 @@ struct HomeView: View {
     }
 
     @State private var viewModel: HomeViewModel
+    @State private var chapelViewModel: ChapelViewModel
     @State private var navigationPath: [Destination] = []
     @State private var showsCurrentGrades = false
     @State private var showsChapel = false
+    @State private var selectedChapel: ChapelStatus?
     private let gradeRepository: GradeRepositoryProtocol
     private let graduationAuditRepository: GraduationAuditRepositoryProtocol
     private let tuitionRepository: TuitionRepositoryProtocol
@@ -18,12 +20,14 @@ struct HomeView: View {
 
     init(
         viewModel: HomeViewModel,
+        chapelViewModel: ChapelViewModel,
         gradeRepository: GradeRepositoryProtocol,
         graduationAuditRepository: GraduationAuditRepositoryProtocol,
         tuitionRepository: TuitionRepositoryProtocol,
         onNavigationDepthChanged: @escaping (Bool) -> Void = { _ in }
     ) {
         _viewModel = State(initialValue: viewModel)
+        _chapelViewModel = State(initialValue: chapelViewModel)
         self.gradeRepository = gradeRepository
         self.graduationAuditRepository = graduationAuditRepository
         self.tuitionRepository = tuitionRepository
@@ -57,12 +61,7 @@ struct HomeView: View {
                         }
                         .buttonStyle(.plain)
 
-                        if let chapelState = dashboard.chapelEnrollmentState {
-                            chapelSection(chapelState)
-                        } else if viewModel.output.errorMessage == nil,
-                                  let errorMessage = dashboard.chapelErrorMessage {
-                            chapelErrorCard(errorMessage)
-                        }
+                        chapelSection
                     } else if let errorMessage = viewModel.output.errorMessage {
                         errorCard(errorMessage)
                     }
@@ -74,7 +73,7 @@ struct HomeView: View {
             }
             .background(Color.soomsilBackground)
             .refreshable {
-                await viewModel.transform(input: .load(force: true))
+                await loadContent(force: true)
             }
             .navigationDestination(for: Destination.self) { destination in
                 destinationView(destination)
@@ -85,7 +84,7 @@ struct HomeView: View {
             )
         }
         .task {
-            await viewModel.transform(input: .load())
+            await loadContent(force: false)
         }
         .onChange(of: navigationPath) { _, path in
             onNavigationDepthChanged(!path.isEmpty)
@@ -101,8 +100,11 @@ struct HomeView: View {
                 .presentationDetents([.fraction(0.67), .large])
             }
         }
-        .sheet(isPresented: $showsChapel) {
-            if let chapel = viewModel.output.dashboard?.chapel {
+        .sheet(
+            isPresented: $showsChapel,
+            onDismiss: { selectedChapel = nil }
+        ) {
+            if let chapel = selectedChapel {
                 NavigationStack {
                     ChapelDetailView(chapel: chapel)
                 }
@@ -240,10 +242,14 @@ struct HomeView: View {
     }
 
     @ViewBuilder
-    private func chapelSection(_ state: ChapelEnrollmentState) -> some View {
-        switch state {
-        case let .enrolled(chapel):
+    private var chapelSection: some View {
+        switch chapelViewModel.output.loadState {
+        case .idle, .loading:
+            chapelLoadingCard
+
+        case let .loaded(chapel):
             Button {
+                selectedChapel = chapel
                 showsChapel = true
             } label: {
                 ChapelSeatCard(chapel: chapel)
@@ -251,6 +257,7 @@ struct HomeView: View {
             .buttonStyle(.plain)
 
             Button {
+                selectedChapel = chapel
                 showsChapel = true
             } label: {
                 ChapelAttendanceCard(chapel: chapel, style: .detailed)
@@ -261,7 +268,26 @@ struct HomeView: View {
             chapelEnrollmentCard(
                 isCompleted: completedSemesterCount >= 6
             )
+
+        case let .failed(errorMessage):
+            chapelErrorCard(errorMessage)
         }
+    }
+
+    private var chapelLoadingCard: some View {
+        HStack(spacing: 14) {
+            ProgressView()
+                .tint(Color.soomsilBlue600)
+
+            Text(L10n.Chapel.loading)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color.soomsilSecondaryText)
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .soomsilCard(cornerRadius: 16)
     }
 
     private func chapelEnrollmentCard(isCompleted: Bool) -> some View {
@@ -315,7 +341,7 @@ struct HomeView: View {
 
             Button(L10n.Common.retry) {
                 Task {
-                    await viewModel.transform(input: .load(force: true))
+                    await chapelViewModel.transform(input: .load(force: true))
                 }
             }
             .font(.system(size: 13, weight: .bold))
@@ -333,12 +359,30 @@ struct HomeView: View {
             return lhs < rhs
         }
     }
+
+    @MainActor
+    private func loadContent(force: Bool) async {
+        async let dashboardLoad: Void = loadDashboard(force: force)
+        async let chapelLoad: Void = loadChapel(force: force)
+        _ = await (dashboardLoad, chapelLoad)
+    }
+
+    @MainActor
+    private func loadDashboard(force: Bool) async {
+        await viewModel.transform(input: .load(force: force))
+    }
+
+    @MainActor
+    private func loadChapel(force: Bool) async {
+        await chapelViewModel.transform(input: .load(force: force))
+    }
 }
 
 #Preview("Home") {
     let container = DIContainer.preview
     HomeView(
         viewModel: HomeViewModel(repository: container.homeRepository),
+        chapelViewModel: ChapelViewModel(repository: container.chapelRepository),
         gradeRepository: container.gradeRepository,
         graduationAuditRepository: container.graduationAuditRepository,
         tuitionRepository: container.tuitionRepository

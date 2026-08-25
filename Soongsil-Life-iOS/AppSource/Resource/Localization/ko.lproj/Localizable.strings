@@ -52,6 +52,7 @@
 "grades.course_detail" = "%1$@ · %2$.1f학점";
 
 "chapel.title" = "채플";
+"chapel.loading" = "채플 정보를 불러오는 중이에요";
 "chapel.semester" = "학기";
 "chapel.absences" = "결석";
 "chapel.attendance_section" = "출결 내역";
