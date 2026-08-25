@@ -5,6 +5,7 @@ struct MainTabView: View {
     @State private var homeViewModel: HomeViewModel
     @State private var settingViewModel: SettingViewModel
     @State private var isHomeNavigationActive = false
+    @State private var notificationViewModel: NotificationViewModel      //알림 탭 추가
     private let gradeRepository: GradeRepositoryProtocol
 
     init(
@@ -23,6 +24,11 @@ struct MainTabView: View {
             initialValue: SettingViewModel(
                 repository: container.authenticationRepository,
                 appFlow: appFlow
+            )
+        )
+        _notificationViewModel = State(
+            initialValue: NotificationViewModel(
+                repository: container.notificationRepository
             )
         )
     }
@@ -77,7 +83,7 @@ struct MainTabView: View {
             }
         case .notification:
             NavigationStack {
-                NotificationView()
+                NotificationView(viewModel: notificationViewModel)
             }
         case .my:
             SettingView(viewModel: settingViewModel)

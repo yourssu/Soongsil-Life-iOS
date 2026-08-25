@@ -4,15 +4,18 @@ struct DIContainer {
     let authenticationRepository: AuthenticationRepositoryProtocol
     let homeRepository: HomeRepositoryProtocol
     let gradeRepository: GradeRepositoryProtocol
+    let notificationRepository: NotificationRepositoryProtocol //추가
 
     init(
         authenticationRepository: AuthenticationRepositoryProtocol,
         homeRepository: HomeRepositoryProtocol,
-        gradeRepository: GradeRepositoryProtocol
+        gradeRepository: GradeRepositoryProtocol,
+        notificationRepository: NotificationRepositoryProtocol //추가
     ) {
         self.authenticationRepository = authenticationRepository
         self.homeRepository = homeRepository
         self.gradeRepository = gradeRepository
+        self.notificationRepository = notificationRepository //추가
     }
 
     static let mock = makeMockContainer()
@@ -41,7 +44,11 @@ struct DIContainer {
                 gradeService: gradeService,
                 chapelService: ChapelService()
             ),
-            gradeRepository: GradeRepository(service: gradeService)
+            gradeRepository: GradeRepository(service: gradeService),
+            //추가
+            notificationRepository: NotificationRepository(
+                            service: NotificationService()
+            )
         )
 #endif
     }
@@ -71,7 +78,13 @@ struct DIContainer {
                     delayNanoseconds: delayNanoseconds
                 )
             ),
-            gradeRepository: GradeRepository(service: gradeService)
+            gradeRepository: GradeRepository(service: gradeService),
+            //추가
+            notificationRepository: NotificationRepository(
+                            service: MockNotificationService(
+                                delayNanoseconds: delayNanoseconds
+                            )
+                        )
         )
     }
 }
