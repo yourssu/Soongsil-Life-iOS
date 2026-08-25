@@ -53,23 +53,11 @@ struct HomeView: View {
                         }
                         .buttonStyle(.plain)
 
-                        if let chapel = dashboard.chapel {
-                            Button {
-                                showsChapel = true
-                            } label: {
-                                ChapelSeatCard(chapel: chapel)
-                            }
-                            .buttonStyle(.plain)
-
-                            Button {
-                                showsChapel = true
-                            } label: {
-                                ChapelAttendanceCard(
-                                    chapel: chapel,
-                                    style: .detailed
-                                )
-                            }
-                            .buttonStyle(.plain)
+                        if let chapelState = dashboard.chapelEnrollmentState {
+                            chapelSection(chapelState)
+                        } else if viewModel.output.errorMessage == nil,
+                                  let errorMessage = dashboard.chapelErrorMessage {
+                            chapelErrorCard(errorMessage)
                         }
                     } else if let errorMessage = viewModel.output.errorMessage {
                         errorCard(errorMessage)
@@ -205,6 +193,88 @@ struct HomeView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(28)
+        .soomsilCard(cornerRadius: 16)
+    }
+
+    @ViewBuilder
+    private func chapelSection(_ state: ChapelEnrollmentState) -> some View {
+        switch state {
+        case let .enrolled(chapel):
+            Button {
+                showsChapel = true
+            } label: {
+                ChapelSeatCard(chapel: chapel)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                showsChapel = true
+            } label: {
+                ChapelAttendanceCard(chapel: chapel, style: .detailed)
+            }
+            .buttonStyle(.plain)
+
+        case let .notEnrolled(completedSemesterCount):
+            chapelEnrollmentCard(isCompleted: completedSemesterCount >= 6)
+        }
+    }
+
+    private func chapelEnrollmentCard(isCompleted: Bool) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: isCompleted ? "checkmark.circle.fill" : "sofa.fill")
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(
+                    isCompleted
+                        ? Color.soomsilGreen500
+                        : Color.soomsilSecondaryText
+                )
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(
+                    isCompleted
+                        ? L10n.Soomsil.noChapelTitle
+                        : L10n.Soomsil.notTakingChapelTitle
+                )
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(Color.soomsilPrimaryText)
+
+                Text(
+                    isCompleted
+                        ? L10n.Soomsil.noChapel
+                        : L10n.Soomsil.notTakingChapel
+                )
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Color.soomsilSecondaryText)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .soomsilCard(cornerRadius: 16)
+    }
+
+    private func chapelErrorCard(_ message: String) -> some View {
+        VStack(spacing: 10) {
+            Label(L10n.Chapel.loadFailed, systemImage: "wifi.exclamationmark")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(Color.soomsilPrimaryText)
+
+            Text(message)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Color.soomsilSecondaryText)
+                .multilineTextAlignment(.center)
+
+            Button(L10n.Common.retry) {
+                Task {
+                    await viewModel.transform(input: .load(force: true))
+                }
+            }
+            .font(.system(size: 13, weight: .bold))
+            .foregroundStyle(Color.soomsilBlue600)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(20)
         .soomsilCard(cornerRadius: 16)
     }
 

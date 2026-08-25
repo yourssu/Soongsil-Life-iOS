@@ -4,6 +4,7 @@ struct DIContainer {
     let authenticationRepository: AuthenticationRepositoryProtocol
     let homeRepository: HomeRepositoryProtocol
     let gradeRepository: GradeRepositoryProtocol
+    let chapelRepository: ChapelRepositoryProtocol
     let graduationAuditRepository: GraduationAuditRepositoryProtocol
     let timetableService: TimetableServiceProtocol
     let tuitionRepository: TuitionRepositoryProtocol
@@ -12,6 +13,7 @@ struct DIContainer {
         authenticationRepository: AuthenticationRepositoryProtocol,
         homeRepository: HomeRepositoryProtocol,
         gradeRepository: GradeRepositoryProtocol,
+        chapelRepository: ChapelRepositoryProtocol,
         graduationAuditRepository: GraduationAuditRepositoryProtocol,
         timetableService: TimetableServiceProtocol,
         tuitionRepository: TuitionRepositoryProtocol
@@ -19,6 +21,7 @@ struct DIContainer {
         self.authenticationRepository = authenticationRepository
         self.homeRepository = homeRepository
         self.gradeRepository = gradeRepository
+        self.chapelRepository = chapelRepository
         self.graduationAuditRepository = graduationAuditRepository
         self.timetableService = timetableService
         self.tuitionRepository = tuitionRepository
@@ -41,6 +44,7 @@ struct DIContainer {
 #else
         let authenticationService = AuthenticationService()
         let gradeService = GradeService()
+        let chapelService = ChapelService()
 
         return DIContainer(
             authenticationRepository: AuthenticationRepository(
@@ -50,9 +54,10 @@ struct DIContainer {
             homeRepository: HomeRepository(
                 studentService: StudentService(),
                 gradeService: gradeService,
-                chapelService: ChapelService()
+                chapelService: chapelService
             ),
             gradeRepository: GradeRepository(service: gradeService),
+            chapelRepository: ChapelRepository(service: chapelService),
             graduationAuditRepository: GraduationAuditRepository(
                 service: GraduationAuditService()
             ),
@@ -74,6 +79,7 @@ struct DIContainer {
         let gradeService = MockGradeService(
             delay: delay
         )
+        let chapelService = MockChapelService(delay: delay)
 
         return DIContainer(
             authenticationRepository: AuthenticationRepository(
@@ -85,13 +91,12 @@ struct DIContainer {
                     delay: delay
                 ),
                 gradeService: gradeService,
-                chapelService: MockChapelService(
-                    delay: delay
-                )
+                chapelService: chapelService
             ),
             gradeRepository: GradeRepository(
                 service: gradeService
             ),
+            chapelRepository: ChapelRepository(service: chapelService),
             graduationAuditRepository: GraduationAuditRepository(
                 service: MockGraduationAuditService(
                     delay: delay

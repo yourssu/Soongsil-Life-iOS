@@ -144,6 +144,11 @@ struct ChapelStatus: Sendable {
     let attendance: [ChapelAttendance]
 }
 
+enum ChapelEnrollmentState: Sendable {
+    case enrolled(ChapelStatus)
+    case notEnrolled(completedSemesterCount: Int)
+}
+
 struct ChapelAttendance: Identifiable, Sendable {
     var id: String { "\(date)-\(classGroup)-\(lectureType)" }
 
@@ -200,8 +205,15 @@ struct Dashboard: Sendable {
     let profile: StudentProfile
     let semesters: [SemesterGrade]
     let currentCourses: [CourseGrade]
-    let chapel: ChapelStatus?
+    let chapelEnrollmentState: ChapelEnrollmentState?
     let chapelErrorMessage: String?
+
+    var chapel: ChapelStatus? {
+        guard case let .enrolled(chapel) = chapelEnrollmentState else {
+            return nil
+        }
+        return chapel
+    }
 
     var latestSemester: SemesterGrade? {
         semesters.max {

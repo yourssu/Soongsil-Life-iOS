@@ -40,17 +40,20 @@ final class HomeRepository: HomeRepositoryProtocol {
             profile: profile,
             semesters: semesters,
             currentCourses: currentCourses,
-            chapel: chapelResult.value,
+            chapelEnrollmentState: chapelResult.value,
             chapelErrorMessage: chapelResult.errorMessage
         )
     }
 
     private func fetchChapelResult() async -> (
-        value: ChapelStatus?,
+        value: ChapelEnrollmentState?,
         errorMessage: String?
     ) {
         do {
-            return (try await chapelService.fetchChapel(), nil)
+            return (
+                try await chapelService.fetchChapelEnrollmentState(),
+                nil
+            )
         } catch {
             return (nil, error.localizedDescription)
         }

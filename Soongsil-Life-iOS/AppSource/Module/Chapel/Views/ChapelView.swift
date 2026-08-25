@@ -1,15 +1,20 @@
 import SwiftUI
 
 struct ChapelTabView: View {
-    @State var viewModel: HomeViewModel
+    @State private var viewModel: ChapelViewModel
     @State private var showsInfo = false
+
+    init(viewModel: ChapelViewModel) {
+        _viewModel = State(initialValue: viewModel)
+    }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 header
 
-                if let chapel = viewModel.output.dashboard?.chapel {
+                switch viewModel.output.loadState {
+                case let .loaded(chapel):
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 12) {
                             NavigationLink {
@@ -24,16 +29,45 @@ struct ChapelTabView: View {
                         .padding(.horizontal, 29)
                         .padding(.vertical, 8)
                     }
-                } else if viewModel.output.isLoading {
+
+                case .idle, .loading:
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    ContentUnavailableView(
-                        L10n.Chapel.title,
-                        systemImage: "sofa.fill",
-                        description: Text(viewModel.output.errorMessage ?? L10n.Soomsil.noChapel)
-                    )
+
+                case let .failed(errorMessage):
+                    ContentUnavailableView {
+                        Label(
+                            L10n.Chapel.loadFailed,
+                            systemImage: "wifi.exclamationmark"
+                        )
+                    } description: {
+                        Text(errorMessage)
+                    } actions: {
+                        Button(L10n.Common.retry) {
+                            Task {
+                                await viewModel.transform(input: .load(force: true))
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                case let .notEnrolled(completedSemesterCount):
+                    if completedSemesterCount >= 6 {
+                        ContentUnavailableView(
+                            L10n.Soomsil.noChapelTitle,
+                            systemImage: "checkmark.circle.fill",
+                            description: Text(L10n.Soomsil.noChapel)
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        ContentUnavailableView(
+                            L10n.Soomsil.notTakingChapelTitle,
+                            systemImage: "sofa.fill",
+                            description: Text(L10n.Soomsil.notTakingChapel)
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                 }
             }
             .background(Color.soomsilBackground)
@@ -131,8 +165,7 @@ struct ChapelDetailView: View {
             .padding(20)
         }
         .background(Color.soomsilBackground)
-        .navigationTitle(L10n.Soomsil.seatLocation)
-        .navigationBarTitleDisplayMode(.inline)
+        .soomsilDetailNavigation(title: L10n.Soomsil.seatLocation)
     }
 
     private func attendanceDetail(_ attendance: ChapelAttendance) -> String {
@@ -145,7 +178,7 @@ struct ChapelDetailView: View {
 #Preview("Chapel") {
     let container = DIContainer.preview
     ChapelTabView(
-        viewModel: HomeViewModel(repository: container.homeRepository)
+        viewModel: ChapelViewModel(repository: container.chapelRepository)
     )
 }
 
