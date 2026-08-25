@@ -16,6 +16,7 @@ final class HomeViewModel: BaseViewModel {
 
     private(set) var output = Output()
     private let repository: HomeRepositoryProtocol
+    private let loadFlight = AsyncSingleFlight()
 
     init(repository: HomeRepositoryProtocol) {
         self.repository = repository
@@ -25,16 +26,21 @@ final class HomeViewModel: BaseViewModel {
     func transform(input: Input) async -> Output {
         switch input {
         case let .load(force):
-            guard !output.isLoading else { return output }
             guard output.dashboard == nil || force else { return output }
-            output.isLoading = true
-            output.errorMessage = nil
-            do {
-                output.dashboard = try await repository.fetchDashboard()
-            } catch {
-                output.errorMessage = error.localizedDescription
+
+            await loadFlight.run { [self] in
+                output.isLoading = true
+                output.errorMessage = nil
+                defer { output.isLoading = false }
+
+                do {
+                    output.dashboard = try await repository.fetchDashboard()
+                } catch is CancellationError {
+                    return
+                } catch {
+                    output.errorMessage = error.localizedDescription
+                }
             }
-            output.isLoading = false
 
         case .errorDismissed:
             output.errorMessage = nil

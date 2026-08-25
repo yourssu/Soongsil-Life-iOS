@@ -11,9 +11,19 @@ struct SemesterListView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 14) {
-                semesterTabs
+                if viewModel.output.semesters.isEmpty {
+                    ContentUnavailableView(
+                        L10n.Grades.noSemesterGrades,
+                        systemImage: "chart.line.downtrend.xyaxis",
+                        description: Text(L10n.Grades.noSemesterGradesDescription)
+                    )
+                    .frame(maxWidth: .infinity, minHeight: 320)
+                } else {
+                    semesterTabs
+                }
 
-                if let selectedSemester {
+                if !viewModel.output.semesters.isEmpty,
+                   let selectedSemester {
                     summaryCard(selectedSemester)
                     trendCard
 
@@ -28,7 +38,7 @@ struct SemesterListView: View {
                         ContentUnavailableView(
                             L10n.Grades.courseSection,
                             systemImage: "doc.text",
-                            description: Text(L10n.Home.retryDescription)
+                            description: Text(L10n.Grades.noCoursesDescription)
                         )
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 28)
@@ -45,8 +55,7 @@ struct SemesterListView: View {
             .padding(.bottom, 28)
         }
         .background(Color.soomsilBackground)
-        .navigationTitle(L10n.Grades.title)
-        .navigationBarTitleDisplayMode(.inline)
+        .soomsilDetailNavigation(title: L10n.Grades.title)
     }
 
     private var semesterTabs: some View {
@@ -168,7 +177,7 @@ struct SemesterListView: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(Color.soomsilSecondaryText)
                 .multilineTextAlignment(.center)
-            Button(L10n.Home.retryDescription) {
+            Button(L10n.Common.retry) {
                 Task {
                     await viewModel.transform(input: .reloadSelectedSemester)
                 }

@@ -5,23 +5,24 @@ final class StudentService: StudentServiceProtocol {
     private let api = LmsApi.shared
 
     func fetchProfile() async throws -> StudentProfile {
-        try await withCheckedThrowingContinuation { continuation in
+        try await LMSCallbackBridge.call { completion in
             api.getLoginInfo { result in
                 guard result.success, let info = result.info else {
-                    continuation.resume(
-                        throwing: LMSServiceError.message(
-                            result.errorMessage ?? L10n.Error.profileFailed
-                        )
+                    completion(
+                        .failure(LMSServiceError.serverMessage(
+                            raw: result.errorMessage ?? "",
+                            fallback: L10n.Error.profileFailed
+                        ))
                     )
                     return
                 }
-                continuation.resume(
-                    returning: StudentProfile(
+                completion(
+                    .success(StudentProfile(
                         name: info.user_name,
                         department: info.dept_name,
                         studentID: info.user_login,
                         email: info.user_email
-                    )
+                    ))
                 )
             }
         }

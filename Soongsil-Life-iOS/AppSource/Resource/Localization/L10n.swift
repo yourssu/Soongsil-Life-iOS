@@ -4,10 +4,11 @@ enum L10n {
     enum Common {
         static let home = text("common.home")
         static let timetable = text("common.timetable")
-        static let notifications = text("common.notifications")
         static let settings = text("common.settings")
         static let my = text("common.my")
+        static let notifications = text("common.notifications")
         static let confirm = text("common.confirm")
+        static let retry = text("common.retry")
     }
 
     enum Login {
@@ -16,6 +17,17 @@ enum L10n {
         static let studentID = text("login.student_id")
         static let password = text("login.password")
         static let action = text("login.action")
+        static let unofficialNotice = text("login.unofficial_notice")
+        static let credentialNotice = text("login.credential_notice")
+    }
+
+    enum Session {
+        static let restoringTitle = text("session.restoring_title")
+        static let restoringDescription = text("session.restoring_description")
+        static let restoreFailedTitle = text("session.restore_failed_title")
+        static let retry = text("session.retry")
+        static let useAnotherAccount = text("session.use_another_account")
+        static let changingAccount = text("session.changing_account")
     }
 
     enum Home {
@@ -29,6 +41,7 @@ enum L10n {
         static let tuitionScholarship = text("home.tuition_scholarship")
         static let mockAcademicYear = text("home.mock_academic_year")
         static let mockEnrollmentStatus = text("home.mock_enrollment_status")
+        static let refreshFailed = text("home.refresh_failed")
 
         static func greeting(_ name: String) -> String {
             format("home.greeting", name)
@@ -58,6 +71,10 @@ enum L10n {
         static let includeSeasonalSemesters = text("grades.include_seasonal_semesters")
         static let summerAxis = text("grades.summer_axis")
         static let winterAxis = text("grades.winter_axis")
+        static let noSemesterGrades = text("grades.no_semester_grades")
+        static let noSemesterGradesDescription = text("grades.no_semester_grades_description")
+        static let noCoursesDescription = text("grades.no_courses_description")
+        static let noCurrentCoursesDescription = text("grades.no_current_courses_description")
 
         static func semesterTitle(year: String, semester: String) -> String {
             format("grades.semester_title", year, semester)
@@ -80,6 +97,7 @@ enum L10n {
         static let leftDirection = text("chapel.left_direction")
         static let rightDirection = text("chapel.right_direction")
         static let seatGuideDefault = text("chapel.seat_guide_default")
+        static let loadFailed = text("chapel.load_failed")
 
         static func semesterValue(year: String, semester: String) -> String {
             format("chapel.semester_value", year, semester)
@@ -127,6 +145,31 @@ enum L10n {
         }
     }
 
+    enum Timetable {
+        static let title = text("timetable.title")
+        static let loadFailed = text("timetable.load_failed")
+        static let loading = text("timetable.loading")
+        static let empty = text("timetable.empty")
+        static let emptyDescription = text("timetable.empty_description")
+        static let close = text("timetable.close")
+        static let time = text("timetable.time")
+        static let professor = text("timetable.professor")
+        static let classroom = text("timetable.classroom")
+        static let periodFilter = text("timetable.period_filter")
+
+        static func academicYear(_ year: String) -> String {
+            format("timetable.academic_year", year)
+        }
+
+        static func periodTitle(year: String, semester: String) -> String {
+            format("timetable.period_title", year, semester)
+        }
+
+        static func period(day: String, period: Int) -> String {
+            format("timetable.period", day, period)
+        }
+    }
+
     enum Tuition {
         static let tuitionTab = text("tuition.tuition_tab")
         static let scholarshipTab = text("tuition.scholarship_tab")
@@ -135,6 +178,7 @@ enum L10n {
         static let retry = text("tuition.retry")
         static let tuitionDate = text("tuition.tuition_date")
         static let reduction = text("tuition.reduction")
+        static let loadFailed = text("tuition.load_failed")
     }
 
     enum AcademicSemester {
@@ -152,15 +196,86 @@ enum L10n {
         static let unknown = text("attendance.unknown")
     }
 
+    enum GraduationAudit {
+        static let graduationRequired = text("graduation_audit.graduation_required")
+        static let liberalArtsRequired = text("graduation_audit.liberal_arts_required")
+        static let liberalArtsElective = text("graduation_audit.liberal_arts_elective")
+        static let majorBasic = text("graduation_audit.major_basic")
+        static let major = text("graduation_audit.major")
+        static let chapel = text("graduation_audit.chapel")
+        static let other = text("graduation_audit.other")
+        static let result = text("graduation_audit.result")
+        static let eligible = text("graduation_audit.eligible")
+        static let ineligible = text("graduation_audit.ineligible")
+        static let satisfied = text("graduation_audit.satisfied")
+        static let insufficient = text("graduation_audit.insufficient")
+        static let unknownStatus = text("graduation_audit.unknown_status")
+        static let hideCourseStatus = text("graduation_audit.hide_course_status")
+        static let showCourseStatus = text("graduation_audit.show_course_status")
+        static let standard = text("graduation_audit.standard")
+        static let calculated = text("graduation_audit.calculated")
+        static let loading = text("graduation_audit.loading")
+        static let emptyTitle = text("graduation_audit.empty_title")
+        static let emptyDescription = text("graduation_audit.empty_description")
+        static let loadFailed = text("graduation_audit.load_failed")
+        static let notice = text("graduation_audit.notice")
+    }
+
     enum Settings {
         static let serviceSection = text("settings.service_section")
         static let terms = text("settings.terms")
         static let privacy = text("settings.privacy")
         static let openSource = text("settings.open_source")
+        static let openSourceDescription = text("settings.open_source.description")
+        static let openSourceRepository = text("settings.open_source.repository")
+        static let openSourceLicense = text("settings.open_source.license")
+        static let openSourceLoadFailed = text("settings.open_source.load_failed")
         static let appInfoSection = text("settings.app_info_section")
         static let version = text("settings.version")
         static let logout = text("settings.logout")
         static let logoutConfirmation = text("settings.logout_confirmation")
+    }
+
+    enum Legal {
+        static let effectiveDate = text("legal.effective_date")
+        static let contactTitle = text("legal.contact_title")
+        static let contactBody = text("legal.contact_body")
+
+        enum Terms {
+            static let introduction = text("legal.terms.introduction")
+            static let serviceTitle = text("legal.terms.service_title")
+            static let serviceBody = text("legal.terms.service_body")
+            static let accountTitle = text("legal.terms.account_title")
+            static let accountBody = text("legal.terms.account_body")
+            static let usageTitle = text("legal.terms.usage_title")
+            static let usageBody = text("legal.terms.usage_body")
+            static let accuracyTitle = text("legal.terms.accuracy_title")
+            static let accuracyBody = text("legal.terms.accuracy_body")
+            static let availabilityTitle = text("legal.terms.availability_title")
+            static let availabilityBody = text("legal.terms.availability_body")
+            static let changesTitle = text("legal.terms.changes_title")
+            static let changesBody = text("legal.terms.changes_body")
+        }
+
+        enum Privacy {
+            static let introduction = text("legal.privacy.introduction")
+            static let dataTitle = text("legal.privacy.data_title")
+            static let dataBody = text("legal.privacy.data_body")
+            static let purposeTitle = text("legal.privacy.purpose_title")
+            static let purposeBody = text("legal.privacy.purpose_body")
+            static let transmissionTitle = text("legal.privacy.transmission_title")
+            static let transmissionBody = text("legal.privacy.transmission_body")
+            static let retentionTitle = text("legal.privacy.retention_title")
+            static let retentionBody = text("legal.privacy.retention_body")
+            static let thirdPartyTitle = text("legal.privacy.third_party_title")
+            static let thirdPartyBody = text("legal.privacy.third_party_body")
+            static let rightsTitle = text("legal.privacy.rights_title")
+            static let rightsBody = text("legal.privacy.rights_body")
+            static let securityTitle = text("legal.privacy.security_title")
+            static let securityBody = text("legal.privacy.security_body")
+            static let changesTitle = text("legal.privacy.changes_title")
+            static let changesBody = text("legal.privacy.changes_body")
+        }
     }
 
     enum Soomsil {
@@ -185,7 +300,10 @@ enum L10n {
         static let versionInfo = text("soomsil.version_info")
         static let logoutTitle = text("soomsil.logout_title")
         static let logoutMessage = text("soomsil.logout_message")
+        static let noChapelTitle = text("soomsil.no_chapel_title")
         static let noChapel = text("soomsil.no_chapel")
+        static let notTakingChapelTitle = text("soomsil.not_taking_chapel_title")
+        static let notTakingChapel = text("soomsil.not_taking_chapel")
         static let chapelInfo = text("soomsil.chapel_info")
         static let selectedSeat = text("soomsil.selected_seat")
         static let stage = text("soomsil.stage")
@@ -237,7 +355,13 @@ enum L10n {
         static let semestersFailed = text("error.semesters_failed")
         static let tuitionFailed = text("error.tuition_failed")
         static let scholarshipFailed = text("error.scholarship_failed")
+        static let graduateTableFailed = text("error.graduate_table_failed")
         static let invalidResponse = text("error.invalid_response")
+        static let networkUnavailable = text("error.network_unavailable")
+        static let requestTimedOut = text("error.request_timed_out")
+        static let requestCancelled = text("error.request_cancelled")
+        static let noSavedCredentials = text("error.no_saved_credentials")
+        static let autoLoginStorageFailed = text("error.auto_login_storage_failed")
     }
 
     private static func text(_ key: String) -> String {

@@ -13,7 +13,7 @@ struct CurrentSemesterGradesView: View {
                 ContentUnavailableView(
                     L10n.Grades.courseSection,
                     systemImage: "doc.text",
-                    description: Text(L10n.Home.retryDescription)
+                    description: Text(L10n.Grades.noCurrentCoursesDescription)
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {

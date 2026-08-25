@@ -101,8 +101,12 @@ final class SemesterViewModel: BaseViewModel {
                 year: semester.year,
                 semester: semester.semester
             )
+        } catch is CancellationError {
+            return
         } catch {
-            output.errorMessage = error.localizedDescription
+            if output.selectedSemesterID == semesterID {
+                output.errorMessage = error.localizedDescription
+            }
         }
     }
 }

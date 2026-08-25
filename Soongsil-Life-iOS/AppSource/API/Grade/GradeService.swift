@@ -5,18 +5,19 @@ final class GradeService: GradeServiceProtocol {
     private let api = LmsApi.shared
 
     func fetchSemesters() async throws -> [SemesterGrade] {
-        try await withCheckedThrowingContinuation { continuation in
+        try await LMSCallbackBridge.call { completion in
             api.getSemesterGradeSummaryTable { result in
                 guard result.success, let table = result.summaryTable else {
-                    continuation.resume(
-                        throwing: LMSServiceError.message(
-                            result.errorMessage ?? L10n.Error.semestersFailed
-                        )
+                    completion(
+                        .failure(LMSServiceError.serverMessage(
+                            raw: result.errorMessage ?? "",
+                            fallback: L10n.Error.semestersFailed
+                        ))
                     )
                     return
                 }
-                continuation.resume(
-                    returning: table.items.compactMap {
+                completion(
+                    .success(table.items.compactMap {
                         guard let semester = self.academicSemester($0.semester) else {
                             return nil
                         }
@@ -35,7 +36,7 @@ final class GradeService: GradeServiceProtocol {
                             consultationStatus: $0.consultationStatus,
                             failedYearStatus: $0.failedYearStatus
                         )
-                    }
+                    })
                 )
             }
         }
@@ -45,21 +46,22 @@ final class GradeService: GradeServiceProtocol {
         year: String,
         semester: AcademicSemester
     ) async throws -> [CourseGrade] {
-        try await withCheckedThrowingContinuation { continuation in
+        try await LMSCallbackBridge.call { completion in
             api.getGradeTable(
                 year: year,
                 semester: lmsSemester(semester)
             ) { result in
                 guard result.success, let table = result.gradeTable else {
-                    continuation.resume(
-                        throwing: LMSServiceError.message(
-                            result.errorMessage ?? L10n.Error.gradesFailed
-                        )
+                    completion(
+                        .failure(LMSServiceError.serverMessage(
+                            raw: result.errorMessage ?? "",
+                            fallback: L10n.Error.gradesFailed
+                        ))
                     )
                     return
                 }
-                continuation.resume(
-                    returning: table.items.map {
+                completion(
+                    .success(table.items.map {
                         CourseGrade(
                             courseCode: $0.subjectCode,
                             title: $0.subjectName,
@@ -69,7 +71,7 @@ final class GradeService: GradeServiceProtocol {
                             gradePoint: $0.gradePoint,
                             professor: $0.professor
                         )
-                    }
+                    })
                 )
             }
         }
