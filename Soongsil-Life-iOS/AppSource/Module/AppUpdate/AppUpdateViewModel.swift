@@ -19,8 +19,8 @@ final class AppUpdateViewModel {
             let configuration = try await service.fetchConfiguration()
             let current = AppVersion.current
 
-            // 이동할 배포 페이지가 없으면 사용자를 앱 안에 가두지 않습니다.
-            guard configuration.appStoreURL != nil else { return }
+            // 신뢰할 수 있는 배포 페이지가 없으면 사용자를 앱 안에 가두지 않습니다.
+            guard configuration.validatedAppStoreURL != nil else { return }
 
             if current < configuration.minimumVersion {
                 prompt = AppUpdatePrompt(
@@ -41,6 +41,11 @@ final class AppUpdateViewModel {
 
     func postpone() {
         guard prompt?.requirement == .optional else { return }
+        prompt = nil
+    }
+
+    func continueAfterStoreOpenFailure() {
+        // 필수 업데이트라도 App Store를 열 수 없는 환경에서는 앱 진입을 허용합니다.
         prompt = nil
     }
 }

@@ -63,7 +63,8 @@ struct SoongsilLifeApp: App {
                 if let prompt = appUpdate.prompt {
                     AppUpdatePromptView(
                         prompt: prompt,
-                        postpone: appUpdate.postpone
+                        postpone: appUpdate.postpone,
+                        continueAfterStoreOpenFailure: appUpdate.continueAfterStoreOpenFailure
                     )
                 }
             }
