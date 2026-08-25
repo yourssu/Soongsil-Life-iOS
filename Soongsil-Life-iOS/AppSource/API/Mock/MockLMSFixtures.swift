@@ -96,6 +96,26 @@ enum MockLMSFixtures {
         ]
     )
 
+    static let tuitionRecords = [
+        TuitionRecord(year: "2022학년도", semester: .first, grade: "1", registrationType: "학기등록", registrationDate: "2022.02.09", amount: "1,000,000", reduction: "0,000", paymentAmount: "1,000,000"),
+        TuitionRecord(year: "2022학년도", semester: .second, grade: "1", registrationType: "학기등록", registrationDate: "2022.08.24", amount: "1,000,000", reduction: "0", paymentAmount: "1,000,000"),
+        TuitionRecord(year: "2023학년도", semester: .first, grade: "2", registrationType: "학기등록", registrationDate: "2023.02.20", amount: "2,750,000", reduction: "1,750,000", paymentAmount: "1,000,000"),
+        TuitionRecord(year: "2023학년도", semester: .second, grade: "2", registrationType: "학기등록", registrationDate: "2023.08.23", amount: "1,000,000", reduction: "0,000", paymentAmount: "1,000,000"),
+        TuitionRecord(year: "2024학년도", semester: .first, grade: "3", registrationType: "학기등록", registrationDate: "2024.02.23", amount: "1,000,000", reduction: "0", paymentAmount: "1,000,000"),
+        TuitionRecord(year: "2024학년도", semester: .second, grade: "3", registrationType: "학기등록", registrationDate: "2024.08.26", amount: "1,000,000", reduction: "0", paymentAmount: "1,000,000"),
+        TuitionRecord(year: "2026학년도", semester: .summer, grade: "4", registrationType: "학기등록", registrationDate: "2026.02.26", amount: "1,000,000", reduction: "0", paymentAmount: "1,000,000")
+    ]
+
+    static let scholarshipRecords = [
+        ScholarshipRecord(year: "2026", semester: .first, scholarshipName: "한국장학재단(국가장학금II유형)", paymentMethod: "", processStatus: "선발탈락", note: "", dropReason: "소득분위 초과", processDate: "2026.02.04", selectedAmount: "0", actualAmount: "0", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: ""),
+        ScholarshipRecord(year: "2024", semester: .second, scholarshipName: "한국장학재단(국가장학금II유형)", paymentMethod: "", processStatus: "선발탈락", note: "", dropReason: "소득구간 초과", processDate: "2024.07.30", selectedAmount: "0", actualAmount: "0", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: ""),
+        ScholarshipRecord(year: "2024", semester: .first, scholarshipName: "한국장학재단(국가장학금II유형)", paymentMethod: "", processStatus: "선발탈락", note: "", dropReason: "소득구간 초과", processDate: "2024.01.29", selectedAmount: "0", actualAmount: "0", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: ""),
+        ScholarshipRecord(year: "2023", semester: .second, scholarshipName: "한국장학재단(국가장학금II유형)", paymentMethod: "", processStatus: "지급완료", note: "", dropReason: "", processDate: "2023.09.01", selectedAmount: "0,000,000", actualAmount: "0,000,000", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: ""),
+        ScholarshipRecord(year: "2023", semester: .second, scholarshipName: "한국장학재단(국가장학금II유형) 우대지원", paymentMethod: "", processStatus: "선발탈락", note: "", dropReason: "소득구간 초과", processDate: "2023.08.08", selectedAmount: "0", actualAmount: "0", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: ""),
+        ScholarshipRecord(year: "2023", semester: .first, scholarshipName: "한국장학재단(국가장학금II유형)", paymentMethod: "", processStatus: "지급완료", note: "", dropReason: "", processDate: "2023.03.01", selectedAmount: "0,000,000", actualAmount: "0,000,000", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: ""),
+        ScholarshipRecord(year: "2022", semester: .second, scholarshipName: "학과(부)우수장학금", paymentMethod: "", processStatus: "지급완료", note: "[융특]학과우수장학금", dropReason: "", processDate: "2023.02.14", selectedAmount: "100,000", actualAmount: "100,000", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: "")
+    ]
+
     static let dashboard = Dashboard(
         profile: profile,
         semesters: semesters,

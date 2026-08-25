@@ -29,6 +29,25 @@ enum AcademicSemester: String, CaseIterable, Hashable, Sendable {
     }
 }
 
+extension AcademicSemester {
+    init?(apiValue: String) {
+        switch apiValue.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        ) {
+        case "1학기":
+            self = .first
+        case "여름학기":
+            self = .summer
+        case "2학기":
+            self = .second
+        case "겨울학기":
+            self = .winter
+        default:
+            return nil
+        }
+    }
+}
+
 struct StudentProfile: Sendable {
     let name: String
     let department: String

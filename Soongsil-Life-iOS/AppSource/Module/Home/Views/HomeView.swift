@@ -12,15 +12,18 @@ struct HomeView: View {
     @State private var showsCurrentGrades = false
     @State private var showsChapel = false
     private let gradeRepository: GradeRepositoryProtocol
+    private let tuitionRepository: TuitionRepositoryProtocol
     private let onNavigationDepthChanged: (Bool) -> Void
 
     init(
         viewModel: HomeViewModel,
         gradeRepository: GradeRepositoryProtocol,
+        tuitionRepository: TuitionRepositoryProtocol,
         onNavigationDepthChanged: @escaping (Bool) -> Void = { _ in }
     ) {
         _viewModel = State(initialValue: viewModel)
         self.gradeRepository = gradeRepository
+        self.tuitionRepository = tuitionRepository
         self.onNavigationDepthChanged = onNavigationDepthChanged
     }
 
@@ -170,7 +173,9 @@ struct HomeView: View {
         case .graduationAudit:
             GraduationAuditView()
         case .tuition:
-            TuitionView()
+            TuitionView(
+                viewModel: TuitionViewModel(repository: tuitionRepository)
+            )
         }
     }
 
@@ -209,6 +214,7 @@ struct HomeView: View {
     let container = DIContainer.preview
     HomeView(
         viewModel: HomeViewModel(repository: container.homeRepository),
-        gradeRepository: container.gradeRepository
+        gradeRepository: container.gradeRepository,
+        tuitionRepository: container.tuitionRepository
     )
 }

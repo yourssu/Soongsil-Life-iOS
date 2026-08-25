@@ -127,6 +127,16 @@ enum L10n {
         }
     }
 
+    enum Tuition {
+        static let tuitionTab = text("tuition.tuition_tab")
+        static let scholarshipTab = text("tuition.scholarship_tab")
+        static let noTuitionRecords = text("tuition.no_tuition_records")
+        static let noScholarshipRecords = text("tuition.no_scholarship_records")
+        static let retry = text("tuition.retry")
+        static let tuitionDate = text("tuition.tuition_date")
+        static let reduction = text("tuition.reduction")
+    }
+
     enum AcademicSemester {
         static let first = text("academic_semester.first")
         static let summer = text("academic_semester.summer")
@@ -225,6 +235,8 @@ enum L10n {
         static let gradesFailed = text("error.grades_failed")
         static let profileFailed = text("error.profile_failed")
         static let semestersFailed = text("error.semesters_failed")
+        static let tuitionFailed = text("error.tuition_failed")
+        static let scholarshipFailed = text("error.scholarship_failed")
         static let invalidResponse = text("error.invalid_response")
     }
 

@@ -4,30 +4,34 @@ struct DIContainer {
     let authenticationRepository: AuthenticationRepositoryProtocol
     let homeRepository: HomeRepositoryProtocol
     let gradeRepository: GradeRepositoryProtocol
+    let tuitionRepository: TuitionRepositoryProtocol
 
     init(
         authenticationRepository: AuthenticationRepositoryProtocol,
         homeRepository: HomeRepositoryProtocol,
-        gradeRepository: GradeRepositoryProtocol
+        gradeRepository: GradeRepositoryProtocol,
+        tuitionRepository: TuitionRepositoryProtocol
     ) {
         self.authenticationRepository = authenticationRepository
         self.homeRepository = homeRepository
         self.gradeRepository = gradeRepository
+        self.tuitionRepository = tuitionRepository
     }
 
     static let mock = makeMockContainer()
-    static let preview = makeMockContainer(delayNanoseconds: 0)
+    static let preview = makeMockContainer(delay: .zero)
 
     static var app: DIContainer {
         if ProcessInfo.processInfo.arguments.contains("-useMockData") {
             return .mock
         }
+
         return makeAppContainer()
     }
 
     private static func makeAppContainer() -> DIContainer {
 #if targetEnvironment(simulator)
-        makeMockContainer(delayNanoseconds: 0)
+        makeMockContainer(delay: .zero)
 #else
         let authenticationService = AuthenticationService()
         let gradeService = GradeService()
@@ -41,21 +45,23 @@ struct DIContainer {
                 gradeService: gradeService,
                 chapelService: ChapelService()
             ),
-            gradeRepository: GradeRepository(service: gradeService)
+            gradeRepository: GradeRepository(service: gradeService),
+            tuitionRepository: TuitionRepository(service: TuitionService())
         )
 #endif
     }
 
     private static func makeMockContainer(
         isLoggedIn: Bool = true,
-        delayNanoseconds: UInt64 = 150_000_000
+        delay: Duration = .milliseconds(150)
     ) -> DIContainer {
         let authenticationService = MockAuthenticationService(
             isLoggedIn: isLoggedIn,
-            delayNanoseconds: delayNanoseconds
+            delay: delay
         )
+
         let gradeService = MockGradeService(
-            delayNanoseconds: delayNanoseconds
+            delay: delay
         )
 
         return DIContainer(
@@ -64,14 +70,21 @@ struct DIContainer {
             ),
             homeRepository: HomeRepository(
                 studentService: MockStudentService(
-                    delayNanoseconds: delayNanoseconds
+                    delay: delay
                 ),
                 gradeService: gradeService,
                 chapelService: MockChapelService(
-                    delayNanoseconds: delayNanoseconds
+                    delay: delay
                 )
             ),
-            gradeRepository: GradeRepository(service: gradeService)
+            gradeRepository: GradeRepository(
+                service: gradeService
+            ),
+            tuitionRepository: TuitionRepository(
+                service: MockTuitionService(
+                    delay: delay
+                )
+            )
         )
     }
 }
