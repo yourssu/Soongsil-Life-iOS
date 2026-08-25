@@ -15,6 +15,13 @@ build/
 *.ipa
 *.dSYM
 *.dSYM.zip
+*.hmap
+*.xcresult
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+timeline.xctimeline
+playground.xcworkspace
 /tmp/
 
 # Swift Package Manager local state
@@ -40,6 +47,14 @@ GoogleService-Info.plist
 *.key
 *.mobileprovision
 *.provisionprofile
+ExportOptions*.plist
+
+# Dependency and automation artifacts
+Carthage/Build/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
 
 # Local source remnants outside the current Xcode targets
 /Soongsil-Life-iOS/Soongsil-Life-iOS/App/
