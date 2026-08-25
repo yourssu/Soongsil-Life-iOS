@@ -3,15 +3,15 @@ import SwiftUI
 
 enum MainTabItem: CaseIterable, Hashable {
     case home
+    case chapel
     case timetable
-    case notification
     case my
 
     var title: String {
         switch self {
         case .home: L10n.Common.home
+        case .chapel: L10n.Chapel.title
         case .timetable: L10n.Common.timetable
-        case .notification: L10n.Common.notifications
         case .my: L10n.Common.my
         }
     }
@@ -19,8 +19,8 @@ enum MainTabItem: CaseIterable, Hashable {
     var assetName: String {
         switch self {
         case .home: "ic_home"
+        case .chapel: "ic_sofa"
         case .timetable: "ic_calender"
-        case .notification: "ic_bell"
         case .my: "ic_person"
         }
     }

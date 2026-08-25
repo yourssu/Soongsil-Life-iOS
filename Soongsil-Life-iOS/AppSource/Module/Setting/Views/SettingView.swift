@@ -2,85 +2,72 @@ import SwiftUI
 
 struct SettingView: View {
     @State var viewModel: SettingViewModel
-    @AppStorage("gradeAnnouncementNotificationEnabled")
-    private var isGradeNotificationEnabled = true
-    @AppStorage("chapelNotificationEnabled")
-    private var isChapelNotificationEnabled = true
-    @Environment(\.openURL) private var openURL
 
     var body: some View {
-        VStack(spacing: 0) {
-            Text(L10n.Common.my)
-                .font(.system(size: 24, weight: .bold))
-                .foregroundStyle(Color.soomsilPrimaryText)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 18)
-                .padding(.bottom, 8)
+        NavigationStack {
+            VStack(spacing: 0) {
+                Text(L10n.Common.my)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 18)
+                    .padding(.bottom, 8)
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    SettingSection(title: L10n.Soomsil.account) {
-                        SettingActionRow(
-                            title: L10n.Settings.logout,
-                            accessory: .chevron
-                        ) {
-                            Task {
-                                await viewModel.transform(input: .logoutButtonTapped)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        SettingSection(title: L10n.Soomsil.account) {
+                            SettingActionRow(
+                                title: L10n.Settings.logout,
+                                accessory: .chevron
+                            ) {
+                                Task {
+                                    await viewModel.transform(input: .logoutButtonTapped)
+                                }
                             }
                         }
-                    }
 
-                    SettingSection(title: L10n.Soomsil.notificationSection) {
-                        SettingToggleRow(
-                            title: L10n.Soomsil.gradeNotifications,
-                            isOn: $isGradeNotificationEnabled
-                        )
-                        SettingDivider()
-                        SettingToggleRow(
-                            title: L10n.Soomsil.chapelNotifications,
-                            isOn: $isChapelNotificationEnabled
-                        )
-                    }
+                        SettingSection(title: L10n.Soomsil.agreements) {
+                            SettingNavigationRow(
+                                title: L10n.Settings.terms,
+                                destination: .legal(.terms)
+                            )
+                            SettingDivider()
+                            SettingNavigationRow(
+                                title: L10n.Settings.privacy,
+                                destination: .legal(.privacy)
+                            )
+                            SettingDivider()
+                            SettingNavigationRow(
+                                title: L10n.Settings.openSource,
+                                destination: .openSource
+                            )
+                        }
 
-                    SettingSection(title: L10n.Soomsil.agreements) {
-                        SettingActionRow(
-                            title: L10n.Settings.terms,
-                            accessory: .chevron
-                        ) {
-                            openURL(AppConfig.termsURL)
-                        }
-                        SettingDivider()
-                        SettingActionRow(
-                            title: L10n.Settings.privacy,
-                            accessory: .chevron
-                        ) {
-                            openURL(AppConfig.privacyURL)
-                        }
-                        SettingDivider()
-                        SettingActionRow(
-                            title: L10n.Settings.openSource,
-                            accessory: .chevron
-                        ) {
-                            guard let url = URL(string: AppConfig.lmsPackageURL) else { return }
-                            openURL(url)
+                        SettingSection(title: L10n.Soomsil.versionInfo) {
+                            SettingActionRow(
+                                title: L10n.Soomsil.versionInfo,
+                                accessory: .text(
+                                    L10n.Soomsil.appVersion(viewModel.output.appVersion)
+                                ),
+                                action: nil
+                            )
                         }
                     }
-
-                    SettingSection(title: L10n.Soomsil.versionInfo) {
-                        SettingActionRow(
-                            title: L10n.Soomsil.versionInfo,
-                            accessory: .text(
-                                L10n.Soomsil.appVersion(viewModel.output.appVersion)
-                            ),
-                            action: nil
-                        )
-                    }
+                    .padding(.bottom, 24)
                 }
-                .padding(.bottom, 24)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(Color.soomsilBackground)
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: SettingDestination.self) { destination in
+                switch destination {
+                case let .legal(kind):
+                    LegalDocumentView(document: kind.document)
+                case .openSource:
+                    OpenSourceLicenseView()
+                }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color.soomsilBackground)
     }
 }
 
@@ -224,24 +211,34 @@ private struct SettingActionRow: View {
     }
 }
 
-private struct SettingToggleRow: View {
+private struct SettingNavigationRow: View {
     let title: String
-    @Binding var isOn: Bool
+    let destination: SettingDestination
 
     var body: some View {
-        HStack {
-            Text(title)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color.soomsilPrimaryText)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        NavigationLink(value: destination) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-            Toggle("", isOn: $isOn)
-                .labelsHidden()
-                .tint(Color.soomsilBlue600)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.soomsilSecondaryText)
+            }
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 16)
         .frame(height: 58)
+        .buttonStyle(SettingRowButtonStyle())
     }
+}
+
+private enum SettingDestination: Hashable {
+    case legal(LegalDocumentKind)
+    case openSource
 }
 
 private struct SettingRowButtonStyle: ButtonStyle {

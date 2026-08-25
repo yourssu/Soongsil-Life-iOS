@@ -37,6 +37,10 @@ struct HomeView: View {
                     header
 
                     if let dashboard = viewModel.output.dashboard {
+                        if let errorMessage = viewModel.output.errorMessage {
+                            refreshErrorCard(errorMessage)
+                        }
+
                         StudentInfoCard(profile: dashboard.profile)
 
                         Button {
@@ -66,7 +70,7 @@ struct HomeView: View {
                     shortcutSection
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 110)
+                .padding(.bottom, 24)
             }
             .background(Color.soomsilBackground)
             .refreshable {
@@ -114,7 +118,11 @@ struct HomeView: View {
     }
 
     private var header: some View {
-        Text(L10n.Soomsil.greeting(viewModel.output.dashboard?.profile.name ?? ""))
+        Text(
+            viewModel.output.dashboard.map {
+                L10n.Soomsil.greeting($0.profile.name)
+            } ?? L10n.Common.home
+        )
             .font(.system(size: 20, weight: .bold))
             .foregroundStyle(Color.soomsilPrimaryText)
             .lineLimit(1)
@@ -179,11 +187,16 @@ struct HomeView: View {
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: 28))
                 .foregroundStyle(Color.soomsilSecondaryText)
+
+            Text(L10n.Home.loadFailed)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(Color.soomsilPrimaryText)
+
             Text(message)
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(Color.soomsilSecondaryText)
                 .multilineTextAlignment(.center)
-            Button(L10n.Home.retryDescription) {
+            Button(L10n.Common.retry) {
                 Task {
                     await viewModel.transform(input: .load(force: true))
                 }
@@ -194,6 +207,36 @@ struct HomeView: View {
         .frame(maxWidth: .infinity)
         .padding(28)
         .soomsilCard(cornerRadius: 16)
+    }
+
+    private func refreshErrorCard(_ message: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "wifi.exclamationmark")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(Color.soomsilSecondaryText)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L10n.Home.refreshFailed)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color.soomsilPrimaryText)
+                Text(message)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.soomsilSecondaryText)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 4)
+
+            Button(L10n.Common.retry) {
+                Task {
+                    await viewModel.transform(input: .load(force: true))
+                }
+            }
+            .font(.system(size: 12, weight: .bold))
+            .foregroundStyle(Color.soomsilBlue600)
+        }
+        .padding(16)
+        .soomsilCard(cornerRadius: 14)
     }
 
     @ViewBuilder
@@ -215,7 +258,9 @@ struct HomeView: View {
             .buttonStyle(.plain)
 
         case let .notEnrolled(completedSemesterCount):
-            chapelEnrollmentCard(isCompleted: completedSemesterCount >= 6)
+            chapelEnrollmentCard(
+                isCompleted: completedSemesterCount >= 6
+            )
         }
     }
 
@@ -256,9 +301,12 @@ struct HomeView: View {
 
     private func chapelErrorCard(_ message: String) -> some View {
         VStack(spacing: 10) {
-            Label(L10n.Chapel.loadFailed, systemImage: "wifi.exclamationmark")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(Color.soomsilPrimaryText)
+            Label(
+                L10n.Chapel.loadFailed,
+                systemImage: "wifi.exclamationmark"
+            )
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(Color.soomsilPrimaryText)
 
             Text(message)
                 .font(.system(size: 12, weight: .medium))
