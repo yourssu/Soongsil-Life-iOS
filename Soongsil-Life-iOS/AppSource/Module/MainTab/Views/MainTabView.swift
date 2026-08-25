@@ -57,6 +57,7 @@ struct MainTabView: View {
 
             if settingViewModel.output.showsLogoutConfirmation {
                 LogoutDialogView(
+                    errorMessage: settingViewModel.output.logoutErrorMessage,
                     cancel: {
                         Task {
                             await settingViewModel.transform(input: .logoutCancelled)

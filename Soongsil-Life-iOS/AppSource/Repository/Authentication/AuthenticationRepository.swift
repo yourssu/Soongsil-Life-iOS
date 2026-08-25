@@ -55,7 +55,9 @@ final class AuthenticationRepository: AuthenticationRepositoryProtocol {
 
     @discardableResult
     func logout() async -> Bool {
+        guard await service.logout() else { return false }
+
         try? credentialsStore.clear()
-        return await service.logout()
+        return true
     }
 }

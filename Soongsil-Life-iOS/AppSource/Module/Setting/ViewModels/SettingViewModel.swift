@@ -12,6 +12,7 @@ final class SettingViewModel: BaseViewModel {
     struct Output {
         var showsLogoutConfirmation = false
         var isLoggingOut = false
+        var logoutErrorMessage: String?
         var appVersion: String
     }
 
@@ -37,18 +38,27 @@ final class SettingViewModel: BaseViewModel {
         switch input {
         case .logoutButtonTapped:
             guard !output.isLoggingOut else { return output }
+            output.logoutErrorMessage = nil
             output.showsLogoutConfirmation = true
 
         case .logoutCancelled:
             guard !output.isLoggingOut else { return output }
+            output.logoutErrorMessage = nil
             output.showsLogoutConfirmation = false
 
         case .logoutConfirmed:
             guard !output.isLoggingOut else { return output }
-            output.showsLogoutConfirmation = false
+            output.logoutErrorMessage = nil
             output.isLoggingOut = true
-            await repository.logout()
+            let didLogout = await repository.logout()
             output.isLoggingOut = false
+
+            guard didLogout else {
+                output.logoutErrorMessage = L10n.Settings.logoutFailed
+                return output
+            }
+
+            output.showsLogoutConfirmation = false
             await appFlow.transform(input: .didLogout)
         }
         return output
