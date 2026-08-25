@@ -2,7 +2,6 @@
 "common.timetable" = "시간표";
 "common.settings" = "설정";
 "common.my" = "마이";
-"common.notifications" = "알림";
 "common.confirm" = "확인";
 "common.retry" = "다시 시도";
 
@@ -201,9 +200,6 @@
 "soomsil.chapel_seat_description" = "%1$@ · %2$@구역";
 "soomsil.cancel" = "취소";
 "soomsil.account" = "계정";
-"soomsil.notification_section" = "알림";
-"soomsil.grade_notifications" = "성적 알림 받기";
-"soomsil.chapel_notifications" = "채플 알림 받기";
 "soomsil.agreements" = "약관";
 "soomsil.version_info" = "버전정보";
 "soomsil.app_version" = "v%1$@";

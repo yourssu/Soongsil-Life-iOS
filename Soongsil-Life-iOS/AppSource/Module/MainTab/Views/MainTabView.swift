@@ -3,6 +3,7 @@ import SwiftUI
 struct MainTabView: View {
     @State private var viewModel: MainTabViewModel
     @State private var homeViewModel: HomeViewModel
+    @State private var chapelViewModel: ChapelViewModel
     @State private var timetableViewModel: TimetableViewModel
     @State private var settingViewModel: SettingViewModel
     @State private var isHomeNavigationActive = false
@@ -24,6 +25,9 @@ struct MainTabView: View {
         _homeViewModel = State(
             initialValue: HomeViewModel(repository: container.homeRepository)
         )
+        _chapelViewModel = State(
+            initialValue: ChapelViewModel(repository: container.chapelRepository)
+        )
         _timetableViewModel = State(
             initialValue: TimetableViewModel(
                 service: container.timetableService
@@ -39,13 +43,17 @@ struct MainTabView: View {
 
     var body: some View {
         ZStack {
-            tabContent
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if showsTabBar {
-                        SoomsilTabBar(selectedTab: selectedTabBinding)
-                            .padding(.bottom, 4)
-                    }
+            VStack(spacing: 0) {
+                tabContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                if showsTabBar {
+                    SoomsilTabBar(selectedTab: selectedTabBinding)
+                        .padding(.bottom, 4)
                 }
+            }
+            .background(Color.soomsilBackground.ignoresSafeArea())
+            .allowsHitTesting(!settingViewModel.output.isLoggingOut)
 
             if settingViewModel.output.showsLogoutConfirmation {
                 LogoutDialogView(
@@ -63,10 +71,20 @@ struct MainTabView: View {
                 .transition(.opacity)
                 .zIndex(1)
             }
+
+            if settingViewModel.output.isLoggingOut {
+                SoomsilLoadingOverlay()
+                    .transition(.opacity)
+                    .zIndex(2)
+            }
         }
         .animation(
             .easeInOut(duration: 0.18),
             value: settingViewModel.output.showsLogoutConfirmation
+        )
+        .animation(
+            .easeInOut(duration: 0.18),
+            value: settingViewModel.output.isLoggingOut
         )
     }
 
@@ -83,13 +101,11 @@ struct MainTabView: View {
                     isHomeNavigationActive = $0
                 }
             )
+        case .chapel:
+            ChapelTabView(viewModel: chapelViewModel)
         case .timetable:
             NavigationStack {
                 TimetableView(viewModel: timetableViewModel)
-            }
-        case .notification:
-            NavigationStack {
-                NotificationView()
             }
         case .my:
             SettingView(viewModel: settingViewModel)

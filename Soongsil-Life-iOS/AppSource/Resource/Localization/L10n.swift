@@ -6,7 +6,6 @@ enum L10n {
         static let timetable = text("common.timetable")
         static let settings = text("common.settings")
         static let my = text("common.my")
-        static let notifications = text("common.notifications")
         static let confirm = text("common.confirm")
         static let retry = text("common.retry")
     }
@@ -293,9 +292,6 @@ enum L10n {
         static let seatLocation = text("soomsil.seat_location")
         static let cancel = text("soomsil.cancel")
         static let account = text("soomsil.account")
-        static let notificationSection = text("soomsil.notification_section")
-        static let gradeNotifications = text("soomsil.grade_notifications")
-        static let chapelNotifications = text("soomsil.chapel_notifications")
         static let agreements = text("soomsil.agreements")
         static let versionInfo = text("soomsil.version_info")
         static let logoutTitle = text("soomsil.logout_title")

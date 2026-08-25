@@ -36,9 +36,11 @@ final class SettingViewModel: BaseViewModel {
     func transform(input: Input) async -> Output {
         switch input {
         case .logoutButtonTapped:
+            guard !output.isLoggingOut else { return output }
             output.showsLogoutConfirmation = true
 
         case .logoutCancelled:
+            guard !output.isLoggingOut else { return output }
             output.showsLogoutConfirmation = false
 
         case .logoutConfirmed:
