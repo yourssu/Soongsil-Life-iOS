@@ -2,7 +2,7 @@ import Foundation
 
 /// 시간표 탭 단독 테스트용 서비스.
 /// 셀 형식은 `LmsApi` 의 `TimetableCell` 과 동일하게 맞춰 실제 응답과 같은 경로로 파싱됩니다.
-final class MockTimetableService: TimetableServiceProtocol {
+final class MockTimetableService: TimetableServiceProtocol, @unchecked Sendable {
     private let year: String
     private let semester: String
     private let cells: [TimetableCellData]
@@ -25,7 +25,7 @@ final class MockTimetableService: TimetableServiceProtocol {
 
     func fetchTimetable() async throws -> TimetableSchedule? {
         if delayNanoseconds > 0 {
-            try? await Task.sleep(nanoseconds: delayNanoseconds)
+            try await Task.sleep(nanoseconds: delayNanoseconds)
         }
         if let error { throw error }
         guard !cells.isEmpty else { return nil }
