@@ -93,4 +93,7 @@ enum AppConfig {
     static let lmsPackageURL = "https://github.com/chlwhdtn03/LMS-API"
     static let termsURL = URL(string: "https://scatch.ssu.ac.kr/terms")!
     static let privacyURL = URL(string: "https://scatch.ssu.ac.kr/privacy")!
+    static let appUpdateConfigurationURL = URL(
+        string: "https://raw.githubusercontent.com/yourssu/Soongsil-Life-iOS/dev/.github/app-config/ios.json"
+    )!
 }
