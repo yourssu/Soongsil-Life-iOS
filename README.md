@@ -244,6 +244,7 @@ Mock 조합을 사용합니다. 로컬 `LmsApi.xcframework`는 `ios-arm64` 실�
 있습니다. 앱 화면용 문서는 `Module/Setting/Models/LegalDocument.swift`, 외부
 공개용 문서는 [`TERMS.md`](TERMS.md)와 [`PRIVACY.md`](PRIVACY.md)에서
 관리합니다. 처리 정보나 보관 방식이 바뀌면 두 표현을 함께 갱신합니다.
+앱 사용 지원과 공개 문의 작성 지침은 [`SUPPORT.md`](SUPPORT.md)에서 안내합니다.
 
 [`PrivacyInfo.xcprivacy`](Soongsil-Life-iOS/AppSource/Resource/PrivacyInfo.xcprivacy)는
 앱 타깃의 개인정보 매니페스트입니다. 현재 추적과 수집 데이터 유형은 선언하지
