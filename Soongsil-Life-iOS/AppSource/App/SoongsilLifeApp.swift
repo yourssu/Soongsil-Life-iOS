@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct SoongsilLifeApp: App {
     @State private var appFlow: AppFlowViewModel
+    @State private var appUpdate = AppUpdateViewModel()
     private let container: DIContainer
 
     init() {
@@ -31,6 +32,17 @@ struct SoongsilLifeApp: App {
                 }
             }
             .tint(Color.soomsilBlue600)
+            .task {
+                await appUpdate.checkIfNeeded()
+            }
+            .overlay {
+                if let prompt = appUpdate.prompt {
+                    AppUpdatePromptView(
+                        prompt: prompt,
+                        postpone: appUpdate.postpone
+                    )
+                }
+            }
         }
     }
 }
