@@ -233,6 +233,7 @@ enum L10n {
         static let version = text("settings.version")
         static let logout = text("settings.logout")
         static let logoutConfirmation = text("settings.logout_confirmation")
+        static let logoutFailed = text("settings.logout_failed")
     }
 
     enum Legal {

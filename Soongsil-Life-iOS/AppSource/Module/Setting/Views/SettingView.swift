@@ -72,6 +72,7 @@ struct SettingView: View {
 }
 
 struct LogoutDialogView: View {
+    let errorMessage: String?
     let cancel: () -> Void
     let confirm: () -> Void
 
@@ -92,6 +93,14 @@ struct LogoutDialogView: View {
                         .foregroundStyle(Color.soomsilSecondaryText)
                         .multilineTextAlignment(.center)
                         .lineSpacing(3)
+
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.soomsilRed500)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 4)
+                    }
                 }
 
                 HStack(spacing: 12) {
@@ -265,5 +274,13 @@ private struct SettingRowButtonStyle: ButtonStyle {
 }
 
 #Preview("Logout dialog") {
-    LogoutDialogView(cancel: {}, confirm: {})
+    LogoutDialogView(errorMessage: nil, cancel: {}, confirm: {})
+}
+
+#Preview("Logout dialog failure") {
+    LogoutDialogView(
+        errorMessage: L10n.Settings.logoutFailed,
+        cancel: {},
+        confirm: {}
+    )
 }

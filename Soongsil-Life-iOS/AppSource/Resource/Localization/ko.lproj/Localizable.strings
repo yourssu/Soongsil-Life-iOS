@@ -144,6 +144,7 @@
 "settings.version" = "버전";
 "settings.logout" = "로그아웃";
 "settings.logout_confirmation" = "로그아웃하시겠어요?";
+"settings.logout_failed" = "로그아웃하지 못했어요. 잠시 후 다시 시도해 주세요.";
 
 "legal.effective_date" = "시행일: 2026년 8월 25일";
 "legal.contact_title" = "문의";
