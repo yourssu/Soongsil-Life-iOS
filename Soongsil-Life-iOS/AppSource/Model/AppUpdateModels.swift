@@ -6,6 +6,25 @@ struct AppUpdateConfiguration: Decodable, Sendable {
     let title: String
     let message: String
     let appStoreURL: URL?
+
+    var validatedAppStoreURL: URL? {
+        guard let appStoreURL,
+              appStoreURL.scheme?.lowercased() == "https",
+              let host = appStoreURL.host?.lowercased(),
+              Self.allowedAppStoreDomains.contains(where: {
+                  host == $0 || host.hasSuffix(".\($0)")
+              })
+        else {
+            return nil
+        }
+
+        return appStoreURL
+    }
+
+    private static let allowedAppStoreDomains = [
+        "apps.apple.com",
+        "itunes.apple.com"
+    ]
 }
 
 struct AppVersion: Comparable, Decodable, Sendable {
