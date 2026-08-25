@@ -116,6 +116,78 @@ enum MockLMSFixtures {
         ScholarshipRecord(year: "2022", semester: .second, scholarshipName: "학과(부)우수장학금", paymentMethod: "", processStatus: "지급완료", note: "[융특]학과우수장학금", dropReason: "", processDate: "2023.02.14", selectedAmount: "100,000", actualAmount: "100,000", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: "")
     ]
 
+    static let graduationAudit = GraduationAudit(
+        items: [
+            GraduationAuditItem(
+                classification: .graduationRequired,
+                requirement: "총 취득학점",
+                standardValue: "133",
+                calculatedValue: "136",
+                difference: "+3",
+                status: .satisfied,
+                usedSubjects: []
+            ),
+            GraduationAuditItem(
+                classification: .liberalArtsRequired,
+                requirement: "교양필수",
+                standardValue: "14",
+                calculatedValue: "14",
+                difference: "0",
+                status: .satisfied,
+                usedSubjects: [
+                    "컴퓨팅적사고",
+                    "Academic and Professional English 1",
+                    "한반도평화와통일"
+                ]
+            ),
+            GraduationAuditItem(
+                classification: .liberalArtsElective,
+                requirement: "교양선택",
+                standardValue: "20",
+                calculatedValue: "22",
+                difference: "+2",
+                status: .satisfied,
+                usedSubjects: ["현대사회와윤리", "과학기술과사회"]
+            ),
+            GraduationAuditItem(
+                classification: .majorBasic,
+                requirement: "전공기초",
+                standardValue: "12",
+                calculatedValue: "12",
+                difference: "0",
+                status: .satisfied,
+                usedSubjects: ["프로그래밍기초및실습", "디지털미디어원리"]
+            ),
+            GraduationAuditItem(
+                classification: .major,
+                requirement: "전공학점",
+                standardValue: "60",
+                calculatedValue: "57",
+                difference: "-3",
+                status: .insufficient,
+                usedSubjects: ["데이터베이스", "알고리즘", "소프트웨어공학"]
+            ),
+            GraduationAuditItem(
+                classification: .chapel,
+                requirement: "채플",
+                standardValue: "6",
+                calculatedValue: "6",
+                difference: "0",
+                status: .satisfied,
+                usedSubjects: ["비전채플"]
+            ),
+            GraduationAuditItem(
+                classification: .other("복수전공"),
+                requirement: "복수전공 이수학점",
+                standardValue: "36",
+                calculatedValue: "36",
+                difference: "0",
+                status: .satisfied,
+                usedSubjects: ["모바일프로그래밍"]
+            )
+        ]
+    )
+
     static let dashboard = Dashboard(
         profile: profile,
         semesters: semesters,

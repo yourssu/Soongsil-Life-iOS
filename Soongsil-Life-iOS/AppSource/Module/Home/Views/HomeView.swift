@@ -12,17 +12,20 @@ struct HomeView: View {
     @State private var showsCurrentGrades = false
     @State private var showsChapel = false
     private let gradeRepository: GradeRepositoryProtocol
+    private let graduationAuditRepository: GraduationAuditRepositoryProtocol
     private let tuitionRepository: TuitionRepositoryProtocol
     private let onNavigationDepthChanged: (Bool) -> Void
 
     init(
         viewModel: HomeViewModel,
         gradeRepository: GradeRepositoryProtocol,
+        graduationAuditRepository: GraduationAuditRepositoryProtocol,
         tuitionRepository: TuitionRepositoryProtocol,
         onNavigationDepthChanged: @escaping (Bool) -> Void = { _ in }
     ) {
         _viewModel = State(initialValue: viewModel)
         self.gradeRepository = gradeRepository
+        self.graduationAuditRepository = graduationAuditRepository
         self.tuitionRepository = tuitionRepository
         self.onNavigationDepthChanged = onNavigationDepthChanged
     }
@@ -171,7 +174,11 @@ struct HomeView: View {
                 )
             }
         case .graduationAudit:
-            GraduationAuditView()
+            GraduationAuditView(
+                viewModel: GraduationAuditViewModel(
+                    repository: graduationAuditRepository
+                )
+            )
         case .tuition:
             TuitionView(
                 viewModel: TuitionViewModel(repository: tuitionRepository)
@@ -215,6 +222,7 @@ struct HomeView: View {
     HomeView(
         viewModel: HomeViewModel(repository: container.homeRepository),
         gradeRepository: container.gradeRepository,
+        graduationAuditRepository: container.graduationAuditRepository,
         tuitionRepository: container.tuitionRepository
     )
 }
