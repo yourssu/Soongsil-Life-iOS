@@ -43,7 +43,7 @@ final class TuitionViewModel: BaseViewModel {
         self.repository = repository
     }
 
-    func selectTab(_ tab: Tab) {
+    private func selectTab(_ tab: Tab) {
         output.selectedTab = tab
         output.errorMessage = nil
     }
@@ -57,10 +57,14 @@ final class TuitionViewModel: BaseViewModel {
             output.isLoading = true
             output.errorMessage = nil
             do {
-                async let tuitionRecords = repository.fetchTuitionRecords()
-                async let scholarshipRecords = repository.fetchScholarshipRecords()
-                output.tuitionRecords = try await tuitionRecords
-                output.scholarshipRecords = try await scholarshipRecords
+                async let tuitionRequest = repository.fetchTuitionRecords()
+                async let scholarshipRequest = repository.fetchScholarshipRecords()
+                
+                let (tuition, scholarship) = try await ( tuitionRequest, scholarshipRequest )
+                
+                output.tuitionRecords = tuition
+                output.scholarshipRecords = scholarship
+                
             } catch {
                 output.errorMessage = error.localizedDescription
             }

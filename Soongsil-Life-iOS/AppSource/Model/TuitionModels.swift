@@ -1,12 +1,9 @@
 import Foundation
 
 struct TuitionRecord: Identifiable, Sendable {
-    var id: String {
-        "\(year)-\(semester)-\(registrationType)-\(registrationDate)-\(paymentAmount)"
-    }
-
+    let id: UUID = UUID()
     let year: String
-    let semester: String
+    let semester: AcademicSemester
     let grade: String
     let registrationType: String
     let registrationDate: String
@@ -16,12 +13,9 @@ struct TuitionRecord: Identifiable, Sendable {
 }
 
 struct ScholarshipRecord: Identifiable, Sendable {
-    var id: String {
-        "\(year)-\(semester)-\(scholarshipName)-\(processDate)-\(actualAmount)"
-    }
-
+    let id: UUID = UUID()
     let year: String
-    let semester: String
+    let semester: AcademicSemester
     let scholarshipName: String
     let paymentMethod: String
     let processStatus: String

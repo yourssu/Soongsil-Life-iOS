@@ -1,7 +1,7 @@
 import Foundation
 
 final class TuitionRepository: TuitionRepositoryProtocol {
-    private let service: TuitionServiceProtocol 
+    private let service: TuitionServiceProtocol
 
     init(service: TuitionServiceProtocol) {
         self.service = service
@@ -9,41 +9,37 @@ final class TuitionRepository: TuitionRepositoryProtocol {
 
     func fetchTuitionRecords() async throws -> [TuitionRecord] {
         try await service.fetchTuitionRecords()
-        // 등록금 최신순 정렬
             .sorted { lhs, rhs in
-                lhs.sortKey > rhs.sortKey
+                if lhs.year.academicYear != rhs.year.academicYear {
+                    return lhs.year.academicYear > rhs.year.academicYear
+                }
+
+                if lhs.semester.sortOrder != rhs.semester.sortOrder {
+                    return lhs.semester.sortOrder > rhs.semester.sortOrder
+                }
+
+                return lhs.registrationDate > rhs.registrationDate
             }
     }
 
     func fetchScholarshipRecords() async throws -> [ScholarshipRecord] {
         try await service.fetchScholarshipRecords()
-    }
-}
+            .sorted { lhs, rhs in
+                if lhs.year.academicYear != rhs.year.academicYear {
+                    return lhs.year.academicYear > rhs.year.academicYear
+                }
 
-private extension TuitionRecord {
-    var sortKey: String {
-        "\(year.digitsOnly)-\(semesterSortValue)-\(registrationDate)"
-    }
+                if lhs.semester.sortOrder != rhs.semester.sortOrder {
+                    return lhs.semester.sortOrder > rhs.semester.sortOrder
+                }
 
-    var semesterSortValue: String {
-        if semester.contains("겨울") {
-            return "4"
-        }
-        if semester.contains("2") || semester.contains("후") {
-            return "3"
-        }
-        if semester.contains("여름") {
-            return "2"
-        }
-        if semester.contains("1") || semester.contains("전") {
-            return "1"
-        }
-        return "0"
+                return lhs.processDate > rhs.processDate
+            }
     }
 }
 
 private extension String {
-    var digitsOnly: String {
-        filter(\.isNumber)
+    var academicYear: Int {
+        Int(filter(\.isNumber)) ?? 0
     }
 }

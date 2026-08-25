@@ -1,23 +1,19 @@
 import Foundation
 
 final class MockTuitionService: TuitionServiceProtocol {
-    private let delayNanoseconds: UInt64
+    private let delay: Duration
 
-    init(delayNanoseconds: UInt64 = 150_000_000) {
-        self.delayNanoseconds = delayNanoseconds
+    init(delay: Duration = .milliseconds(150)) {
+        self.delay = delay
     }
 
     func fetchTuitionRecords() async throws -> [TuitionRecord] {
-        await delay()
+        try await MockDelay.wait(delay)
         return MockLMSFixtures.tuitionRecords
     }
 
     func fetchScholarshipRecords() async throws -> [ScholarshipRecord] {
-        await delay()
+        try await MockDelay.wait(delay)
         return MockLMSFixtures.scholarshipRecords
-    }
-
-    private func delay() async {
-        try? await Task.sleep(nanoseconds: delayNanoseconds)
     }
 }

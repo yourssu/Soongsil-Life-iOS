@@ -6,8 +6,8 @@ struct TuitionView: View {
     @Namespace private var segmentedControlNamespace
 
     private let segmentAnimation = Animation.spring(
-        response: 0.28,
-        dampingFraction: 0.86
+        response: 0.25,
+        dampingFraction: 0.85
     )
 
     var body: some View {
@@ -116,8 +116,8 @@ struct TuitionView: View {
             ForEach(TuitionViewModel.Tab.allCases, id: \.self) { tab in
                 let isSelected = viewModel.output.selectedTab == tab
                 Button {
-                    withAnimation(segmentAnimation) {
-                        viewModel.selectTab(tab)
+                    Task {
+                        await viewModel.transform(input: .selectTab(tab))
                     }
                 } label: {
                     ZStack {
@@ -192,7 +192,7 @@ private struct TuitionRecordCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3.5) {
             HStack(alignment: .top, spacing: 8) {
-                Text("\(record.year) \(record.semester)")
+                Text("\(record.year) \(record.semester.localizedName)")
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(Color.soomsilPrimaryText)
                     .lineLimit(1)
@@ -207,7 +207,7 @@ private struct TuitionRecordCard: View {
             }
             .frame(height: 22, alignment: .top)
 
-            Text(won(record.paymentAmount))
+            Text(CurrencyFormatter.won(record.paymentAmount))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(Color.soomsilPrimaryText)
                 .lineLimit(1)
@@ -231,7 +231,7 @@ private struct TuitionRecordCard: View {
     private var tuitionDetail: String {
         [
             "\(L10n.Tuition.tuitionDate) \(record.registrationDate)",
-            "\(L10n.Tuition.reduction) \(won(record.reduction))"
+            "\(L10n.Tuition.reduction) \(CurrencyFormatter.won(record.reduction))"
         ]
         .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
         .joined(separator: " · ")
@@ -259,7 +259,7 @@ private struct ScholarshipRecordCard: View {
             }
             .frame(height: 19, alignment: .top)
 
-            Text(won(record.actualAmount))
+            Text(CurrencyFormatter.won(record.actualAmount))
                 .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(Color.soomsilPrimaryText)
                 .lineLimit(1)
@@ -282,7 +282,7 @@ private struct ScholarshipRecordCard: View {
 
     private var scholarshipDetail: String {
         [
-            "\(record.year) \(record.semester)",
+            "\(record.year) \(record.semester.localizedName)",
             record.processDate,
             detailReason
         ]
@@ -338,12 +338,6 @@ private struct TuitionStatusBadge: View {
             Color.soomsilGreen50
         }
     }
-}
-
-private func won(_ value: String) -> String {
-    let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty else { return "0원" }
-    return trimmed.hasSuffix("원") ? trimmed : "\(trimmed)원"
 }
 
 #Preview("Tuition") {

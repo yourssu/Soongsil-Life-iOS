@@ -181,7 +181,7 @@ struct LoginView: View {
     let repository = AuthenticationRepository(
         service: MockAuthenticationService(
             isLoggedIn: false,
-            delayNanoseconds: 0
+            delay: .zero
         )
     )
     LoginView(

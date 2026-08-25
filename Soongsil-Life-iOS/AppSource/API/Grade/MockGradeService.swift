@@ -1,14 +1,14 @@
 import Foundation
 
 final class MockGradeService: GradeServiceProtocol {
-    private let delayNanoseconds: UInt64
+    private let delay: Duration
 
-    init(delayNanoseconds: UInt64 = 150_000_000) {
-        self.delayNanoseconds = delayNanoseconds
+    init(delay: Duration = .milliseconds(150)) {
+        self.delay = delay
     }
 
     func fetchSemesters() async throws -> [SemesterGrade] {
-        await delay()
+        try await MockDelay.wait(delay)
         return MockLMSFixtures.semesters
     }
 
@@ -16,16 +16,12 @@ final class MockGradeService: GradeServiceProtocol {
         year: String,
         semester: AcademicSemester
     ) async throws -> [CourseGrade] {
-        await delay()
+        try await MockDelay.wait(delay)
         return MockLMSFixtures.coursesBySemester[
             MockLMSFixtures.semesterID(
                 year: year,
                 semester: semester
             )
         ] ?? []
-    }
-
-    private func delay() async {
-        try? await Task.sleep(nanoseconds: delayNanoseconds)
     }
 }
