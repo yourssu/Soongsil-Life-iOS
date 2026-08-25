@@ -95,6 +95,7 @@ struct MainTabView: View {
         case .home:
             HomeView(
                 viewModel: homeViewModel,
+                chapelViewModel: chapelViewModel,
                 gradeRepository: gradeRepository,
                 graduationAuditRepository: graduationAuditRepository,
                 tuitionRepository: tuitionRepository,

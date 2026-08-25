@@ -53,8 +53,7 @@ struct DIContainer {
             ),
             homeRepository: HomeRepository(
                 studentService: StudentService(),
-                gradeService: gradeService,
-                chapelService: chapelService
+                gradeService: gradeService
             ),
             gradeRepository: GradeRepository(service: gradeService),
             chapelRepository: ChapelRepository(service: chapelService),
@@ -90,8 +89,7 @@ struct DIContainer {
                 studentService: MockStudentService(
                     delay: delay
                 ),
-                gradeService: gradeService,
-                chapelService: chapelService
+                gradeService: gradeService
             ),
             gradeRepository: GradeRepository(
                 service: gradeService

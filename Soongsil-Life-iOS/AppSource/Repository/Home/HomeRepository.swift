@@ -3,22 +3,18 @@ import Foundation
 final class HomeRepository: HomeRepositoryProtocol {
     private let studentService: StudentServiceProtocol
     private let gradeService: GradeServiceProtocol
-    private let chapelService: ChapelServiceProtocol
 
     init(
         studentService: StudentServiceProtocol,
-        gradeService: GradeServiceProtocol,
-        chapelService: ChapelServiceProtocol
+        gradeService: GradeServiceProtocol
     ) {
         self.studentService = studentService
         self.gradeService = gradeService
-        self.chapelService = chapelService
     }
 
     func fetchDashboard() async throws -> Dashboard {
         async let profileRequest = studentService.fetchProfile()
         async let semesterRequest = gradeService.fetchSemesters()
-        async let chapelRequest = fetchChapelResult()
 
         let (profile, semesters) = try await (
             profileRequest,
@@ -35,28 +31,13 @@ final class HomeRepository: HomeRepositoryProtocol {
             currentCourses = []
         }
 
-        let chapelResult = await chapelRequest
         return Dashboard(
             profile: profile,
             semesters: semesters,
             currentCourses: currentCourses,
-            chapelEnrollmentState: chapelResult.value,
-            chapelErrorMessage: chapelResult.errorMessage
+            chapelEnrollmentState: nil,
+            chapelErrorMessage: nil
         )
-    }
-
-    private func fetchChapelResult() async -> (
-        value: ChapelEnrollmentState?,
-        errorMessage: String?
-    ) {
-        do {
-            return (
-                try await chapelService.fetchChapelEnrollmentState(),
-                nil
-            )
-        } catch {
-            return (nil, error.localizedDescription)
-        }
     }
 
     private func isEarlierSemester(

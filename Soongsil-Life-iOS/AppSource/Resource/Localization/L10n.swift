@@ -90,6 +90,7 @@ enum L10n {
 
     enum Chapel {
         static let title = text("chapel.title")
+        static let loading = text("chapel.loading")
         static let semester = text("chapel.semester")
         static let absences = text("chapel.absences")
         static let attendanceSection = text("chapel.attendance_section")
