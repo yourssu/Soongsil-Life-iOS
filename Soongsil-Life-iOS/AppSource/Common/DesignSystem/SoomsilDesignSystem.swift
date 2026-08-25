@@ -15,6 +15,8 @@ extension Color {
     static let soomsilSlate400 = Color("slate_400")
     static let soomsilGreen50 = Color("green_50")
     static let soomsilGreen500 = Color("green_500")
+    static let soomsilRed50 = Color("red_50")
+    static let soomsilRed500 = Color("red_500")
 
     static let soomsilBackground = adaptive(
         light: .white,

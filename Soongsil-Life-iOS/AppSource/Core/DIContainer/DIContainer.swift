@@ -4,17 +4,20 @@ struct DIContainer {
     let authenticationRepository: AuthenticationRepositoryProtocol
     let homeRepository: HomeRepositoryProtocol
     let gradeRepository: GradeRepositoryProtocol
+    let timetableService: TimetableServiceProtocol
     let tuitionRepository: TuitionRepositoryProtocol
 
     init(
         authenticationRepository: AuthenticationRepositoryProtocol,
         homeRepository: HomeRepositoryProtocol,
         gradeRepository: GradeRepositoryProtocol,
+        timetableService: TimetableServiceProtocol,
         tuitionRepository: TuitionRepositoryProtocol
     ) {
         self.authenticationRepository = authenticationRepository
         self.homeRepository = homeRepository
         self.gradeRepository = gradeRepository
+        self.timetableService = timetableService
         self.tuitionRepository = tuitionRepository
     }
 
@@ -47,6 +50,7 @@ struct DIContainer {
                 chapelService: ChapelService()
             ),
             gradeRepository: GradeRepository(service: gradeService),
+            timetableService: TimetableService(),
             tuitionRepository: TuitionRepository(service: TuitionService())
         )
 #endif
@@ -82,6 +86,7 @@ struct DIContainer {
             gradeRepository: GradeRepository(
                 service: gradeService
             ),
+            timetableService: MockTimetableService(delay: delay),
             tuitionRepository: TuitionRepository(
                 service: MockTuitionService(
                     delay: delay

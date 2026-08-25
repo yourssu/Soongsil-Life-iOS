@@ -3,6 +3,7 @@ import SwiftUI
 struct MainTabView: View {
     @State private var viewModel: MainTabViewModel
     @State private var homeViewModel: HomeViewModel
+    @State private var timetableViewModel: TimetableViewModel
     @State private var settingViewModel: SettingViewModel
     @State private var isHomeNavigationActive = false
     private let gradeRepository: GradeRepositoryProtocol
@@ -20,6 +21,11 @@ struct MainTabView: View {
         )
         _homeViewModel = State(
             initialValue: HomeViewModel(repository: container.homeRepository)
+        )
+        _timetableViewModel = State(
+            initialValue: TimetableViewModel(
+                service: container.timetableService
+            )
         )
         _settingViewModel = State(
             initialValue: SettingViewModel(
@@ -76,7 +82,7 @@ struct MainTabView: View {
             )
         case .timetable:
             NavigationStack {
-                TimetableView()
+                TimetableView(viewModel: timetableViewModel)
             }
         case .notification:
             NavigationStack {

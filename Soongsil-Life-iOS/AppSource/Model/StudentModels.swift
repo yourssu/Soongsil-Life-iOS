@@ -31,18 +31,34 @@ enum AcademicSemester: String, CaseIterable, Hashable, Sendable {
 
 extension AcademicSemester {
     init?(apiValue: String) {
-        switch apiValue.trimmingCharacters(
-            in: .whitespacesAndNewlines
-        ) {
-        case "1학기":
+        let normalized = apiValue
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: " ", with: "")
+            .uppercased()
+        let numericTokens = apiValue.split(whereSeparator: { !$0.isNumber })
+        let semesterCode = numericTokens
+            .map(String.init)
+            .first { ["090", "091", "092", "093"].contains($0) }
+
+        if semesterCode == "090"
+            || normalized.contains("1학기")
+            || normalized.contains("FIRST") {
             self = .first
-        case "여름학기":
+        } else if semesterCode == "091"
+            || normalized.contains("여름")
+            || normalized.contains("하계")
+            || normalized.contains("SUMMER") {
             self = .summer
-        case "2학기":
+        } else if semesterCode == "092"
+            || normalized.contains("2학기")
+            || normalized.contains("SECOND") {
             self = .second
-        case "겨울학기":
+        } else if semesterCode == "093"
+            || normalized.contains("겨울")
+            || normalized.contains("동계")
+            || normalized.contains("WINTER") {
             self = .winter
-        default:
+        } else {
             return nil
         }
     }
