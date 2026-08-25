@@ -38,7 +38,8 @@ struct DIContainer {
 
         return DIContainer(
             authenticationRepository: AuthenticationRepository(
-                service: authenticationService
+                service: authenticationService,
+                credentialsStore: KeychainLoginCredentialsStore()
             ),
             homeRepository: HomeRepository(
                 studentService: StudentService(),
@@ -66,7 +67,8 @@ struct DIContainer {
 
         return DIContainer(
             authenticationRepository: AuthenticationRepository(
-                service: authenticationService
+                service: authenticationService,
+                credentialsStore: InMemoryLoginCredentialsStore()
             ),
             homeRepository: HomeRepository(
                 studentService: MockStudentService(

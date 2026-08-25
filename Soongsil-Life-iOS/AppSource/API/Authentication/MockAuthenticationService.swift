@@ -21,12 +21,14 @@ final class MockAuthenticationService: AuthenticationServiceProtocol {
         isLoggedIn = true
     }
 
-    func logout() async {
+    @discardableResult
+    func logout() async -> Bool {
         do {
             try await MockDelay.wait(delay)
         } catch {
-            return
+            return false
         }
         isLoggedIn = false
+        return true
     }
 }
