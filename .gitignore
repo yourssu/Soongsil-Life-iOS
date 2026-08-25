@@ -6,6 +6,14 @@
 **/xcuserdata/
 *.xcuserstate
 *.xcuserdatad/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
 
 # Build products
 DerivedData/
@@ -15,10 +23,22 @@ build/
 *.ipa
 *.dSYM
 *.dSYM.zip
+*.hmap
+*.xcresult
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+timeline.xctimeline
+playground.xcworkspace
 /tmp/
 
 # Swift Package Manager local state
 .swiftpm/
+.xcode.env.local
+
+# Editor temporary files
+*.swp
+*~
 
 # Local environment and sensitive configuration
 .env
@@ -40,6 +60,14 @@ GoogleService-Info.plist
 *.key
 *.mobileprovision
 *.provisionprofile
+ExportOptions*.plist
+
+# Dependency and automation artifacts
+Carthage/Build/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
 
 # Local source remnants outside the current Xcode targets
 /Soongsil-Life-iOS/Soongsil-Life-iOS/App/
