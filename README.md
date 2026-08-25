@@ -15,8 +15,9 @@ iPhone에서 한곳에 모아 확인할 수 있도록 만든 SwiftUI 앱입니�
 
 ## 주요 기능
 
-- **홈**: 학생 정보, 누적·학기 성적, 채플 요약을 표시합니다. 학기별 성적,
-  졸업사정표, 등록금·장학금 화면으로 이동할 수 있습니다.
+- **홈**: 학생 정보와 누적·학기 성적을 먼저 표시하고, 채플 요약은 독립된
+  로딩·수강·수료·미수강·오류 상태로 갱신합니다. 학기별 성적, 졸업사정표,
+  등록금·장학금 화면으로 이동할 수 있습니다.
 - **채플**: 현재 수강 중이면 좌석, 장소, 출결 요약과 상세 출결을 표시합니다.
   현재 수강 정보가 없으면 과거 이수 횟수에 따라 수료 완료와 미수강을 구분합니다.
 - **시간표**: LMS가 반환한 학기를 최신순으로 선택하고 수업 블록과 과목 상세를
@@ -67,9 +68,9 @@ iPhone에서 한곳에 모아 확인할 수 있도록 만든 SwiftUI 앱입니�
 │   │   │   ├── Chapel                  채플 도메인 경계
 │   │   │   ├── GraduationAudit         졸업사정표 도메인 경계
 │   │   │   ├── Tuition                 등록금·장학금 정렬
-│   │   │   └── Home                    학생·성적·채플 결과 조립
+│   │   │   └── Home                    학생·성적 기본 Dashboard 조립
 │   │   ├── Model                       화면과 도메인 모델
-│   │   ├── Module                      기능별 ViewModel과 SwiftUI View
+│   │   ├── Module                      기능별 ViewModel과 SwiftUI View, MainTab 상태 소유
 │   │   └── Resource
 │   │       ├── Licenses                오픈소스 라이선스
 │   │       ├── Localization            L10n과 한국어 문자열
@@ -110,6 +111,9 @@ protocol BaseViewModel: AnyObject {
 - Service는 `LmsApi.shared` callback을 async 함수로 감싸고 SDK 응답을 앱
   모델로 변환합니다.
 - `DIContainer`는 실제와 Mock 구현을 조립하는 Composition Root입니다.
+- `MainTabView`는 `HomeViewModel`과 하나의 `ChapelViewModel` 생명주기를
+  소유합니다. 같은 `ChapelViewModel`을 홈의 채플 카드와 채플 탭에 전달해
+  상태와 중복 요청 방지를 공유합니다.
 
 ```text
 View
@@ -124,9 +128,9 @@ View
 | 화면/ViewModel | 주입받는 Protocol | 실제 데이터 원천 |
 | --- | --- | --- |
 | AppFlow, Login, Setting | `AuthenticationRepositoryProtocol` | Authentication Service |
-| Home | `HomeRepositoryProtocol` | Student + Grade + Chapel Service |
+| Home / `HomeViewModel` | `HomeRepositoryProtocol` | Student + Grade Service |
 | Semester | `GradeRepositoryProtocol` | Grade Service |
-| Chapel | `ChapelRepositoryProtocol` | Chapel Service |
+| Home 채플 카드 + Chapel / 공유 `ChapelViewModel` | `ChapelRepositoryProtocol` | Chapel Service |
 | Timetable | `TimetableServiceProtocol` | Timetable Service |
 | GraduationAudit | `GraduationAuditRepositoryProtocol` | GraduationAudit Service |
 | Tuition | `TuitionRepositoryProtocol` | Tuition Service |
@@ -139,7 +143,7 @@ View
 시간표는 45초, 졸업사정표와 채플 이수 횟수 조회는 60초를 사용합니다.
 취소, timeout과 실제 callback이 경쟁해도 continuation은 한 번만 완료됩니다.
 
-`AsyncSingleFlight`는 같은 화면의 중복 로드 요청을 하나로 합칩니다. 인증과
+`AsyncSingleFlight`는 같은 ViewModel의 중복 로드 요청을 하나로 합칩니다. 인증과
 시간표는 Swift Task가 timeout된 뒤에도 취소할 수 없는 SDK 요청이 남을 수
 있으므로 별도 gate가 실제 callback 전까지 다음 SDK 요청 시작을 막습니다.
 화면에는 SDK 원문 대신 네트워크 단절, timeout과 기능별 fallback 문구를
@@ -147,10 +151,16 @@ View
 
 각 기능의 상태 기준은 다음과 같습니다.
 
+홈 진입 시 `HomeViewModel`과 공유 `ChapelViewModel`의 요청은 독립적으로
+시작됩니다. `HomeRepository`는 Student·Grade Service 결과만 조합하므로 채플
+조회나 최대 60초의 이수 횟수 fallback을 기다리지 않고 기본 Dashboard를 먼저
+표시합니다. 이후 채플 카드만 공유 ViewModel의 상태에 따라 갱신되며, 채플
+탭으로 이동해도 같은 결과와 진행 중인 요청을 이어서 사용합니다.
+
 | 기능 | 성공 | 빈 데이터 | 실패 |
 | --- | --- | --- | --- |
-| 홈 | 학생 정보와 성적을 표시하고 채플 결과를 함께 조립 | 최신 학기나 과목이 없으면 빈 목록으로 표시 | 학생·성적 실패는 홈 전체 오류, 채플만 실패하면 나머지 홈은 유지하고 채플 카드만 오류 |
-| 채플 | 현재 수강 정보가 있으면 좌석·출결을 표시 | 현재 수강 정보가 없거나 알려진 채플 서비스 중단 응답이면 졸업사정표의 이수 횟수를 조회해 6회 이상은 수료 완료, 6회 미만은 현재 미수강으로 표시 | 실제 네트워크 오류 또는 이수 횟수 대체 조회 실패는 재시도 상태 |
+| 홈 | Student·Grade 조회가 끝나면 프로필·성적·바로가기를 먼저 표시하고, 채플 카드는 `idle` / `loading` 뒤 `loaded` 상태의 좌석·출결을 표시 | 최신 학기나 과목이 없으면 빈 목록으로 표시하고, 채플 `notEnrolled`는 이수 6회 이상이면 수료 완료, 6회 미만이면 현재 미수강으로 표시 | 학생·성적 실패는 홈 전체 오류, 채플 `failed`는 나머지 홈을 유지하고 채플 카드만 오류·독립 재시도 |
+| 채플 | 홈과 공유하는 `ChapelViewModel`의 `loaded` 상태로 좌석·출결을 표시 | 현재 수강 정보가 없거나 알려진 채플 서비스 중단 응답이면 졸업사정표의 이수 횟수를 조회해 6회 이상은 수료 완료, 6회 미만은 현재 미수강으로 표시 | 실제 네트워크 오류 또는 이수 횟수 대체 조회 실패는 홈 채플 카드와 채플 탭에 같은 재시도 상태로 표시 |
 | 시간표 | 선택한 학기의 시간이 있는 수업을 그리드로 표시하고 결과를 캐시 | 정상 조회 결과에 배치할 수업이 없으면 현장실습·온라인 수업 등이 가능한 정상 빈 상태로 표시 | 전송·인증·timeout·파싱 실패는 오류로 표시하고, 이전 그리드가 있으면 유지 |
 | 졸업사정표 | 비어 있지 않은 표의 모든 행이 정확히 `충족` 또는 `부족`일 때 표시 | 실제 Service는 빈 표를 정상 결과로 위장하지 않고 잘못된 응답으로 처리 | 표 누락, 빈 표, 알 수 없는 상태 또는 파싱 실패는 재시도 오류 |
 | 등록금·장학금 | 두 요청을 `async let`으로 동시에 시작하고 둘 다 성공해야 새 결과를 함께 반영 | 성공한 배열이 비어 있으면 해당 탭에 내역 없음 문구를 표시 | 어느 한 요청이라도 실패하면 그 로드 시도는 오류이며, 기존 데이터가 있으면 유지한 채 알림을 표시하고 첫 로드라면 재시도 화면 표시 |
