@@ -29,6 +29,7 @@ final class TuitionViewModel: BaseViewModel {
         var tuitionRecords: [TuitionRecord] = []
         var scholarshipRecords: [ScholarshipRecord] = []
         var isLoading = false
+        var hasLoaded = false
         var errorMessage: String?
 
         var hasLoadedData: Bool {
@@ -38,6 +39,7 @@ final class TuitionViewModel: BaseViewModel {
     
     private(set) var output = Output() // 밖에서 수정 불가
     private let repository: TuitionRepositoryProtocol
+    private let loadFlight = AsyncSingleFlight()
 
     init(repository: TuitionRepositoryProtocol) {
         self.repository = repository
@@ -52,23 +54,35 @@ final class TuitionViewModel: BaseViewModel {
     func transform(input: Input) async -> Output {
         switch input {
         case let .load(force):
-            guard !output.isLoading else { return output }
-            guard force || !output.hasLoadedData else { return output }
-            output.isLoading = true
-            output.errorMessage = nil
-            do {
-                async let tuitionRequest = repository.fetchTuitionRecords()
-                async let scholarshipRequest = repository.fetchScholarshipRecords()
-                
-                let (tuition, scholarship) = try await ( tuitionRequest, scholarshipRequest )
-                
-                output.tuitionRecords = tuition
-                output.scholarshipRecords = scholarship
-                
-            } catch {
-                output.errorMessage = error.localizedDescription
+            guard force || !output.hasLoaded else { return output }
+
+            await loadFlight.run { [self] in
+                output.isLoading = true
+                output.errorMessage = nil
+                var didFinish = false
+                defer {
+                    output.isLoading = false
+                    if didFinish {
+                        output.hasLoaded = true
+                    }
+                }
+
+                do {
+                    async let tuitionRequest = repository.fetchTuitionRecords()
+                    async let scholarshipRequest = repository.fetchScholarshipRecords()
+
+                    let (tuition, scholarship) = try await (tuitionRequest, scholarshipRequest)
+
+                    output.tuitionRecords = tuition
+                    output.scholarshipRecords = scholarship
+                    didFinish = true
+                } catch is CancellationError {
+                    return
+                } catch {
+                    output.errorMessage = error.localizedDescription
+                    didFinish = true
+                }
             }
-            output.isLoading = false
 
         case let .selectTab(tab):
             selectTab(tab)

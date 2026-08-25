@@ -5,16 +5,16 @@ final class TuitionService: TuitionServiceProtocol {
     private let api = LmsApi.shared
 
     func fetchTuitionRecords() async throws -> [TuitionRecord] {
-        try await withCheckedThrowingContinuation { continuation in
+        try await LMSCallbackBridge.call { completion in
             api.getTuitionTable { result in
                 guard result.success,
                       let table = result.tuitionTable
                 else {
-                    continuation.resume(
-                        throwing: LMSServiceError.message(
-                            result.errorMessage
-                                ?? L10n.Error.tuitionFailed
-                        )
+                    completion(
+                        .failure(LMSServiceError.serverMessage(
+                            raw: result.errorMessage ?? "",
+                            fallback: L10n.Error.tuitionFailed
+                        ))
                     )
                     return
                 }
@@ -39,25 +39,25 @@ final class TuitionService: TuitionServiceProtocol {
                         )
                     }
 
-                    continuation.resume(returning: records)
+                    completion(.success(records))
                 } catch {
-                    continuation.resume(throwing: error)
+                    completion(.failure(error))
                 }
             }
         }
     }
 
     func fetchScholarshipRecords() async throws -> [ScholarshipRecord] {
-        try await withCheckedThrowingContinuation { continuation in
+        try await LMSCallbackBridge.call { completion in
             api.getScholarshipHistoryTable { result in
                 guard result.success,
                       let table = result.scholarshipHistoryTable
                 else {
-                    continuation.resume(
-                        throwing: LMSServiceError.message(
-                            result.errorMessage
-                                ?? L10n.Error.scholarshipFailed
-                        )
+                    completion(
+                        .failure(LMSServiceError.serverMessage(
+                            raw: result.errorMessage ?? "",
+                            fallback: L10n.Error.scholarshipFailed
+                        ))
                     )
                     return
                 }
@@ -88,9 +88,9 @@ final class TuitionService: TuitionServiceProtocol {
                         )
                     }
 
-                    continuation.resume(returning: records)
+                    completion(.success(records))
                 } catch {
-                    continuation.resume(throwing: error)
+                    completion(.failure(error))
                 }
             }
         }

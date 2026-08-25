@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct TuitionView: View {
-    @Environment(\.dismiss) private var dismiss // 현재 화면 닫기
     @State var viewModel: TuitionViewModel // ViewModel 설정
     @Namespace private var segmentedControlNamespace
 
@@ -12,12 +11,29 @@ struct TuitionView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            header // 상단 바 UI 설정 ( <     등록금 장학금      )
-
             // 로딩 중이거나 데이터 없음녀 ProgessView 표시
-            if viewModel.output.isLoading && !viewModel.output.hasLoadedData {
+            if (!viewModel.output.hasLoaded || viewModel.output.isLoading)
+                && !viewModel.output.hasLoadedData {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let errorMessage = viewModel.output.errorMessage,
+                      !viewModel.output.hasLoadedData {
+                ContentUnavailableView {
+                    Label(
+                        L10n.Tuition.loadFailed,
+                        systemImage: "wifi.exclamationmark"
+                    )
+                } description: {
+                    Text(errorMessage)
+                } actions: {
+                    Button(L10n.Common.retry) {
+                        Task {
+                            await viewModel.transform(input: .load(force: true))
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 // 실제 데이터 영역
                 ScrollView(showsIndicators: false) {
@@ -41,7 +57,7 @@ struct TuitionView: View {
             }
         }
         .background(Color.soomsilBackground)
-        .toolbar(.hidden, for: .navigationBar) // 기존 네비게이션바 숨기기
+        .soomsilDetailNavigation(title: L10n.Home.tuitionScholarship)
         .task {
             await viewModel.transform(input: .load()) // 화면 실행 시 바로 데이터 불러오기 (비동기)
         }
@@ -68,7 +84,10 @@ struct TuitionView: View {
     // errorMessage 값을 보고 alert 표시 여부 계산
     private var showsError: Binding<Bool> {
         Binding(
-            get: { viewModel.output.errorMessage != nil },
+            get: {
+                viewModel.output.errorMessage != nil
+                    && viewModel.output.hasLoadedData
+            },
             set: { isPresented in
                 guard !isPresented else { return }
                 Task {
@@ -78,38 +97,6 @@ struct TuitionView: View {
         )
     }
 
-    private var header: some View {
-        ZStack {
-            // 정 가운데 배치
-            Text(L10n.Home.tuitionScholarship) // localization
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(Color.soomsilPrimaryText)
-                .frame(width: 127, height: 20)
-
-            HStack {
-                Button {
-                    dismiss() // 뒤로가기
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 22, weight: .medium))
-                        .foregroundStyle(Color.soomsilPrimaryText)
-                        .frame(width: 24, height: 24)
-                }
-                .buttonStyle(.plain)
-                .padding(.leading, 20)
-
-                Spacer() // 나머지 빈 공간
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 56)
-        .background(Color.soomsilBackground)
-        .overlay(alignment: .bottom) { // 구분선 1pt
-            Rectangle()
-                .fill(Color.soomsilBorder)
-                .frame(height: 1)
-        }
-    }
     // 세그먼트 탭
     private var segmentedControl: some View {
         HStack(spacing: 4) {
