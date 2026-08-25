@@ -1,0 +1,8 @@
+framework module "LmsApi" {
+    umbrella header "LmsApi.h"
+
+    export *
+    module * { export * }
+
+    use Foundation
+}

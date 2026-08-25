@@ -160,7 +160,7 @@
 			mainGroup = 2D5A8D683017714A0044D85C;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				2DEDBCCC3018E2BB00B98407 /* XCRemoteSwiftPackageReference "LMS-API" */,
+				2DEDBCCC3018E2BB00B98407 /* XCLocalSwiftPackageReference "../LocalPackages/LmsApi" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2D5A8D723017714B0044D85C /* Products */;
@@ -495,21 +495,17 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		2DEDBCCC3018E2BB00B98407 /* XCRemoteSwiftPackageReference "LMS-API" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/chlwhdtn03/LMS-API";
-			requirement = {
-				kind = revision;
-				revision = 014b325fea9bcd234a21edaf0f8e41b0debadcba;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		2DEDBCCC3018E2BB00B98407 /* XCLocalSwiftPackageReference "../LocalPackages/LmsApi" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../LocalPackages/LmsApi;
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		2DEDBCCD3018E2BB00B98407 /* LmsApi */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 2DEDBCCC3018E2BB00B98407 /* XCRemoteSwiftPackageReference "LMS-API" */;
+			package = 2DEDBCCC3018E2BB00B98407 /* XCLocalSwiftPackageReference "../LocalPackages/LmsApi" */;
 			productName = LmsApi;
 		};
 /* End XCSwiftPackageProductDependency section */
