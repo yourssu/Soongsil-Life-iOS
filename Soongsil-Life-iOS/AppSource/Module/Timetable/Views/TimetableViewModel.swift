@@ -32,8 +32,8 @@ final class TimetableViewModel: BaseViewModel {
     private(set) var output = Output()
     private let service: TimetableServiceProtocol
 
-    init(service: TimetableServiceProtocol = TimetableDataSource.makeService()) {
-        self.service = service
+    init(service: TimetableServiceProtocol? = nil) {
+        self.service = service ?? TimetableDataSource.makeService()
     }
 
     @discardableResult
