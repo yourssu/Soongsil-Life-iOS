@@ -187,3 +187,38 @@ struct Dashboard: Sendable {
         semesters.reduce(0) { $0 + $1.earnedCredits }
     }
 }
+
+struct GraduationAudit: Sendable {
+    let items: [GraduationAuditItem]
+
+    var isGraduatable: Bool {
+        !items.isEmpty && items.allSatisfy(\.isSatisfied)
+    }
+}
+
+struct GraduationAuditItem: Identifiable, Sendable {
+    var id: String {
+        "\(classification)-\(requirement)"
+    }
+
+    let classification: String
+    let requirement: String
+    let standardValue: String
+    let calculatedValue: String
+    let difference: String
+    let result: String
+    let usedSubjects: [String]
+    
+    var status: GraduationAuditStatus? {
+        GraduationAuditStatus(rawValue: result)
+    }
+
+    var isSatisfied: Bool {
+        status == .satisfied
+    }
+    
+    enum GraduationAuditStatus: String, Sendable {
+        case satisfied = "충족"
+        case insufficient = "부족"
+    }
+}

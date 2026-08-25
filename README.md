@@ -5,7 +5,7 @@
 - iOS 17+
 - SwiftUI + Observation(`@Observable`)
 - MVVM Input/Output
-- LMS-API 1.6.1
+- LMS-API 1.6.6.2 (`014b325` revision)
 - 한국어 현지화
 
 ## Git Flow 및 브랜치 규칙
@@ -97,7 +97,7 @@ Module/GraduationAudit/Views/GraduationAuditView.swift
 Module/Tuition/Views/TuitionView.swift
 ```
 
-LMS-API 1.6.1에는 후속 구현에 사용할 수 있는 API가 이미 있습니다.
+LMS-API 1.6.6.2에는 후속 구현에 사용할 수 있는 API가 이미 있습니다.
 
 - 시간표: `LmsApi.getTimetable`
 - 졸업사정표: `LmsApi.getGraduateTable`
@@ -203,11 +203,13 @@ Mock으로 앱 전체를 실행하려면 Xcode에서
 Service Protocol → Repository Protocol → ViewModel 순서로 추가합니다.
 
 LMS-API 버전은 Xcode의 Package Dependencies와 `Package.resolved`에서
-관리합니다.
+관리합니다. 현재 최신 릴리스 `1.6.6.2`는 SwiftPM이 버전으로 인식하지
+못하는 네 구간 태그이므로, 같은 릴리스 커밋 `014b325`를 revision으로
+고정합니다.
 
-## LMS-API 1.6.1과 실행 대상
+## LMS-API 1.6.6.2와 실행 대상
 
-LMS-API 1.6.1의 바이너리는 `ios-arm64` 실기기 슬라이스만 제공합니다.
+LMS-API 1.6.6.2의 바이너리는 `ios-arm64` 실기기 슬라이스만 제공합니다.
 따라서 스킴을 용도별로 분리했습니다.
 
 | 스킴 | 실행 대상 | 실제 도메인 Service | 용도 |
@@ -293,7 +295,7 @@ Localizations에도 언어를 등록합니다.
 ## 처음 실행하기
 
 1. `Soongsil-Life-iOS/Soongsil-Life-iOS.xcodeproj`를 엽니다.
-2. Xcode가 LMS-API 1.6.1을 Resolve할 때까지 기다립니다.
+2. Xcode가 LMS-API 1.6.6.2를 Resolve할 때까지 기다립니다.
 3. 실제 API를 확인할 때는 `Soongsil-Life-iOS` 스킴과 실제 iPhone/iPad를
    선택합니다.
 4. **Signing & Capabilities**에서 본인의 Team을 선택합니다.
@@ -306,7 +308,7 @@ Localizations에도 언어를 등록합니다.
 구분하는 `LmsApi`입니다. 메인 타깃에서 오류가 나면 다음을 확인합니다.
 
 1. Xcode의 **Project → Package Dependencies**에
-   `https://github.com/chlwhdtn03/LMS-API` 1.6.1이 있는지 확인합니다.
+   `https://github.com/chlwhdtn03/LMS-API` 1.6.6.2가 있는지 확인합니다.
 2. 메인 타깃 **General → Frameworks, Libraries, and Embedded Content**에
    `LmsApi`가 연결됐는지 확인합니다.
 3. **File → Packages → Reset Package Caches**를 실행한 뒤

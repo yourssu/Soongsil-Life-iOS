@@ -141,6 +141,23 @@ enum L10n {
         static let excused = text("attendance.excused")
         static let unknown = text("attendance.unknown")
     }
+    
+    enum GraduationAudit {
+        static let graduationRequired = text("graduation_audit.graduation_required")
+        static let liberalArtsRequired = text("graduation_audit.liberal_arts_required")
+        static let liberalArtsElective = text("graduation_audit.liberal_arts_elective")
+        static let majorBasic = text("graduation_audit.major_basic")
+        static let major = text("graduation_audit.major")
+        static let chapel = text("graduation_audit.chapel")
+        
+        static let result = text("graduation_audit.result")
+        static let eligible = text("graduation_audit.eligible")
+        static let ineligible = text("graduation_audit.ineligible")
+        static let hideCourseStatus = text("graduation_audit.hide_course_status")
+        static let showCourseStatus = text("graduation_audit.show_course_status")
+        static let standard = text("graduation_audit.standard")
+        static let calculated = text("graduation_audit.calculated")
+    }
 
     enum Settings {
         static let serviceSection = text("settings.service_section")
@@ -223,6 +240,7 @@ enum L10n {
     enum Error {
         static let loginFailed = text("error.login_failed")
         static let gradesFailed = text("error.grades_failed")
+        static let graduateTableFailed = text("error.graduate_table_failed")
         static let profileFailed = text("error.profile_failed")
         static let semestersFailed = text("error.semesters_failed")
         static let invalidResponse = text("error.invalid_response")
