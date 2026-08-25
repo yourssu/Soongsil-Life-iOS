@@ -1,5 +1,9 @@
 import Foundation
 
-protocol TimetableServiceProtocol: Sendable {
-    func fetchTimetable() async throws -> TimetableSchedule?
+protocol TimetableServiceProtocol: AnyObject, Sendable {
+    func fetchAvailablePeriods() async throws -> [TimetablePeriod]
+
+    func fetchTimetable(
+        for period: TimetablePeriod?
+    ) async throws -> TimetableSchedule?
 }
