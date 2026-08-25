@@ -1,6 +1,5 @@
 import Foundation
 
-protocol ChapelServiceProtocol: AnyObject {
-    func fetchChapel() async throws -> ChapelStatus?
+protocol ChapelRepositoryProtocol: AnyObject {
     func fetchChapelEnrollmentState() async throws -> ChapelEnrollmentState
 }

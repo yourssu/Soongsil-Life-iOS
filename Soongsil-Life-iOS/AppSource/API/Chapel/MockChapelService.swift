@@ -11,4 +11,11 @@ final class MockChapelService: ChapelServiceProtocol {
         try await MockDelay.wait(delay)
         return MockLMSFixtures.chapel
     }
+
+    func fetchChapelEnrollmentState() async throws -> ChapelEnrollmentState {
+        guard let chapel = try await fetchChapel() else {
+            return .notEnrolled(completedSemesterCount: 0)
+        }
+        return .enrolled(chapel)
+    }
 }

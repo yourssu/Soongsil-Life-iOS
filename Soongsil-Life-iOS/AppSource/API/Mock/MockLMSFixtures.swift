@@ -192,7 +192,7 @@ enum MockLMSFixtures {
         profile: profile,
         semesters: semesters,
         currentCourses: courses,
-        chapel: chapel,
+        chapelEnrollmentState: .enrolled(chapel),
         chapelErrorMessage: nil
     )
 
