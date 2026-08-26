@@ -137,7 +137,7 @@
 "settings.terms" = "이용약관";
 "settings.privacy" = "개인정보 처리방침";
 "settings.open_source" = "LMS-API 오픈소스";
-"settings.open_source.description" = "숭실생활은 아래 오픈소스 소프트웨어를 사용합니다. 라이선스 전문은 네트워크 연결 없이도 확인할 수 있습니다.";
+"settings.open_source.description" = "슬기로운 숭실생활은 아래 오픈소스 소프트웨어를 사용합니다. 라이선스 전문은 네트워크 연결 없이도 확인할 수 있습니다.";
 "settings.open_source.repository" = "LMS-API 저장소";
 "settings.open_source.license" = "Apache License 2.0";
 "settings.open_source.load_failed" = "라이선스 전문을 불러오지 못했습니다.";
@@ -151,9 +151,9 @@
 "legal.contact_title" = "문의";
 "legal.contact_body" = "서비스 및 개인정보 관련 문의는 GitHub 저장소(https://github.com/yourssu/Soongsil-Life-iOS)의 Issues를 통해 접수할 수 있습니다. 공개 문의에는 학번, 비밀번호 등 개인정보를 작성하지 마세요.";
 
-"legal.terms.introduction" = "이 약관은 숭실생활 앱이 제공하는 학사 정보 조회 기능의 이용 조건과 사용자 및 운영 주체의 책임을 정합니다.";
+"legal.terms.introduction" = "이 약관은 슬기로운 숭실생활 앱이 제공하는 학사 정보 조회 기능의 이용 조건과 사용자 및 운영 주체의 책임을 정합니다.";
 "legal.terms.service_title" = "1. 서비스 범위";
-"legal.terms.service_body" = "숭실생활은 사용자가 숭실대학교 학사 시스템에서 조회할 수 있는 홈, 성적, 채플, 시간표, 졸업사정, 등록금 및 장학금 정보를 한곳에 표시하는 편의 서비스입니다. 숭실대학교가 직접 제공하는 공식 앱이 아니며, 최종 학사 정보는 u-SAINT 등 학교 공식 시스템을 기준으로 확인해야 합니다.";
+"legal.terms.service_body" = "슬기로운 숭실생활은 사용자가 숭실대학교 학사 시스템에서 조회할 수 있는 홈, 성적, 채플, 시간표, 졸업사정, 등록금 및 장학금 정보를 한곳에 표시하는 편의 서비스입니다. 숭실대학교가 직접 제공하는 공식 앱이 아니며, 최종 학사 정보는 u-SAINT 등 학교 공식 시스템을 기준으로 확인해야 합니다.";
 "legal.terms.account_title" = "2. 이용 자격과 계정 관리";
 "legal.terms.account_body" = "사용자는 본인에게 적법하게 발급된 숭실대학교 계정만 사용해야 합니다. 학번과 비밀번호를 타인에게 공유하거나 타인의 계정으로 접속해서는 안 되며, 기기와 계정의 안전한 관리 책임은 사용자에게 있습니다.";
 "legal.terms.usage_title" = "3. 이용자 의무";
@@ -165,7 +165,7 @@
 "legal.terms.changes_title" = "6. 책임 범위와 약관 변경";
 "legal.terms.changes_body" = "운영 주체의 고의 또는 중대한 과실이 없는 한, 학교 시스템의 오류나 사용자의 부주의로 발생한 손해에 대해서는 관련 법령이 허용하는 범위에서 책임이 제한됩니다. 약관이 변경되면 시행일과 주요 변경 내용을 앱 또는 공개 정책 페이지를 통해 안내합니다.";
 
-"legal.privacy.introduction" = "숭실생활은 학사 정보 조회 기능을 제공하는 데 필요한 범위에서만 개인정보를 처리합니다.";
+"legal.privacy.introduction" = "슬기로운 숭실생활은 학사 정보 조회 기능을 제공하는 데 필요한 범위에서만 개인정보를 처리합니다.";
 "legal.privacy.data_title" = "1. 처리하는 정보";
 "legal.privacy.data_body" = "로그인 과정에서 학번과 비밀번호를 처리합니다. 로그인 후에는 학교 시스템에서 성명, 이메일, 학과, 학년과 학적 상태, 성적과 수강 정보, 채플 좌석과 출결, 시간표, 등록금과 장학금, 졸업사정 정보를 조회할 수 있습니다.";
 "legal.privacy.purpose_title" = "2. 처리 목적";
