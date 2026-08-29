@@ -52,22 +52,21 @@ struct ChapelTabView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                case let .notEnrolled(completedSemesterCount):
-                    if completedSemesterCount >= 6 {
-                        ContentUnavailableView(
-                            L10n.Soomsil.noChapelTitle,
-                            systemImage: "checkmark.circle.fill",
-                            description: Text(L10n.Soomsil.noChapel)
-                        )
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else {
-                        ContentUnavailableView(
-                            L10n.Soomsil.notTakingChapelTitle,
-                            systemImage: "sofa.fill",
-                            description: Text(L10n.Soomsil.notTakingChapel)
-                        )
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
+                case .completed:
+                    ContentUnavailableView(
+                        L10n.Soomsil.noChapelTitle,
+                        systemImage: "checkmark.circle.fill",
+                        description: Text(L10n.Soomsil.noChapel)
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                case .notEnrolled:
+                    ContentUnavailableView(
+                        L10n.Soomsil.notTakingChapelTitle,
+                        systemImage: "sofa.fill",
+                        description: Text(L10n.Soomsil.notTakingChapel)
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
             .background(Color.soomsilBackground)

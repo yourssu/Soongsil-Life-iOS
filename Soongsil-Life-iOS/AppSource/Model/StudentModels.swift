@@ -146,6 +146,7 @@ struct ChapelStatus: Sendable {
 
 enum ChapelEnrollmentState: Sendable {
     case enrolled(ChapelStatus)
+    case completed(completedSemesterCount: Int)
     case notEnrolled(completedSemesterCount: Int)
 }
 

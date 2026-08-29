@@ -264,10 +264,11 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
 
-        case let .notEnrolled(completedSemesterCount):
-            chapelEnrollmentCard(
-                isCompleted: completedSemesterCount >= 6
-            )
+        case .completed:
+            chapelEnrollmentCard(isCompleted: true)
+
+        case .notEnrolled:
+            chapelEnrollmentCard(isCompleted: false)
 
         case let .failed(errorMessage):
             chapelErrorCard(errorMessage)
