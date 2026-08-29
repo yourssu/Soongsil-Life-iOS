@@ -10,7 +10,10 @@ while scanning large single-line Web Dynpro HTML. The local client-only patch:
 - returns the base graduation-audit table when the optional detail action is
   unavailable or its response cannot be parsed;
 - accepts graduation-audit rows both with and without the optional used-subject
-  column while preserving the server's `충족` / `부족` result contract.
+  column while preserving the server's `충족` / `부족` result contract;
+- forces SAP Web Dynpro initial and event requests to use `sap-language=KO`
+  and an explicit Korean `Accept-Language`, so parsing does not depend on the
+  review device's language setting.
 
 It does not contain or replace an LMS server, credentials, signing settings, or
 provisioning assets. The official LMS-API repository is not modified by this
