@@ -25,7 +25,7 @@ struct GraduationAuditSummaryView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.soomsilMutedSurface)
+        .background(.gray050)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
@@ -33,7 +33,7 @@ struct GraduationAuditSummaryView: View {
         HStack(spacing: 0) {
             Text("\(L10n.GraduationAudit.result) · ")
                 .font(.system(size: 13))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
 
             Text(
                 audit.isGraduatable
@@ -43,8 +43,8 @@ struct GraduationAuditSummaryView: View {
             .font(.system(size: 14, weight: .bold))
             .foregroundStyle(
                 audit.isGraduatable
-                    ? Color.soomsilGreen500
-                    : Color.soomsilRed500
+                    ? .logoIndigo
+                    : .warningRed500
             )
         }
         .fixedSize(horizontal: true, vertical: false)
@@ -58,11 +58,11 @@ struct GraduationAuditSummaryView: View {
                     : L10n.GraduationAudit.showCourseStatus
             )
             .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(Color.soomsilPrimaryText)
+            .foregroundStyle(.black000)
             .fixedSize(horizontal: true, vertical: false)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(Color.soomsilSurface)
+            .background(.white000)
             .clipShape(Capsule())
             .contentShape(Capsule())
         }
@@ -79,7 +79,7 @@ struct GraduationAuditNoticeView: View {
             Image(systemName: "info.circle")
         }
         .font(.system(size: 12, weight: .medium))
-        .foregroundStyle(Color.soomsilSecondaryText)
+        .foregroundStyle(.gray600)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 4)
     }
@@ -93,7 +93,7 @@ struct GraduationAuditRequirementSectionView: View {
         VStack(alignment: .leading, spacing: 9) {
             Text(section.classification.localizedName)
                 .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(Color.soomsilBlue500)
+                .foregroundStyle(.pointColor500)
                 .fixedSize(horizontal: false, vertical: true)
 
             ForEach(section.items) { item in
@@ -107,7 +107,7 @@ struct GraduationAuditRequirementSectionView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.soomsilMutedSurface)
+        .background(.gray050)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
@@ -121,7 +121,7 @@ private struct GraduationAuditRequirementRow: View {
             HStack(alignment: .top, spacing: 8) {
                 Text(item.requirement.isEmpty ? "-" : item.requirement)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .foregroundStyle(.black000)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Spacer(minLength: 8)
@@ -139,11 +139,11 @@ private struct GraduationAuditRequirementRow: View {
                     ) { _, subject in
                         Text(subject)
                             .font(.system(size: 11))
-                            .foregroundStyle(Color.soomsilSecondaryText)
+                            .foregroundStyle(.gray600)
                             .multilineTextAlignment(.leading)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color.soomsilSurface)
+                            .background(.white000)
                             .clipShape(
                                 RoundedRectangle(
                                     cornerRadius: 10,
@@ -198,7 +198,7 @@ private struct GraduationAuditMetricsView: View {
         if !values.isEmpty {
             Text(values.joined(separator: " · "))
                 .font(.system(size: 12))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -233,8 +233,8 @@ private struct GraduationAuditStatusBadge: View {
 struct GraduationAuditLoadingStateView: View {
     var body: some View {
         ProgressView(L10n.GraduationAudit.loading)
-            .tint(Color.soomsilBlue600)
-            .foregroundStyle(Color.soomsilSecondaryText)
+            .tint(.pointColor600)
+            .foregroundStyle(.gray600)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -388,18 +388,18 @@ private extension GraduationAuditStatus {
     var foregroundColor: Color {
         switch self {
         case .satisfied:
-            Color.soomsilGreen500
+            .logoIndigo
         case .insufficient:
-            Color.soomsilRed500
+            .warningRed500
         }
     }
 
     var backgroundColor: Color {
         switch self {
         case .satisfied:
-            Color.soomsilGreen50
+            .pointColor050
         case .insufficient:
-            Color.soomsilRed50
+            .warningRed050
         }
     }
 }

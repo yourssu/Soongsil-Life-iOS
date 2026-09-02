@@ -63,7 +63,7 @@ struct ZoomableChapelSeatMapView: View {
                     .fontWeight(.bold)
             }
             .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(Color.soomsilBlue500)
+            .foregroundStyle(.pointColor500)
         }
         .padding(.vertical, 18)
         .padding(.horizontal, 24)
@@ -177,7 +177,7 @@ private struct ChapelSeatMapContentView: View {
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 58)
-                .background(Color.soomsilGray950)
+                .background(.black000)
 
             VStack(spacing: 38) {
                 ForEach(zoneRows.indices, id: \.self) { rowIndex in
@@ -194,7 +194,7 @@ private struct ChapelSeatMapContentView: View {
         }
         .padding(.horizontal, 26)
         .padding(.vertical, 24)
-        .background(Color.soomsilSurface)
+        .background(.white000)
     }
 }
 
@@ -223,7 +223,7 @@ private struct ChapelSeatZoneView: View {
         VStack(spacing: 16) {
             Text(zone.id)
                 .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
 
             VStack(spacing: seatGap) {
                 ForEach(zone.rows.indices, id: \.self) { rowIndex in
@@ -266,15 +266,15 @@ private struct ChapelSeatZoneView: View {
         return RoundedRectangle(cornerRadius: 2, style: .continuous)
             .fill(
                 isSelected
-                    ? Color.soomsilBlue500
-                    : Color.soomsilGray200
+                    ? .pointColor500
+                    : .gray200
             )
             .frame(width: seatSize, height: seatSize)
             .overlay {
                 if isSelected {
                     RoundedRectangle(cornerRadius: 2, style: .continuous)
                         .stroke(
-                            Color.soomsilBlue500.opacity(0.35),
+                            .pointColor500.opacity(0.35),
                             lineWidth: 4
                         )
                 }
@@ -292,11 +292,11 @@ private struct ChapelSeatZoneView: View {
 #Preview("Seat map · compact seat") {
     ZoomableChapelSeatMapView(seat: "B-12")
         .padding(24)
-        .background(Color.soomsilBackground)
+        .background(.white000)
 }
 
 #Preview("Seat map · explicit row and column") {
     ZoomableChapelSeatMapView(seat: "H-1-4")
         .padding(24)
-        .background(Color.soomsilBackground)
+        .background(.white000)
 }

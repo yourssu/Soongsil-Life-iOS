@@ -52,7 +52,11 @@ struct MainTabView: View {
                         .padding(.bottom, 4)
                 }
             }
-            .background(Color.soomsilBackground.ignoresSafeArea())
+            .background {
+                Rectangle()
+                    .fill(.white000)
+                    .ignoresSafeArea()
+            }
             .allowsHitTesting(!settingViewModel.output.isLoggingOut)
 
             if settingViewModel.output.showsLogoutConfirmation {

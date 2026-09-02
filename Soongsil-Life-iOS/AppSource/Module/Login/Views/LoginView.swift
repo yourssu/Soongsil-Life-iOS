@@ -20,12 +20,12 @@ struct LoginView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(L10n.Soomsil.loginHeading)
                         .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(Color.soomsilPrimaryText)
+                        .foregroundStyle(.black000)
                         .lineSpacing(4)
 
                     Text(L10n.Soomsil.loginDescription)
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                 }
                 .padding(.bottom, 78)
 
@@ -71,7 +71,7 @@ struct LoginView: View {
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 58)
-                    .background(Color.soomsilBlue600)
+                    .background(.pointColor600)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)
@@ -81,7 +81,7 @@ struct LoginView: View {
                 VStack(spacing: 8) {
                     Text(L10n.Login.credentialNotice)
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                         .multilineTextAlignment(.center)
 
                     HStack(spacing: 18) {
@@ -97,7 +97,7 @@ struct LoginView: View {
 
                     Text(L10n.Login.unofficialNotice)
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
@@ -111,7 +111,8 @@ struct LoginView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .background {
-            Color.soomsilBackground
+            Rectangle()
+                .fill(.white000)
                 .ignoresSafeArea()
         }
         .overlay {
@@ -154,7 +155,7 @@ struct LoginView: View {
         } label: {
             Text(title)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.soomsilBlue600)
+                .foregroundStyle(.pointColor600)
                 .underline()
                 .frame(minHeight: 32)
         }
@@ -170,7 +171,7 @@ struct LoginView: View {
         HStack(spacing: 12) {
             Text(title)
                 .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
 
             Group {
                 if secure && isPasswordSecured {
@@ -192,23 +193,23 @@ struct LoginView: View {
                 } label: {
                     Image(systemName: isPasswordSecured ? "eye" : "eye.slash")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                         .frame(width: 24, height: 24)
                 }
                 .buttonStyle(.plain)
             }
         }
         .font(.system(size: 16, weight: .bold))
-        .foregroundStyle(Color.soomsilPrimaryText)
+        .foregroundStyle(.black000)
         .textInputAutocapitalization(.never)
         .autocorrectionDisabled()
         .padding(.horizontal, 24)
         .frame(height: 58)
-        .background(Color.soomsilInputSurface)
+        .background(.white000)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.soomsilBorder, lineWidth: 1)
+                .stroke(.gray100, lineWidth: 1)
         }
         .contentShape(Rectangle())
         .onTapGesture {

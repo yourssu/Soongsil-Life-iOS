@@ -56,7 +56,7 @@ struct TuitionView: View {
                 }
             }
         }
-        .background(Color.soomsilBackground)
+        .background(.white000)
         .soomsilDetailNavigation(title: L10n.Home.tuitionScholarship)
         .task {
             await viewModel.transform(input: .load()) // 화면 실행 시 바로 데이터 불러오기 (비동기)
@@ -110,7 +110,7 @@ struct TuitionView: View {
                     ZStack {
                         if isSelected {
                             Capsule()
-                                .fill(Color.soomsilBlue600)
+                                .fill(.pointColor600)
                                 .matchedGeometryEffect(
                                     id: "selectedSegment",
                                     in: segmentedControlNamespace
@@ -120,7 +120,7 @@ struct TuitionView: View {
                         Text(tab.title)
                             .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(
-                                isSelected ? Color.white : Color.soomsilSecondaryText
+                                isSelected ? Color.white : .gray600
                             )
                     }
                     .frame(maxWidth: .infinity)
@@ -134,7 +134,7 @@ struct TuitionView: View {
         .frame(height: 43.5)
         .frame(maxWidth: .infinity)
         .frame(maxWidth: 362)
-        .background(Color.soomsilMutedSurface)
+        .background(.gray050)
         .clipShape(Capsule())
     }
 
@@ -165,7 +165,7 @@ struct TuitionView: View {
     private func emptyState(_ message: String) -> some View {
         Text(message)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
                 .frame(maxWidth: .infinity)
                 .frame(maxWidth: 362)
                 .frame(minHeight: 240)
@@ -181,7 +181,7 @@ private struct TuitionRecordCard: View {
             HStack(alignment: .top, spacing: 8) {
                 Text("\(record.year) \(record.semester.localizedName)")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .foregroundStyle(.black000)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
 
@@ -196,13 +196,13 @@ private struct TuitionRecordCard: View {
 
             Text(CurrencyFormatter.won(record.paymentAmount))
                 .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(Color.soomsilPrimaryText)
+                .foregroundStyle(.black000)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
 
             Text(tuitionDetail)
                 .font(.system(size: 12, weight: .regular))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
         }
@@ -211,7 +211,7 @@ private struct TuitionRecordCard: View {
         .padding(.top, 14)
         .frame(maxWidth: .infinity, minHeight: 93, alignment: .topLeading)
         .frame(maxWidth: 362)
-        .background(Color.soomsilGray100)
+        .background(.gray100)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
@@ -233,7 +233,7 @@ private struct ScholarshipRecordCard: View {
             HStack(alignment: .top, spacing: 8) {
                 Text(record.scholarshipName)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .foregroundStyle(.black000)
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
 
@@ -248,13 +248,13 @@ private struct ScholarshipRecordCard: View {
 
             Text(CurrencyFormatter.won(record.actualAmount))
                 .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(Color.soomsilPrimaryText)
+                .foregroundStyle(.black000)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
 
             Text(scholarshipDetail)
                 .font(.system(size: 12, weight: .regular))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
@@ -263,7 +263,7 @@ private struct ScholarshipRecordCard: View {
         .padding(.top, 14)
         .frame(maxWidth: .infinity, minHeight: 93, alignment: .topLeading)
         .frame(maxWidth: 362)
-        .background(Color.soomsilGray100)
+        .background(.gray100)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
@@ -311,18 +311,18 @@ private struct TuitionStatusBadge: View {
     private var foregroundColor: Color {
         switch style {
         case .neutral:
-            Color.soomsilSecondaryText
+            .gray600
         case .success:
-            Color.soomsilGreen500
+            .logoIndigo
         }
     }
 
     private var backgroundColor: Color {
         switch style {
         case .neutral:
-            Color.soomsilMutedSurface
+            .gray050
         case .success:
-            Color.soomsilGreen50
+            .pointColor050
         }
     }
 }

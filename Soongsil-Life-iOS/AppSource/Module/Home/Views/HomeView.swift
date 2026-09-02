@@ -71,7 +71,7 @@ struct HomeView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)
             }
-            .background(Color.soomsilBackground)
+            .background(.white000)
             .refreshable {
                 await loadContent(force: true)
             }
@@ -126,7 +126,7 @@ struct HomeView: View {
             } ?? L10n.Common.home
         )
             .font(.system(size: 20, weight: .bold))
-            .foregroundStyle(Color.soomsilPrimaryText)
+            .foregroundStyle(.black000)
             .lineLimit(1)
         .padding(.top, 10)
     }
@@ -135,7 +135,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text(L10n.Home.shortcuts)
                 .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
 
             HStack(spacing: 12) {
                 NavigationLink(value: Destination.graduationAudit) {
@@ -188,15 +188,15 @@ struct HomeView: View {
         VStack(spacing: 14) {
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: 28))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
 
             Text(L10n.Home.loadFailed)
                 .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(Color.soomsilPrimaryText)
+                .foregroundStyle(.black000)
 
             Text(message)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
                 .multilineTextAlignment(.center)
             Button(L10n.Common.retry) {
                 Task {
@@ -204,7 +204,7 @@ struct HomeView: View {
                 }
             }
             .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(Color.soomsilBlue600)
+            .foregroundStyle(.pointColor600)
         }
         .frame(maxWidth: .infinity)
         .padding(28)
@@ -215,15 +215,15 @@ struct HomeView: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(L10n.Home.refreshFailed)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .foregroundStyle(.black000)
                 Text(message)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.soomsilSecondaryText)
+                    .foregroundStyle(.gray600)
                     .lineLimit(2)
             }
 
@@ -235,7 +235,7 @@ struct HomeView: View {
                 }
             }
             .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(Color.soomsilBlue600)
+            .foregroundStyle(.pointColor600)
         }
         .padding(16)
         .soomsilCard(cornerRadius: 14)
@@ -278,11 +278,11 @@ struct HomeView: View {
     private var chapelLoadingCard: some View {
         HStack(spacing: 14) {
             ProgressView()
-                .tint(Color.soomsilBlue600)
+                .tint(.pointColor600)
 
             Text(L10n.Chapel.loading)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
 
             Spacer(minLength: 0)
         }
@@ -297,8 +297,8 @@ struct HomeView: View {
                 .font(.system(size: 24, weight: .semibold))
                 .foregroundStyle(
                     isCompleted
-                        ? Color.soomsilGreen500
-                        : Color.soomsilSecondaryText
+                        ? .logoIndigo
+                        : .gray600
                 )
 
             VStack(alignment: .leading, spacing: 4) {
@@ -308,7 +308,7 @@ struct HomeView: View {
                         : L10n.Soomsil.notTakingChapelTitle
                 )
                 .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(Color.soomsilPrimaryText)
+                .foregroundStyle(.black000)
 
                 Text(
                     isCompleted
@@ -316,7 +316,7 @@ struct HomeView: View {
                         : L10n.Soomsil.notTakingChapel
                 )
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
             }
 
             Spacer(minLength: 0)
@@ -333,11 +333,11 @@ struct HomeView: View {
                 systemImage: "wifi.exclamationmark"
             )
             .font(.system(size: 14, weight: .bold))
-            .foregroundStyle(Color.soomsilPrimaryText)
+            .foregroundStyle(.black000)
 
             Text(message)
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
                 .multilineTextAlignment(.center)
 
             Button(L10n.Common.retry) {
@@ -346,7 +346,7 @@ struct HomeView: View {
                 }
             }
             .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(Color.soomsilBlue600)
+            .foregroundStyle(.pointColor600)
         }
         .frame(maxWidth: .infinity)
         .padding(20)

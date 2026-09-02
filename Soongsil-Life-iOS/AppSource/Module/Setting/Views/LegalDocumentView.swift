@@ -9,11 +9,11 @@ struct LegalDocumentView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(document.effectiveDate)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.soomsilBlue600)
+                        .foregroundStyle(.pointColor600)
 
                     Text(document.introduction)
                         .font(.system(size: 15))
-                        .foregroundStyle(Color.soomsilPrimaryText)
+                        .foregroundStyle(.black000)
                         .lineSpacing(5)
                 }
 
@@ -21,11 +21,11 @@ struct LegalDocumentView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text(section.title)
                             .font(.system(size: 17, weight: .bold))
-                            .foregroundStyle(Color.soomsilPrimaryText)
+                            .foregroundStyle(.black000)
 
                         Text(section.body)
                             .font(.system(size: 14))
-                            .foregroundStyle(Color.soomsilSecondaryText)
+                            .foregroundStyle(.gray600)
                             .lineSpacing(5)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -35,7 +35,7 @@ struct LegalDocumentView: View {
             .padding(.top, 20)
             .padding(.bottom, 48)
         }
-        .background(Color.soomsilBackground)
+        .background(.white000)
         .navigationTitle(document.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
