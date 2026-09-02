@@ -13,17 +13,18 @@ extension Color {
     static let soomsilGray950 = Color("gray_950")
     static let soomsilGray500 = Color("gray_500")
     static let soomsilSlate400 = Color("slate_400")
-    static let soomsilGreen50 = Color("green_50")
-    static let soomsilGreen500 = Color("green_500")
-    static let soomsilRed50 = Color("red_50")
-    static let soomsilRed500 = Color("red_500")
+    // Temporary aliases while feature-level semantic colors are being migrated.
+    static let soomsilGreen50 = Color("pointColor050")
+    static let soomsilGreen500 = Color("logoIndigo")
+    static let soomsilRed50 = Color("warningRed050")
+    static let soomsilRed500 = Color("warningRed500")
 
     static let soomsilBackground = adaptive(
-        light: .white,
+        light: assetColor("white000"),
         dark: assetColor("gray_950")
     )
     static let soomsilSurface = adaptive(
-        light: .white,
+        light: assetColor("white000"),
         dark: assetColor("gray_900")
     )
     static let soomsilMutedSurface = adaptive(
@@ -31,7 +32,7 @@ extension Color {
         dark: assetColor("gray_800").withAlphaComponent(0.36)
     )
     static let soomsilInputSurface = adaptive(
-        light: .white,
+        light: assetColor("white000"),
         dark: assetColor("gray_800").withAlphaComponent(0.52)
     )
     static let soomsilBorder = adaptive(
@@ -40,7 +41,7 @@ extension Color {
     )
     static let soomsilPrimaryText = adaptive(
         light: assetColor("gray_950"),
-        dark: .white
+        dark: assetColor("white000")
     )
     static let soomsilSecondaryText = adaptive(
         light: assetColor("gray_500"),
