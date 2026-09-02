@@ -12,7 +12,7 @@ struct OpenSourceLicenseView: View {
             VStack(alignment: .leading, spacing: 24) {
                 Text(L10n.Settings.openSourceDescription)
                     .font(.system(size: 15))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .foregroundStyle(.black000)
                     .lineSpacing(5)
 
                 if let repositoryURL = LicenseResource.repositoryURL {
@@ -21,18 +21,18 @@ struct OpenSourceLicenseView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(L10n.Settings.openSourceRepository)
                                     .font(.system(size: 16, weight: .bold))
-                                    .foregroundStyle(Color.soomsilPrimaryText)
+                                    .foregroundStyle(.black000)
 
                                 Text(LicenseResource.repositoryURLString)
                                     .font(.system(size: 12))
-                                    .foregroundStyle(Color.soomsilSecondaryText)
+                                    .foregroundStyle(.gray600)
                                     .lineLimit(1)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
 
                             Image(systemName: "arrow.up.right.square")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Color.soomsilBlue600)
+                                .foregroundStyle(.pointColor600)
                         }
                         .padding(16)
                         .soomsilCard(cornerRadius: 10)
@@ -44,11 +44,11 @@ struct OpenSourceLicenseView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(L10n.Settings.openSourceLicense)
                         .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(Color.soomsilPrimaryText)
+                        .foregroundStyle(.black000)
 
                     Text(licenseText)
                         .font(.system(size: 11, design: .monospaced))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                         .lineSpacing(3)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -58,7 +58,7 @@ struct OpenSourceLicenseView: View {
             .padding(.top, 20)
             .padding(.bottom, 48)
         }
-        .background(Color.soomsilBackground)
+        .background(.white000)
         .navigationTitle(L10n.Settings.openSource)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)

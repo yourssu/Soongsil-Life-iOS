@@ -8,7 +8,7 @@ struct SettingView: View {
             VStack(spacing: 0) {
                 Text(L10n.Common.my)
                     .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .foregroundStyle(.black000)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 18)
                     .padding(.bottom, 8)
@@ -57,7 +57,7 @@ struct SettingView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .background(Color.soomsilBackground)
+            .background(.white000)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: SettingDestination.self) { destination in
                 switch destination {
@@ -86,18 +86,18 @@ struct LogoutDialogView: View {
                 VStack(spacing: 9) {
                     Text(L10n.Soomsil.logoutTitle)
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(Color.soomsilPrimaryText)
+                        .foregroundStyle(.black000)
 
                     Text(L10n.Soomsil.logoutMessage)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                         .multilineTextAlignment(.center)
                         .lineSpacing(3)
 
                     if let errorMessage {
                         Text(errorMessage)
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.soomsilRed500)
+                            .foregroundStyle(.warningRed500)
                             .multilineTextAlignment(.center)
                             .padding(.top, 4)
                     }
@@ -107,10 +107,10 @@ struct LogoutDialogView: View {
                     Button(action: cancel) {
                         Text(L10n.Soomsil.cancel)
                             .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(Color.soomsilPrimaryText)
+                            .foregroundStyle(.black000)
                             .frame(maxWidth: .infinity)
                             .frame(height: 48)
-                            .background(Color.soomsilMutedSurface)
+                            .background(.gray050)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)
@@ -121,7 +121,7 @@ struct LogoutDialogView: View {
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 48)
-                            .background(Color.soomsilBlue600)
+                            .background(.pointColor600)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)
@@ -130,7 +130,7 @@ struct LogoutDialogView: View {
             .padding(.top, 40)
             .padding(.horizontal, 34)
             .padding(.bottom, 28)
-            .background(Color.soomsilSurface)
+            .background(.white000)
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .padding(.horizontal, 34)
         }
@@ -150,7 +150,7 @@ private struct SettingSection<Content: View>: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
                 .padding(.horizontal, 2)
 
             VStack(spacing: 0) {
@@ -166,7 +166,7 @@ private struct SettingSection<Content: View>: View {
 private struct SettingDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Color.soomsilBorder)
+            .fill(.gray100)
             .frame(height: 1)
             .padding(.horizontal, 16)
     }
@@ -200,18 +200,18 @@ private struct SettingActionRow: View {
         HStack(spacing: 12) {
             Text(title)
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color.soomsilPrimaryText)
+                .foregroundStyle(.black000)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             switch accessory {
             case .chevron:
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.soomsilSecondaryText)
+                    .foregroundStyle(.gray600)
             case let .text(value):
                 Text(value)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color.soomsilSecondaryText)
+                    .foregroundStyle(.gray600)
             }
         }
         .padding(.horizontal, 16)
@@ -229,12 +229,12 @@ private struct SettingNavigationRow: View {
             HStack(spacing: 12) {
                 Text(title)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .foregroundStyle(.black000)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.soomsilSecondaryText)
+                    .foregroundStyle(.gray600)
             }
             .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -255,7 +255,7 @@ private struct SettingRowButtonStyle: ButtonStyle {
         configuration.label
             .background(
                 configuration.isPressed
-                    ? Color.soomsilMutedSurface
+                    ? .gray050
                     : Color.clear
             )
     }

@@ -48,8 +48,8 @@ struct GPALineGraphView: View {
                 .foregroundStyle(
                     LinearGradient(
                         colors: [
-                            Color.soomsilBlue600.opacity(0.02),
-                            Color.soomsilBlue600.opacity(0.19)
+                            .pointColor600.opacity(0.02),
+                            .pointColor600.opacity(0.19)
                         ],
                         startPoint: .leading,
                         endPoint: .trailing
@@ -62,7 +62,7 @@ struct GPALineGraphView: View {
                 )
                 .interpolationMethod(.monotone)
                 .lineStyle(StrokeStyle(lineWidth: 2))
-                .foregroundStyle(Color.soomsilBlue600)
+                .foregroundStyle(.pointColor600)
 
                 PointMark(
                     x: .value(L10n.Grades.semesterSection, gpa.id),
@@ -70,7 +70,7 @@ struct GPALineGraphView: View {
                 )
                 .symbol {
                     Circle()
-                        .fill(Color.soomsilBlue600)
+                        .fill(.pointColor600)
                         .frame(width: 10, height: 10)
                         .overlay {
                             Circle()
@@ -80,7 +80,7 @@ struct GPALineGraphView: View {
                 .annotation(position: .top, spacing: 2) {
                     Text(gpa.gpa.formattedGPA)
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.soomsilBlue600)
+                        .foregroundStyle(.pointColor600)
                 }
             }
         }
@@ -91,14 +91,14 @@ struct GPALineGraphView: View {
         .chartYAxis {
             AxisMarks(position: .leading, values: yAxisValues) { value in
                 AxisGridLine()
-                    .foregroundStyle(Color.soomsilBorder)
+                    .foregroundStyle(.gray100)
                 AxisTick()
-                    .foregroundStyle(Color.soomsilBorder)
+                    .foregroundStyle(.gray100)
                 AxisValueLabel {
                     if let axisValue = value.as(Double.self) {
                         Text(axisValue.formattedGPA)
                             .font(.system(size: 10))
-                            .foregroundStyle(Color.soomsilSecondaryText)
+                            .foregroundStyle(.gray600)
                     }
                 }
             }
@@ -119,8 +119,8 @@ struct GPALineGraphView: View {
                             )
                             .foregroundStyle(
                                 semesterID == latestGPAID
-                                    ? Color.soomsilBlue600
-                                    : Color.soomsilSecondaryText
+                                    ? .pointColor600
+                                    : .gray600
                             )
                             .minimumScaleFactor(0.5)
                             .padding(.top, 20)
@@ -169,5 +169,5 @@ private extension Double {
         ]
     )
     .padding(24)
-    .background(Color.soomsilSurface)
+    .background(.white000)
 }

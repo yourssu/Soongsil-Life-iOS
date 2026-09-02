@@ -14,7 +14,7 @@ struct GraduationAuditView: View {
             content
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.soomsilBackground)
+        .background(.white000)
         .soomsilDetailNavigation(title: L10n.Home.graduationAudit)
         .task {
             await viewModel.transform(input: .load())

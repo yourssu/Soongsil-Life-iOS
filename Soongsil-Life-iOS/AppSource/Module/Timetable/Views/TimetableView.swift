@@ -10,7 +10,8 @@ struct TimetableView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            Color.soomsilBackground
+            Rectangle()
+                .fill(.white000)
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
@@ -66,7 +67,7 @@ struct TimetableView: View {
     private var header: some View {
         Text(L10n.Timetable.title)
             .font(.system(size: 24, weight: .bold))
-            .foregroundStyle(Color.soomsilPrimaryText)
+            .foregroundStyle(.black000)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 10)
     }
@@ -118,14 +119,14 @@ struct TimetableView: View {
                 .font(.system(size: 11, weight: .bold))
         }
         .font(.system(size: 15, weight: .bold))
-        .foregroundStyle(Color.soomsilPrimaryText)
+        .foregroundStyle(.black000)
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
-        .background(Color.soomsilMutedSurface)
+        .background(.gray050)
         .clipShape(Capsule())
         .overlay {
             Capsule()
-                .stroke(Color.soomsilBorder, lineWidth: 1)
+                .stroke(.gray100, lineWidth: 1)
         }
     }
 

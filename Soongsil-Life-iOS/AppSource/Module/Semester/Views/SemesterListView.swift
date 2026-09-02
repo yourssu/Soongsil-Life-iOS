@@ -29,7 +29,7 @@ struct SemesterListView: View {
 
                     if viewModel.output.isLoadingSelectedSemester {
                         ProgressView()
-                            .tint(Color.soomsilBlue600)
+                            .tint(.pointColor600)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 32)
                     } else if let errorMessage = viewModel.output.errorMessage {
@@ -54,7 +54,7 @@ struct SemesterListView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 28)
         }
-        .background(Color.soomsilBackground)
+        .background(.white000)
         .soomsilDetailNavigation(title: L10n.Grades.title)
     }
 
@@ -75,10 +75,10 @@ struct SemesterListView: View {
                             semester: semester.semester.localizedName
                         ))
                         .font(.system(size: 13, weight: selected ? .bold : .medium))
-                        .foregroundStyle(selected ? .white : Color.soomsilSecondaryText)
+                        .foregroundStyle(selected ? .white : .gray600)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
-                        .background(selected ? Color.soomsilGray950 : Color.soomsilMutedSurface)
+                        .background(selected ? .black000 : .gray050)
                         .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
@@ -92,21 +92,21 @@ struct SemesterListView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(L10n.Soomsil.totalGPA)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.soomsilGray500)
+                .foregroundStyle(.gray500)
             HStack(alignment: .lastTextBaseline, spacing: 4) {
                 Text(String(format: "%.2f", semester.gpa))
                     .font(.system(size: 40, weight: .black))
                     .foregroundStyle(.white)
                 Text("/ 4.5")
                     .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(Color.soomsilGray500)
+                    .foregroundStyle(.gray500)
             }
             Text(L10n.Grades.semesterDetail(
                 credits: semester.earnedCredits,
                 rank: semester.semesterRank
             ))
             .font(.system(size: 13))
-            .foregroundStyle(Color.soomsilGray500)
+            .foregroundStyle(.gray500)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 24)
@@ -121,7 +121,7 @@ struct SemesterListView: View {
             HStack(spacing: 12) {
                 Text(L10n.Soomsil.gpaTrend)
                     .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .foregroundStyle(.black000)
 
                 Spacer()
 
@@ -141,8 +141,8 @@ struct SemesterListView: View {
                     }
                     .foregroundStyle(
                         includesSeasonalSemesters
-                            ? Color.soomsilBlue600
-                            : Color.soomsilSlate400
+                            ? .pointColor600
+                            : .gray600
                     )
                 }
                 .buttonStyle(.plain)
@@ -175,7 +175,7 @@ struct SemesterListView: View {
         VStack(spacing: 12) {
             Text(message)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
                 .multilineTextAlignment(.center)
             Button(L10n.Common.retry) {
                 Task {
@@ -183,7 +183,7 @@ struct SemesterListView: View {
                 }
             }
             .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(Color.soomsilBlue600)
+            .foregroundStyle(.pointColor600)
         }
         .frame(maxWidth: .infinity)
         .padding(24)

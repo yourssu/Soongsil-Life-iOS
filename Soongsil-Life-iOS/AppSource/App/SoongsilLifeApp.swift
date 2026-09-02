@@ -52,7 +52,7 @@ struct SoongsilLifeApp: App {
                     )
                 }
             }
-            .tint(Color.soomsilBlue600)
+            .tint(.pointColor600)
             .task {
                 await appFlow.transform(input: .restoreSession)
             }
@@ -226,34 +226,34 @@ private struct SessionRestoreView: View {
             if isChangingAccount {
                 VStack(spacing: 12) {
                     ProgressView()
-                        .tint(Color.soomsilBlue600)
+                        .tint(.pointColor600)
                     Text(L10n.Session.changingAccount)
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(Color.soomsilPrimaryText)
+                        .foregroundStyle(.black000)
                 }
             } else if isLoading || errorMessage == nil {
                 VStack(spacing: 12) {
                     ProgressView()
-                        .tint(Color.soomsilBlue600)
+                        .tint(.pointColor600)
                     Text(L10n.Session.restoringTitle)
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(Color.soomsilPrimaryText)
+                        .foregroundStyle(.black000)
                     Text(L10n.Session.restoringDescription)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                 }
 
             } else {
                 VStack(spacing: 10) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 28, weight: .semibold))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                     Text(L10n.Session.restoreFailedTitle)
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(Color.soomsilPrimaryText)
+                        .foregroundStyle(.black000)
                     Text(errorMessage ?? L10n.Error.networkUnavailable)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                         .multilineTextAlignment(.center)
                 }
 
@@ -263,7 +263,7 @@ private struct SessionRestoreView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
-                        .background(Color.soomsilBlue600)
+                        .background(.pointColor600)
                         .clipShape(
                             RoundedRectangle(
                                 cornerRadius: 12,
@@ -278,7 +278,11 @@ private struct SessionRestoreView: View {
         }
         .padding(.horizontal, 32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.soomsilBackground.ignoresSafeArea())
+        .background {
+            Rectangle()
+                .fill(.white000)
+                .ignoresSafeArea()
+        }
     }
 
     private var useAnotherAccountButton: some View {
@@ -287,7 +291,7 @@ private struct SessionRestoreView: View {
             action: useAnotherAccount
         )
         .font(.system(size: 14, weight: .semibold))
-        .foregroundStyle(Color.soomsilSecondaryText)
+        .foregroundStyle(.gray600)
         .frame(height: 44)
         .buttonStyle(.plain)
     }

@@ -30,7 +30,7 @@ struct CurrentSemesterGradesView: View {
         .padding(.top, 48)
         .padding(.horizontal, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color.soomsilBackground)
+        .background(.white000)
     }
 
     private var summary: some View {
@@ -42,26 +42,26 @@ struct CurrentSemesterGradesView: View {
                 )
             } ?? L10n.Soomsil.currentSemesterGrades)
             .font(.system(size: 22, weight: .bold))
-            .foregroundStyle(Color.soomsilPrimaryText)
+            .foregroundStyle(.black000)
             .padding(.bottom, 4)
 
             Text(L10n.Soomsil.currentSemesterGrades)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
                 .padding(.bottom, 20)
 
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(L10n.Soomsil.totalGPA)
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                     HStack(alignment: .lastTextBaseline, spacing: 4) {
                         Text(String(format: "%.2f", semester?.gpa ?? courseAverage))
                             .font(.system(size: 32, weight: .black))
-                            .foregroundStyle(Color.soomsilPrimaryText)
+                            .foregroundStyle(.black000)
                         Text("/ 4.5")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(Color.soomsilSecondaryText)
+                            .foregroundStyle(.gray600)
                     }
                 }
                 Spacer()
@@ -81,10 +81,10 @@ struct CurrentSemesterGradesView: View {
         VStack(alignment: .trailing, spacing: 6) {
             Text(title)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
             Text(value)
                 .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(Color.soomsilPrimaryText)
+                .foregroundStyle(.black000)
         }
         .padding(.leading, 20)
     }

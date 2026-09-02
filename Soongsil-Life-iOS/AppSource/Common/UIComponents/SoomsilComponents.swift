@@ -45,11 +45,11 @@ struct SoomsilTabBar: View {
                         Text(tab.title)
                             .font(.system(size: selected ? 12 : 10, weight: selected ? .semibold : .medium))
                     }
-                    .foregroundStyle(selected ? .white : Color.soomsilSecondaryText)
+                    .foregroundStyle(selected ? .white : .gray600)
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
-                    .background(selected ? Color.soomsilBlue600 : .clear)
+                    .background(selected ? .pointColor600 : .clear)
                     .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -57,9 +57,9 @@ struct SoomsilTabBar: View {
             }
         }
         .padding(6)
-        .background(Color.soomsilSurface)
+        .background(.white000)
         .clipShape(Capsule())
-        .overlay { Capsule().stroke(Color.soomsilBorder, lineWidth: 1) }
+        .overlay { Capsule().stroke(.gray100, lineWidth: 1) }
         .padding(.horizontal, 20)
         .padding(.top, 10)
     }
@@ -87,20 +87,20 @@ struct StudentInfoCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(profile.name)
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .foregroundStyle(.black000)
                     .lineLimit(1)
                 Text(subtitle)
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.soomsilSecondaryText)
+                    .foregroundStyle(.gray600)
                     .lineLimit(1)
             }
             Spacer()
             Text(L10n.Home.studentID(profile.studentID))
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color.soomsilPrimaryText)
+                .foregroundStyle(.black000)
                 .padding(.horizontal, 15)
                 .padding(.vertical, 10)
-                .background(Color.soomsilMutedSurface)
+                .background(.gray050)
                 .clipShape(Capsule())
         }
         .padding(.horizontal, 18)
@@ -140,14 +140,14 @@ struct GradeOverviewCard: View {
                 Image(systemName: "arrow.right")
             }
             .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(Color.soomsilGray950)
+            .foregroundStyle(.black000)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .background(.white)
             .clipShape(Capsule())
         }
         .padding(24)
-        .background(Color.soomsilGray950)
+        .background(.black000)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
@@ -191,14 +191,14 @@ struct GPATrendCard: View {
             HStack {
                 Text(L10n.Soomsil.overallSemesterTrend)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .foregroundStyle(.black000)
                 Spacer()
                 HStack(spacing: 4) {
                     Text(L10n.Soomsil.details)
                     Image(systemName: "chevron.right")
                 }
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color.soomsilBlue600)
+                .foregroundStyle(.pointColor600)
             }
 
             Chart(displayedSemesters) { item in
@@ -210,11 +210,11 @@ struct GPATrendCard: View {
                 )
                 .foregroundStyle(
                     isLatest
-                    ? Color.soomsilGray950
+                    ? .black000
                     : (
                         item.academicIndex.isMultiple(of: 2)
-                        ? Color.soomsilBlue100
-                        : Color.soomsilBlue200
+                        ? .pointColor100
+                        : .pointColor200
                     )
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
@@ -232,7 +232,7 @@ struct GPATrendCard: View {
                     AxisTick().foregroundStyle(.clear)
                     AxisValueLabel()
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                 }
             }
             .frame(height: 116)
@@ -288,14 +288,14 @@ struct ChapelAttendanceCard: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(L10n.Soomsil.chapelAttendance)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.soomsilPrimaryText)
+                        .foregroundStyle(.black000)
                     Text(L10n.Soomsil.attendanceSummary(attendanceCount, requiredCount))
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.soomsilBlue500)
+                        .foregroundStyle(.pointColor500)
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .foregroundStyle(Color.soomsilSlate400)
+                    .foregroundStyle(.gray600)
             }
 
             progressBar
@@ -311,11 +311,11 @@ struct ChapelAttendanceCard: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(L10n.Soomsil.remainingAttendance)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .foregroundStyle(.black000)
                 Spacer()
                 Text(L10n.Soomsil.attendanceCount(attendanceCount, requiredCount))
                     .font(.system(size: 16, weight: .black))
-                    .foregroundStyle(Color.soomsilBlue600)
+                    .foregroundStyle(.pointColor600)
             }
 
             progressBar
@@ -328,12 +328,12 @@ struct ChapelAttendanceCard: View {
                 )
             )
             .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(Color.soomsilSecondaryText)
+            .foregroundStyle(.gray600)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 18)
         .frame(maxWidth: .infinity)
-        .background(Color.soomsilMutedSurface)
+        .background(.gray050)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
@@ -341,9 +341,9 @@ struct ChapelAttendanceCard: View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.soomsilGray100)
+                    .fill(.gray100)
                 Capsule()
-                    .fill(Color.soomsilBlue600)
+                    .fill(.pointColor600)
                     .frame(
                         width: proxy.size.width *
                         CGFloat(attendanceCount) /
@@ -405,7 +405,7 @@ struct ChapelSeatCard: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity)
-        .background(Color.soomsilBlue600)
+        .background(.pointColor600)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
@@ -428,13 +428,13 @@ struct HomeShortcutCard: View {
 
             Text(title)
                 .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(Color.soomsilPrimaryText)
+                .foregroundStyle(.black000)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity, minHeight: 112)
         .padding(.horizontal, 12)
-        .background(Color.soomsilMutedSurface)
+        .background(.gray050)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
@@ -445,18 +445,18 @@ struct HomeShortcutCard: View {
         case .graduation:
             Image(systemName: "graduationcap.fill")
                 .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(Color.soomsilGray950)
+                .foregroundStyle(.black000)
         case .tuition:
             Text("₩")
                 .font(.system(size: 25, weight: .black))
-                .foregroundStyle(Color.soomsilGreen500)
+                .foregroundStyle(.logoIndigo)
         }
     }
 
     private var iconBackground: Color {
         switch icon {
-        case .graduation: Color.soomsilBlue50
-        case .tuition: Color.soomsilGreen50
+        case .graduation: .pointColor050
+        case .tuition: .pointColor050
         }
     }
 }
@@ -468,19 +468,19 @@ struct CourseGradeRow: View {
         HStack(spacing: 12) {
             Text(course.grade)
                 .font(.system(size: 15, weight: .black))
-                .foregroundStyle(Color.soomsilBlue600)
+                .foregroundStyle(.pointColor600)
                 .frame(width: 44, height: 44)
-                .background(Color.soomsilBlue50)
+                .background(.pointColor050)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(course.title)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .foregroundStyle(.black000)
                     .lineLimit(1)
                 Text(L10n.Grades.courseDetail(professor: course.professor, credits: course.credits))
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.soomsilSecondaryText)
+                    .foregroundStyle(.gray600)
             }
             Spacer()
         }
@@ -496,7 +496,7 @@ struct SoomsilLoadingOverlay: View {
             Color.black.opacity(0.12).ignoresSafeArea()
             ProgressView()
                 .controlSize(.large)
-                .tint(Color.soomsilBlue600)
+                .tint(.pointColor600)
                 .padding(28)
                 .background(.ultraThinMaterial)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -531,5 +531,5 @@ struct SoomsilLoadingOverlay: View {
         }
         .padding(20)
     }
-    .background(Color.soomsilBackground)
+    .background(.white000)
 }

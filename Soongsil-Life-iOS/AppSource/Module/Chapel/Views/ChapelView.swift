@@ -69,7 +69,7 @@ struct ChapelTabView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .background(Color.soomsilBackground)
+            .background(.white000)
             .toolbar(.hidden, for: .navigationBar)
             .task {
                 await viewModel.transform(input: .load())
@@ -86,7 +86,7 @@ struct ChapelTabView: View {
         HStack {
             Text(L10n.Chapel.title)
                 .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(Color.soomsilPrimaryText)
+                .foregroundStyle(.black000)
             Spacer()
             Button {
                 showsInfo = true
@@ -96,7 +96,7 @@ struct ChapelTabView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 22, height: 22)
-                    .foregroundStyle(Color.soomsilGray500)
+                    .foregroundStyle(.gray500)
             }
             .buttonStyle(.plain)
         }
@@ -114,13 +114,13 @@ struct ChapelDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(L10n.Soomsil.mySeat)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                     Text(chapel.seat)
                         .font(.system(size: 32, weight: .black))
-                        .foregroundStyle(Color.soomsilBlue500)
+                        .foregroundStyle(.pointColor500)
                     Text(chapel.classroom)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                 }
                 .padding(20)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -131,7 +131,7 @@ struct ChapelDetailView: View {
 
                     Text(ChapelSeatLocation(seat: chapel.seat).guideText)
                         .font(.system(size: 13))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .foregroundStyle(.gray600)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 }
@@ -142,15 +142,15 @@ struct ChapelDetailView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(item.date)
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color.soomsilPrimaryText)
+                                    .foregroundStyle(.black000)
                                 Text(attendanceDetail(item))
                                     .font(.system(size: 12))
-                                    .foregroundStyle(Color.soomsilSecondaryText)
+                                    .foregroundStyle(.gray600)
                             }
                             Spacer()
                             Text(item.status.localizedName)
                                 .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(item.status.isPresent ? Color.soomsilGreen500 : .red)
+                                .foregroundStyle(item.status.isPresent ? .logoIndigo : .red)
                         }
                         .padding(16)
 
@@ -163,7 +163,7 @@ struct ChapelDetailView: View {
             }
             .padding(20)
         }
-        .background(Color.soomsilBackground)
+        .background(.white000)
         .soomsilDetailNavigation(title: L10n.Soomsil.seatLocation)
     }
 

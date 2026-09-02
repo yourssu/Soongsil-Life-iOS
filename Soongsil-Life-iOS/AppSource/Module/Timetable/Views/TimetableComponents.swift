@@ -40,7 +40,7 @@ struct TimetableGridView: View {
             ForEach(weekdays, id: \.self) { weekday in
                 Text(weekday.shortName)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.soomsilSecondaryText)
+                    .foregroundStyle(.gray600)
                     .frame(width: dayWidth)
             }
         }
@@ -57,7 +57,7 @@ struct TimetableGridView: View {
             ForEach(hourMarks, id: \.self) { minutes in
                 Text(hourText(minutes))
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(Color.soomsilSecondaryText)
+                    .foregroundStyle(.gray600)
                     .frame(width: timeColumnWidth, alignment: .leading)
                     .offset(y: yOffset(for: minutes) - 5)
             }
@@ -178,24 +178,24 @@ private struct CourseStyle {
 
     static let palette: [CourseStyle] = [
         CourseStyle(
-            background: Color.soomsilBlue100,
-            foreground: Color.soomsilBlue600
+            background: .pointColor100,
+            foreground: .pointColor600
         ),
         CourseStyle(
-            background: Color.soomsilGreen50,
-            foreground: Color.soomsilGreen500
+            background: .pointColor050,
+            foreground: .logoIndigo
         ),
         CourseStyle(
             background: Color(red: 0.94, green: 0.88, blue: 1),
             foreground: Color(red: 0.50, green: 0.16, blue: 0.78)
         ),
         CourseStyle(
-            background: Color("pointColor100"),
-            foreground: Color("logoViolet")
+            background: .pointColor100,
+            foreground: .logoViolet
         ),
         CourseStyle(
-            background: Color.soomsilRed50,
-            foreground: Color.soomsilRed500
+            background: .warningRed050,
+            foreground: .warningRed500
         )
     ]
 }
@@ -223,10 +223,10 @@ struct TimetableCourseDetailSheet: View {
     private func detail(_ title: String, _ value: String) -> some View {
         HStack(alignment: .top) {
             Text(title)
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .foregroundStyle(.gray600)
                 .frame(width: 72, alignment: .leading)
             Text(value.isEmpty ? "-" : value)
-                .foregroundStyle(Color.soomsilPrimaryText)
+                .foregroundStyle(.black000)
         }
     }
 }
