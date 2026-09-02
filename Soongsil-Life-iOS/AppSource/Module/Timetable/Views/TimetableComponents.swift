@@ -190,8 +190,8 @@ private struct CourseStyle {
             foreground: Color(red: 0.50, green: 0.16, blue: 0.78)
         ),
         CourseStyle(
-            background: Color("orange_50"),
-            foreground: Color("orange_500")
+            background: Color("pointColor100"),
+            foreground: Color("logoViolet")
         ),
         CourseStyle(
             background: Color.soomsilRed50,
