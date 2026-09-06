@@ -1,3 +1,5 @@
+import Foundation
+
 final class GraduationAuditRepository: GraduationAuditRepositoryProtocol {
     private let service: GraduationAuditServiceProtocol
 
@@ -5,7 +7,7 @@ final class GraduationAuditRepository: GraduationAuditRepositoryProtocol {
         self.service = service
     }
 
-    func fetchGraduateTable() async throws -> GraduationAudit {
-        try await service.fetchGraduateTable()
+    func fetchGraduationAudit() async throws -> GraduationAudit {
+        try await service.fetchGraduationAudit()
     }
 }

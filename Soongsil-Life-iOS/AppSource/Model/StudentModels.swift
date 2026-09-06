@@ -1,6 +1,6 @@
 import Foundation
 
-enum AcademicSemester: String, CaseIterable, Hashable, Sendable {
+enum AcademicSemester: String, CaseIterable, Codable, Hashable, Sendable {
     case first
     case summer
     case second
@@ -25,6 +25,41 @@ enum AcademicSemester: String, CaseIterable, Hashable, Sendable {
         case .summer: 1
         case .second: 2
         case .winter: 3
+        }
+    }
+}
+
+extension AcademicSemester {
+    init?(apiValue: String) {
+        let normalized = apiValue
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: " ", with: "")
+            .uppercased()
+        let numericTokens = apiValue.split(whereSeparator: { !$0.isNumber })
+        let semesterCode = numericTokens
+            .map(String.init)
+            .first { ["090", "091", "092", "093"].contains($0) }
+
+        if semesterCode == "090"
+            || normalized.contains("1학기")
+            || normalized.contains("FIRST") {
+            self = .first
+        } else if semesterCode == "091"
+            || normalized.contains("여름")
+            || normalized.contains("하계")
+            || normalized.contains("SUMMER") {
+            self = .summer
+        } else if semesterCode == "092"
+            || normalized.contains("2학기")
+            || normalized.contains("SECOND") {
+            self = .second
+        } else if semesterCode == "093"
+            || normalized.contains("겨울")
+            || normalized.contains("동계")
+            || normalized.contains("WINTER") {
+            self = .winter
+        } else {
+            return nil
         }
     }
 }
@@ -97,7 +132,7 @@ struct CourseGrade: Identifiable, Sendable {
     let professor: String
 }
 
-struct ChapelStatus: Sendable {
+struct ChapelStatus: Codable, Sendable {
     let year: String
     let semester: AcademicSemester
     let classGroup: String
@@ -109,7 +144,13 @@ struct ChapelStatus: Sendable {
     let attendance: [ChapelAttendance]
 }
 
-struct ChapelAttendance: Identifiable, Sendable {
+enum ChapelEnrollmentState: Sendable {
+    case enrolled(ChapelStatus)
+    case completed(completedSemesterCount: Int)
+    case notEnrolled(completedSemesterCount: Int)
+}
+
+struct ChapelAttendance: Codable, Identifiable, Sendable {
     var id: String { "\(date)-\(classGroup)-\(lectureType)" }
 
     let date: String
@@ -118,7 +159,7 @@ struct ChapelAttendance: Identifiable, Sendable {
     let status: ChapelAttendanceStatus
 }
 
-enum ChapelAttendanceStatus: Equatable, Sendable {
+enum ChapelAttendanceStatus: Codable, Equatable, Sendable {
     case present
     case absent
     case late
@@ -162,11 +203,20 @@ enum ChapelAttendanceStatus: Equatable, Sendable {
 }
 
 struct Dashboard: Sendable {
-    let profile: StudentProfile
+    /// 현재 홈 디자인은 사용자 프로필을 표시하지 않으므로 선택 값으로 둡니다.
+    /// 프로필이 다시 필요한 화면에서만 별도 조회해 초기 홈 로딩을 막지 않습니다.
+    let profile: StudentProfile?
     let semesters: [SemesterGrade]
     let currentCourses: [CourseGrade]
-    let chapel: ChapelStatus?
+    let chapelEnrollmentState: ChapelEnrollmentState?
     let chapelErrorMessage: String?
+
+    var chapel: ChapelStatus? {
+        guard case let .enrolled(chapel) = chapelEnrollmentState else {
+            return nil
+        }
+        return chapel
+    }
 
     var latestSemester: SemesterGrade? {
         semesters.max {
@@ -185,40 +235,5 @@ struct Dashboard: Sendable {
 
     var cumulativeEarnedCredits: Double {
         semesters.reduce(0) { $0 + $1.earnedCredits }
-    }
-}
-
-struct GraduationAudit: Sendable {
-    let items: [GraduationAuditItem]
-
-    var isGraduatable: Bool {
-        !items.isEmpty && items.allSatisfy(\.isSatisfied)
-    }
-}
-
-struct GraduationAuditItem: Identifiable, Sendable {
-    var id: String {
-        "\(classification)-\(requirement)"
-    }
-
-    let classification: String
-    let requirement: String
-    let standardValue: String
-    let calculatedValue: String
-    let difference: String
-    let result: String
-    let usedSubjects: [String]
-    
-    var status: GraduationAuditStatus? {
-        GraduationAuditStatus(rawValue: result)
-    }
-
-    var isSatisfied: Bool {
-        status == .satisfied
-    }
-    
-    enum GraduationAuditStatus: String, Sendable {
-        case satisfied = "충족"
-        case insufficient = "부족"
     }
 }

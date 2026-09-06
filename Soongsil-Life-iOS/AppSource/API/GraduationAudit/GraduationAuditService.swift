@@ -1,41 +1,70 @@
+#if !PREVIEW_TARGET && canImport(LmsApi)
 import Foundation
 import LmsApi
 
-final class GraduationAuditService: GraduationAuditServiceProtocol {
+final class GraduationAuditService: GraduationAuditServiceProtocol, @unchecked Sendable {
     private let api = LmsApi.shared
+    private let requestTimeout: Duration
 
-    func fetchGraduateTable() async throws -> GraduationAudit {
-        try await withCheckedThrowingContinuation { continuation in
+    init(requestTimeout: Duration = .seconds(60)) {
+        self.requestTimeout = requestTimeout
+    }
+
+    func fetchGraduationAudit() async throws -> GraduationAudit {
+        try await LMSCallbackBridge.call(timeout: requestTimeout) { completion in
             api.getGraduateTable(completion: { result in
                 guard result.success,
-                let table = result.graduateTable else {
-                    continuation.resume(
-                        throwing: LMSServiceError.message(
-                            result.errorMessage ?? L10n.Error.graduateTableFailed
+                      let table = result.graduateTable
+                else {
+#if DEBUG
+                    print("[LMS][GraduationAudit] request failed")
+#endif
+                    completion(
+                        .failure(
+                            LMSServiceError.serverMessage(
+                                raw: result.errorMessage ?? "",
+                                fallback: L10n.Error.graduateTableFailed
+                            )
                         )
                     )
                     return
                 }
 
-                let items = table.items.map {
-                    GraduationAuditItem(
-                        classification: $0.classification,
-                        requirement: $0.requirement,
-                        standardValue: $0.standardValue,
-                        calculatedValue: $0.calculatedValue,
-                        difference: $0.difference,
-                        result: $0.result,
-                        usedSubjects: $0.usedSubjects
-                    )
+                guard !table.items.isEmpty else {
+                    completion(.failure(LMSServiceError.invalidResponse))
+                    return
                 }
 
-                continuation.resume(
-                    returning: GraduationAudit(
-                        items: items
+                let items = table.items.compactMap { item -> GraduationAuditItem? in
+                    guard let status = GraduationAuditStatus(
+                        apiValue: item.result
+                    ) else {
+                        return nil
+                    }
+
+                    return GraduationAuditItem(
+                        classification: GraduationAuditClassification(
+                            apiValue: item.classification
+                        ),
+                        requirement: item.requirement,
+                        standardValue: item.standardValue,
+                        calculatedValue: item.calculatedValue,
+                        difference: item.difference,
+                        status: status,
+                        usedSubjects: item.usedSubjects
                     )
-                )
+                }
+                guard items.count == table.items.count else {
+                    completion(.failure(LMSServiceError.invalidResponse))
+                    return
+                }
+
+#if DEBUG
+                print("[LMS][GraduationAudit] request succeeded (items=\(items.count))")
+#endif
+                completion(.success(GraduationAudit(items: items)))
             })
         }
     }
 }
-
+#endif

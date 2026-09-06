@@ -3,6 +3,11 @@ import Foundation
 @Observable
 @MainActor
 final class SemesterViewModel: BaseViewModel {
+    private struct CourseRequest {
+        let id: UUID
+        let task: Task<Void, Never>
+    }
+
     enum Input {
         case selectSemester(SemesterGrade.ID)
         case reloadSelectedSemester
@@ -33,11 +38,12 @@ final class SemesterViewModel: BaseViewModel {
 
     private(set) var output: Output
     private let repository: GradeRepositoryProtocol
+    private var activeCourseRequest: CourseRequest?
 
     init(
         repository: GradeRepositoryProtocol,
         semesters: [SemesterGrade],
-        initialCourses: [CourseGrade] = []
+        initialCourses: [CourseGrade]? = nil
     ) {
         let sortedSemesters = semesters.sorted {
             let lhs = (Int($0.year) ?? 0, $0.semester.sortOrder)
@@ -46,7 +52,7 @@ final class SemesterViewModel: BaseViewModel {
         }
         let latestSemesterID = sortedSemesters.last?.id
         var initialCoursesBySemester: [SemesterGrade.ID: [CourseGrade]] = [:]
-        if let latestSemesterID {
+        if let latestSemesterID, let initialCourses {
             initialCoursesBySemester[latestSemesterID] = initialCourses
         }
 
@@ -89,20 +95,44 @@ final class SemesterViewModel: BaseViewModel {
         guard force || output.coursesBySemester[semesterID] == nil else {
             return
         }
-        guard !output.loadingSemesterIDs.contains(semesterID) else {
-            return
-        }
 
         output.loadingSemesterIDs.insert(semesterID)
         defer { output.loadingSemesterIDs.remove(semesterID) }
 
-        do {
-            output.coursesBySemester[semesterID] = try await repository.fetchCourses(
-                year: semester.year,
-                semester: semester.semester
-            )
-        } catch {
-            output.errorMessage = error.localizedDescription
+        while let activeCourseRequest {
+            await activeCourseRequest.task.value
+            if self.activeCourseRequest?.id == activeCourseRequest.id {
+                self.activeCourseRequest = nil
+            }
+        }
+
+        // 여러 학기를 빠르게 눌렀다면 대기 중이던 예전 선택은 추가 요청하지 않습니다.
+        guard !Task.isCancelled else { return }
+        guard output.selectedSemesterID == semesterID else { return }
+        guard force || output.coursesBySemester[semesterID] == nil else { return }
+
+        let request = CourseRequest(
+            id: UUID(),
+            task: Task { @MainActor [weak self, repository] in
+                guard let self else { return }
+                do {
+                    output.coursesBySemester[semesterID] = try await repository.fetchCourses(
+                        year: semester.year,
+                        semester: semester.semester
+                    )
+                } catch is CancellationError {
+                    return
+                } catch {
+                    if output.selectedSemesterID == semesterID {
+                        output.errorMessage = error.localizedDescription
+                    }
+                }
+            }
+        )
+        activeCourseRequest = request
+        await request.task.value
+        if activeCourseRequest?.id == request.id {
+            activeCourseRequest = nil
         }
     }
 }

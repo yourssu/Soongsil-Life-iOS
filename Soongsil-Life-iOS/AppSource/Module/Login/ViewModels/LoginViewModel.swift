@@ -4,8 +4,6 @@ import Foundation
 @MainActor
 final class LoginViewModel: BaseViewModel {
     enum Input {
-        case studentIDChanged(String)
-        case passwordChanged(String)
         case loginButtonTapped
         case errorDismissed
     }
@@ -35,31 +33,43 @@ final class LoginViewModel: BaseViewModel {
         self.appFlow = appFlow
     }
 
+    func updateStudentID(_ studentID: String) {
+        output.studentID = studentID
+        output.errorMessage = nil
+    }
+
+    func updatePassword(_ password: String) {
+        output.password = password
+        output.errorMessage = nil
+    }
+
     @discardableResult
     func transform(input: Input) async -> Output {
         switch input {
-        case let .studentIDChanged(studentID):
-            output.studentID = studentID
-            output.errorMessage = nil
-
-        case let .passwordChanged(password):
-            output.password = password
-            output.errorMessage = nil
-
         case .loginButtonTapped:
             guard output.canLogin else { return output }
             output.isLoading = true
             output.errorMessage = nil
+            await appFlow.transform(input: .didStartLogin)
+
             do {
                 try await repository.login(
                     id: output.studentID.trimmingCharacters(in: .whitespaces),
                     password: output.password
                 )
+                output.studentID = ""
+                output.password = ""
+                output.isLoading = false
                 await appFlow.transform(input: .didLogin)
+            } catch is CancellationError {
+                output.isLoading = false
+                await appFlow.transform(input: .didFailLogin)
+                return output
             } catch {
                 output.errorMessage = error.localizedDescription
+                output.isLoading = false
+                await appFlow.transform(input: .didFailLogin)
             }
-            output.isLoading = false
 
         case .errorDismissed:
             output.errorMessage = nil

@@ -1,119 +1,94 @@
 # Soongsil Life iOS
 
-`Soongsil Life iOS`는 숭실대학교 학사 정보를 한곳에서 확인하기 위한 SwiftUI 프로젝트입니다.
+`Soongsil Life iOS`는 데스크톱 중심의 숭실대학교 학사 시스템 정보를
+iPhone에서 한곳에 모아 확인할 수 있도록 만든 SwiftUI 앱입니다. 숭실대학교가
+직접 제공하는 공식 앱은 아니며, 중요한 학사 판단 전에는 u-SAINT 등 학교 공식
+시스템의 정보를 다시 확인해야 합니다.
 
-- iOS 17+
+- iOS 17 이상, iPhone 세로 화면
 - SwiftUI + Observation(`@Observable`)
-- MVVM Input/Output
-- LMS-API 1.6.6.2 (`014b325` revision)
+- MVVM Input/Output + 생성자 기반 의존성 주입
+- 홈 / 시간표 / 마이 탭과 홈에서 진입하는 채플 상세
+- Keychain 기반 자동 로그인과 세션 복원
+- 로딩·빈 데이터·오류·재시도 상태 분리
 - 한국어 현지화
 
-## Git Flow 및 브랜치 규칙
+## 주요 기능
 
-### 상시 브랜치
-
-| 브랜치 | 역할 |
-| --- | --- |
-| `main` | 실제 배포 버전만 유지합니다. 직접 작업하거나 푸시하지 않습니다. |
-| `dev` | 다음 배포에 포함할 변경 사항을 통합합니다. 모든 작업 브랜치의 기준이자 병합 대상입니다. |
-
-### 작업 브랜치
-
-- 작업 브랜치는 최신 `dev`에서 생성합니다.
-- 브랜치 이름은 `{Prefix}/#{이슈번호}` 형식을 사용합니다.
-  예: `Feat/#153`, `Fix/#204`, `Design/#87`
-- Prefix는 PR 템플릿에 정의된 `Add`, `Chore`, `Comment`, `Del`,
-  `Design`, `Docs`, `Feat`, `Fix`, `Merge`, `Refactor`, `Remove`,
-  `Setting`, `Test` 중 하나를 사용합니다.
-- 하나의 브랜치에서는 하나의 이슈만 작업합니다.
-- PR의 base 브랜치는 `dev`로 지정합니다.
-- 리뷰와 검증을 마쳐 `dev`에 병합한 작업 브랜치는 원격과 로컬에서
-  모두 삭제합니다.
-- `#`가 포함된 브랜치 이름을 터미널에서 사용할 때는
-  `git switch -c 'Feat/#153'`처럼 따옴표로 감쌉니다.
-
-### Release
-
-- 배포할 때 최신 `dev`에서 `release/{배포버전}` 브랜치를 생성합니다.
-  예: `release/1.2.0`
-- release 브랜치에서는 배포 전 QA와 버그 수정만 진행합니다.
-- 배포 준비가 끝나면 release 브랜치를 `main`과 `dev`에 각각
-  병합하고, `main`을 기준으로 배포합니다.
-- 배포 커밋에는 `v{배포버전}` 형식의 태그를 생성하고 GitHub Release에
-  변경 사항을 기록합니다. 예: `v1.2.0`
-- `release/*` 브랜치는 삭제하지 않고 태그 및 GitHub Release와 함께
-  배포 이력으로 유지합니다.
+- **홈**: 학생 정보와 누적·학기 성적을 먼저 표시하고, 채플 요약은 독립된
+  로딩·수강·수료·미수강·오류 상태로 갱신합니다. 학기별 성적, 졸업사정표,
+  등록금·장학금 화면으로 이동할 수 있습니다.
+- **채플**: 현재 수강 중이면 좌석, 장소, 출결 요약과 상세 출결을 표시합니다.
+  현재 수강 정보가 없으면 과거 이수 횟수에 따라 수료 완료와 미수강을 구분합니다.
+- **시간표**: LMS가 반환한 학기를 최신순으로 선택하고 수업 블록과 과목 상세를
+  표시합니다. 시간이 정해진 수업이 없는 학기도 정상적인 빈 상태로 처리합니다.
+- **마이**: 로그아웃, 이용약관, 개인정보 처리방침과 앱 버전을 제공합니다.
+  알림 기능과 알림 설정은 현재 출시 범위에 포함하지 않습니다.
+- **졸업사정표**: 졸업 요건 분류를 기본 접힌 아코디언으로 표시하고, 펼친
+  분류에서 기준·계산 값과 서버의 `충족` / `부족` 상태를 확인할 수 있습니다.
+- **등록금·장학금**: 등록금과 장학금 이력을 탭으로 구분해 최신 학기부터
+  표시합니다.
+- **앱 업데이트**: 원격 버전 정책에 따라 선택 또는 필수 업데이트 안내를
+  표시하되, 설정 조회나 App Store 열기에 실패해도 앱 진입을 막지 않습니다.
 
 ## 프로젝트 구조
 
 ```text
-Soongsil-Life-iOS/AppSource
-├── App                         앱 진입점, 로그인/메인 화면 전환
-├── Core/DIContainer            실제/Mock 의존성 조립
-├── Common
-│   ├── DesignSystem            기존 컬러 에셋의 의미 기반 래퍼
-│   ├── Protocols               BaseViewModel
-│   └── UIComponents            공통 카드, 탭 바, 차트
-├── API
-│   ├── Authentication          로그인/로그아웃 Service와 Mock
-│   ├── Student                 학생 정보 Service와 Mock
-│   ├── Grade                   학기/과목 성적 Service와 Mock
-│   ├── Chapel                  채플 좌석/출결 Service와 Mock
-│   ├── Error                   API 공통 오류
-│   └── Mock                    공통 Preview fixture
-├── Repository
-│   ├── Authentication          인증 Repository
-│   ├── Grade                   성적 Repository
-│   └── Home                    홈에 필요한 도메인 조립
-├── Model                       앱에서 사용하는 도메인 모델
-├── Module/<Feature>
-│   ├── ViewModels              Input/Output ViewModel
-│   └── Views                   SwiftUI View와 Preview
-└── Resource/Localization       L10n과 언어별 Localizable.strings
+.
+├── LocalPackages/LmsApi               앱 저장소 안의 iOS 클라이언트 패키지 래퍼
+├── Soongsil-Life-iOS
+│   ├── AppSource
+│   │   ├── App                         앱 진입점과 세션 복원
+│   │   ├── Core
+│   │   │   ├── DIContainer             실제/Mock 의존성 조립
+│   │   │   └── Security                Keychain 로그인 정보 저장소
+│   │   ├── Common
+│   │   │   ├── Concurrency             중복 비동기 작업 방지
+│   │   │   ├── DesignSystem            의미 기반 색상 래퍼
+│   │   │   ├── Formatters              통화 등 공통 포맷
+│   │   │   ├── MockSupport             취소 가능한 Mock 지연
+│   │   │   ├── Navigation              공통 상세 내비게이션
+│   │   │   ├── Protocols               BaseViewModel
+│   │   │   └── UIComponents            공통 카드, 탭 바와 차트
+│   │   ├── API
+│   │   │   ├── Service                 callback/async 브리지와 timeout
+│   │   │   ├── Authentication          로그인과 로그아웃
+│   │   │   ├── Student                 학생 정보
+│   │   │   ├── Grade                   학기와 과목 성적
+│   │   │   ├── Chapel                  채플 좌석·출결과 이수 상태
+│   │   │   ├── Timetable               시간표와 학기 목록
+│   │   │   ├── GraduationAudit         졸업사정표
+│   │   │   ├── Tuition                 등록금과 장학금
+│   │   │   ├── AppUpdate               원격 버전 정책
+│   │   │   ├── Error                   공통 LMS 오류
+│   │   │   └── Mock                    공통 Preview fixture
+│   │   ├── Repository
+│   │   │   ├── Authentication          인증과 자격 증명 저장 조율
+│   │   │   ├── Grade                   성적 도메인 변환
+│   │   │   ├── Chapel                  채플 도메인 경계
+│   │   │   ├── GraduationAudit         졸업사정표 도메인 경계
+│   │   │   ├── Tuition                 등록금·장학금 정렬
+│   │   │   └── Home                    학생·성적 기본 Dashboard 조립
+│   │   ├── Model                       화면과 도메인 모델
+│   │   ├── Module                      기능별 ViewModel과 SwiftUI View, MainTab 상태 소유
+│   │   └── Resource
+│   │       ├── Licenses                오픈소스 라이선스
+│   │       ├── Localization            L10n과 한국어 문자열
+│   │       ├── logoAni.mp4             앱 시작용 무음 반복 로고 영상
+│   │       └── PrivacyInfo.xcprivacy   개인정보 매니페스트
+│   └── Soongsil-Life-iOS.xcodeproj
+├── TERMS.md                            외부 공개용 이용약관
+└── PRIVACY.md                          외부 공개용 개인정보 처리방침
 ```
 
 이후 문서의 `API/...`, `Module/...`, `Repository/...` 경로는
-`Soongsil-Life-iOS/AppSource`를 기준으로 합니다.
+`Soongsil-Life-iOS/AppSource`를 기준으로 합니다. 시간표는 불필요한 전달
+계층을 두지 않고 `TimetableServiceProtocol`을 ViewModel에 직접 주입하므로
+`Repository/Timetable` 경로는 존재하지 않습니다.
 
-화면은 `Module/Login`, `Home`, `Semester`, `Chapel`, `Notification`,
-`Setting`, `MainTab`, `Timetable`, `GraduationAudit`, `Tuition`처럼
-기능 단위로 나눕니다. 화면 상태를 Reducer에 두지 않으며, ViewModel의
-`Output`만 View가 렌더링합니다.
+## 아키텍처와 책임
 
-## 홈, 탭과 후속 작업용 빈 화면
-
-메인 탭은 디자인 문서에 맞춰 `홈 / 시간표 / 알림 / 마이` 순서입니다.
-채플은 별도 탭이 아니라 홈의 좌석 및 출석 카드에서 상세 화면으로
-진입합니다. 홈의 `바로가기`에는 졸업사정표와 등록금·장학금 화면을
-연결했습니다.
-
-다음 네 화면은 다른 작업자가 바로 이어서 구현할 수 있도록 배경,
-내비게이션 제목, `TODO`, `#Preview`만 둔 상태입니다.
-
-```text
-Module/Timetable/Views/TimetableView.swift
-Module/Notification/Views/NotificationView.swift
-Module/GraduationAudit/Views/GraduationAuditView.swift
-Module/Tuition/Views/TuitionView.swift
-```
-
-LMS-API 1.6.6.2에는 후속 구현에 사용할 수 있는 API가 이미 있습니다.
-
-- 시간표: `LmsApi.getTimetable`
-- 졸업사정표: `LmsApi.getGraduateTable`
-- 등록금: `LmsApi.getTuitionTable`
-- 장학금: `LmsApi.getScholarshipHistoryTable`
-
-화면에서 `LmsApi.shared`를 직접 호출하지 말고, 기존 흐름대로
-해당 도메인의 `ServiceProtocol` → `RepositoryProtocol` → ViewModel의
-`Input / Output / transform` 순서로 추가합니다. 예를 들어 시간표는
-`TimetableServiceProtocol`과 `TimetableRepositoryProtocol`을 별도
-폴더에 추가합니다. 실제 타입에는 `Live` 접미사를 붙이지 않고 Preview
-및 테스트 대역에만 `Mock`을 붙입니다.
-
-## ViewModel 규칙
-
-모든 ViewModel은 `BaseViewModel`을 채택하고 같은 형태로 작성합니다.
+모든 화면 ViewModel은 `BaseViewModel`의 Input/Output 형태를 따릅니다.
 
 ```swift
 @MainActor
@@ -128,151 +103,166 @@ protocol BaseViewModel: AnyObject {
 }
 ```
 
-- 사용자 동작과 생명주기 이벤트는 `Input` case로 전달합니다.
-- 화면에 필요한 상태는 `Output`에만 둡니다.
-- View에서는 `Task { await viewModel.transform(input: ...) }` 형태로
-  이벤트를 보냅니다.
-- ViewModel은 구체 타입이 아닌 필요한 도메인의 Repository Protocol만
-  생성자로 주입받습니다.
-- 실제 구현에는 별도의 `Live` 접미사를 붙이지 않고, 대역에만 `Mock`
-  접두사를 붙입니다.
+- View는 사용자 동작과 생명주기 이벤트를 `Input`으로 전달하고 `Output`만
+  렌더링합니다.
+- ViewModel은 로딩, 성공, 빈 데이터와 오류 상태를 관리하며 구체 구현 대신
+  필요한 Protocol을 생성자로 주입받습니다.
+- Repository는 도메인 변환, 정렬 또는 여러 Service 결과 조합이 필요할 때만
+  둡니다.
+- Service는 `LmsApi.shared` callback을 async 함수로 감싸고 SDK 응답을 앱
+  모델로 변환합니다.
+- `DIContainer`는 실제와 Mock 구현을 조립하는 Composition Root입니다.
+- `MainTabView`는 `HomeViewModel`과 하나의 `ChapelViewModel` 생명주기를
+  소유합니다. 같은 `ChapelViewModel`을 홈의 채플 카드와 채플 탭에 전달해
+  상태와 중복 요청 방지를 공유합니다.
 
-의존성 흐름은 다음과 같습니다.
+모든 콜드 런치는 중앙 로고 애니메이션을 먼저 표시합니다. 최소 표시 시간과
+로그인 세션 판정을 병렬로 진행한 뒤 저장 자격 증명 및 동의 완료 상태에 따라
+로그인·약관 동의·완료·홈 중 알맞은 루트 화면으로 전환합니다.
 
 ```text
 View
   → ViewModel.transform(input:)
-  → <Domain>RepositoryProtocol
-  → <Domain>Repository
-  → <Domain>ServiceProtocol
-  ├── <Domain>Service       실제 LMS-API
-  └── Mock<Domain>Service   Preview/Mock 데이터
+  → RepositoryProtocol         필요한 기능만 사용
+  → ServiceProtocol
+  → LmsApi.shared 또는 Mock Service
 ```
 
-`DIContainer`는 이 객체들을 조립하는 Composition Root입니다. 새로운
-기능도 Service Protocol → Repository Protocol → ViewModel 순서로
-의존성을 연결합니다.
+현재 주입 경계는 다음과 같습니다.
 
-현재 화면별 주입 경계는 다음과 같습니다.
-
-| 화면/ViewModel | 주입받는 Repository | 사용하는 Service |
+| 화면/ViewModel | 주입받는 Protocol | 실제 데이터 원천 |
 | --- | --- | --- |
-| AppFlow, Login, Setting | `AuthenticationRepositoryProtocol` | Authentication |
-| Home | `HomeRepositoryProtocol` | Student + Grade + Chapel |
-| Semester | `GradeRepositoryProtocol` | Grade |
+| AppFlow, Login, Setting | `AuthenticationRepositoryProtocol` | Authentication Service |
+| Home / `HomeViewModel` | `HomeRepositoryProtocol` | Student + Grade Service |
+| Semester | `GradeRepositoryProtocol` | Grade Service |
+| Home 채플 카드 + Chapel / 공유 `ChapelViewModel` | `ChapelRepositoryProtocol` | Chapel Service |
+| Timetable | `TimetableServiceProtocol` | Timetable Service |
+| GraduationAudit | `GraduationAuditRepositoryProtocol` | GraduationAudit Service |
+| Tuition | `TuitionRepositoryProtocol` | Tuition Service |
+| AppUpdate | `AppUpdateServiceProtocol` | GitHub의 앱 버전 정책 JSON |
 
-`HomeRepository`만 여러 도메인의 결과를 모아 `Dashboard`를 만듭니다.
-학생 정보나 성적 조회가 실패하면 홈 로딩을 실패 처리하고, 채플만
-실패했을 때는 나머지 홈을 유지한 채 채플 오류를 별도로 보존합니다.
+## 비동기 요청과 오류 처리
 
-## 실제 서버와 Mock 전환
+`LMSCallbackBridge`는 Kotlin/Native SDK callback을 Swift async 함수로
+변환합니다. 기본 timeout은 20초이며 로그인은 30초, 로그아웃은 5초,
+시간표는 45초, 졸업사정표와 채플 이수 횟수 조회는 60초를 사용합니다.
+취소, timeout과 실제 callback이 경쟁해도 continuation은 한 번만 완료됩니다.
+
+`AsyncSingleFlight`는 같은 ViewModel의 중복 로드 요청을 하나로 합칩니다. 모든
+`LmsApi.shared` 요청은 전역 FIFO coordinator를 거쳐 직렬화되며, 순서를 기다리는
+Swift Task는 메인 스레드를 점유하지 않습니다. 시작된 Kotlin/Native 요청은 Swift
+Task가 취소되거나 timeout되어도 실제 callback이 도착할 때까지 다음 SDK 요청과
+겹치지 않습니다. callback이 누락된 요청은 coordinator를 격리 상태로 전환해 대기
+요청과 신규 요청을 timeout으로 종료하고, 늦은 callback이 도착한 뒤에만 정상
+상태로 돌아옵니다. 화면에는 SDK 원문 대신 네트워크 단절, timeout과 기능별
+fallback 문구를 표시합니다.
+
+각 기능의 상태 기준은 다음과 같습니다.
+
+홈 진입 시 `HomeViewModel`과 공유 `ChapelViewModel`의 요청은 독립적으로
+시작됩니다. `HomeRepository`는 Student·Grade Service 결과만 조합하므로 채플
+조회나 최대 60초의 이수 횟수 fallback을 기다리지 않고 기본 Dashboard를 먼저
+표시합니다. 이후 채플 카드만 공유 ViewModel의 상태에 따라 갱신되며, 채플
+탭으로 이동해도 같은 결과와 진행 중인 요청을 이어서 사용합니다.
+
+| 기능 | 성공 | 빈 데이터 | 실패 |
+| --- | --- | --- | --- |
+| 홈 | Student·Grade 조회가 끝나면 프로필·성적·바로가기를 먼저 표시하고, 채플 카드는 `idle` / `loading` 뒤 `loaded` 상태의 좌석·출결을 표시 | 최신 학기나 과목이 없으면 빈 목록으로 표시하고, 채플 `notEnrolled`는 이수 6회 이상이면 수료 완료, 6회 미만이면 현재 미수강으로 표시 | 학생·성적 실패는 홈 전체 오류, 채플 `failed`는 나머지 홈을 유지하고 채플 카드만 오류·독립 재시도 |
+| 채플 | 홈과 공유하는 `ChapelViewModel`의 `loaded` 상태로 좌석·출결을 표시 | 현재 수강 정보가 없거나 알려진 채플 서비스 중단 응답이면 졸업사정표의 이수 횟수를 조회해 6회 이상은 수료 완료, 6회 미만은 현재 미수강으로 표시 | 실제 네트워크 오류 또는 이수 횟수 대체 조회 실패는 홈 채플 카드와 채플 탭에 같은 재시도 상태로 표시 |
+| 시간표 | 선택한 학기의 시간이 있는 수업을 그리드로 표시하고 결과를 캐시 | 정상 조회 결과에 배치할 수업이 없으면 현장실습·온라인 수업 등이 가능한 정상 빈 상태로 표시 | 전송·인증·timeout·파싱 실패는 오류로 표시하고, 이전 그리드가 있으면 유지 |
+| 졸업사정표 | 비어 있지 않은 표의 모든 행이 정확히 `충족` 또는 `부족`일 때 표시 | 실제 Service는 빈 표를 정상 결과로 위장하지 않고 잘못된 응답으로 처리 | 표 누락, 빈 표, 알 수 없는 상태 또는 파싱 실패는 재시도 오류 |
+| 등록금·장학금 | 두 요청을 `async let`으로 동시에 시작하고 둘 다 성공해야 새 결과를 함께 반영 | 성공한 배열이 비어 있으면 해당 탭에 내역 없음 문구를 표시 | 어느 한 요청이라도 실패하면 그 로드 시도는 오류이며, 기존 데이터가 있으면 유지한 채 알림을 표시하고 첫 로드라면 재시도 화면 표시 |
+
+## 자동 로그인과 자격 증명
+
+로그인 성공 후 `AuthenticationRepository`가 학번과 비밀번호를
+`KeychainLoginCredentialsStore`에 저장합니다. Keychain 항목은
+`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`로 설정되어 잠금 해제된 해당
+기기에서만 접근할 수 있습니다. `UserDefaults`에는 자격 증명이 아니라 자동
+로그인 활성화 여부만 기록합니다.
+
+앱을 다시 실행하면 저장된 자격 증명으로 세션 복원을 시도합니다. 복원 실패
+화면에서는 다시 시도하거나 다른 계정으로 전환할 수 있습니다. 로그아웃은 LMS
+세션 종료가 성공한 뒤에만 자동 로그인 표시를 끄고 Keychain 항목을 삭제합니다.
+SDK 로그아웃이 실패하면 세션과 자격 증명을 유지한 채 재시도를 안내합니다.
+Keychain 저장이 실패해도 이미 성공한 수동 로그인 세션은 유지합니다.
+
+## 로컬 LmsApi 패키지
 
 실제 서버 연결은
-[`chlwhdtn03/LMS-API`](https://github.com/chlwhdtn03/LMS-API)의
-`LmsApi.shared`를 각 도메인 Service가 감싸는 방식입니다. 모든 실제
-Service가 같은 `LmsApi.shared`를 사용하므로 로그인 세션, 쿠키와
-패키지 내부 캐시가 공유됩니다. 앱에 별도의 REST Base URL은 없습니다.
+[`chlwhdtn03/LMS-API`](https://github.com/chlwhdtn03/LMS-API/tree/64ecd286ff1cc022e25cd96e96ace99b400cd7d7)의
+`LmsApi.shared`를 사용합니다. 이 앱은 서버를 포함하거나 대체하지 않으며 별도
+REST Base URL도 두지 않습니다.
 
-일반 실행에서는 다음 구성이 사용됩니다.
+Xcode 프로젝트는 원격 패키지를 직접 가져오는 대신
+[`LocalPackages/LmsApi`](LocalPackages/LmsApi/README.md)를 로컬 Swift
+Package로 참조합니다. 이 패키지는 upstream revision
+`64ecd286ff1cc022e25cd96e96ace99b400cd7d7` (LMS-API `1.6.6.3`)에서 빌드한
+iOS 클라이언트 바이너리를 앱 저장소 안에서 감싸는 래퍼입니다.
 
-```swift
-AuthenticationRepository(service: AuthenticationService())
-GradeRepository(service: GradeService())
-HomeRepository(
-    studentService: StudentService(),
-    gradeService: GradeService(),
-    chapelService: ChapelService()
-)
-```
+로컬 클라이언트의 보완 범위는 다음으로 제한됩니다.
 
-Mock으로 앱 전체를 실행하려면 Xcode에서
-**Product → Scheme → Edit Scheme → Run → Arguments Passed On Launch**에
-아래 인자를 추가합니다.
+- 큰 단일 행 Web Dynpro HTML을 재귀 정규식 대신 선형으로 탐색
+- SDK의 선택 과목 상세 응답을 사용할 수 없을 때 기본 졸업사정표 파싱 유지
+- 선택 과목 열 유무와 관계없이 서버의 `충족` / `부족` 계약 유지
+- SAP Web Dynpro 요청 언어를 한국어로 고정해 기기 언어와 무관하게 파싱
+
+공식 LMS-API 저장소 자체는 수정하지 않았습니다. 로컬 패키지에는 서버,
+실계정 자격 증명, 코드사인 설정, 인증서 또는 provisioning asset이 없습니다.
+라이선스 전문은
+[`LMS-API-LICENSE.txt`](Soongsil-Life-iOS/AppSource/Resource/Licenses/LMS-API-LICENSE.txt)에서
+확인할 수 있습니다.
+
+## 실제 서버와 Mock
+
+실제 앱은 각 Service가 같은 `LmsApi.shared`를 사용하므로 로그인 세션, 쿠키와
+SDK 내부 캐시를 공유합니다. Xcode에서 메인 `Soongsil-Life-iOS` 스킴과 실제
+iPhone을 선택하면 실제 학사 시스템을 조회합니다.
+
+앱 전체를 Mock 데이터로 실행하려면 Xcode의 **Product → Scheme → Edit
+Scheme → Run → Arguments Passed On Launch**에 다음 인자를 추가합니다.
 
 ```text
 -useMockData
 ```
 
-이 경우 `DIContainer.app`이 `MockAuthenticationService`,
-`MockStudentService`, `MockGradeService`, `MockChapelService`를
-사용하는 저장소들을 주입합니다. 공통 Mock 응답은
+이 경우 `DIContainer.app`이 Authentication, Student, Grade, Chapel,
+Timetable, GraduationAudit, Tuition의 Mock 구현을 주입합니다. 공통 fixture는
 `API/Mock/MockLMSFixtures.swift`에서 관리합니다.
 
-알림 탭은 Mock과 데이터 계층 없이 빈 화면으로 남겨 두었습니다.
-알림 요구사항과 서버 API가 정해지면 다른 기능과 동일하게
-Service Protocol → Repository Protocol → ViewModel 순서로 추가합니다.
+`Soongsil-Life-iOS-Preview` 스킴은 Simulator와 SwiftUI Canvas용입니다.
+Preview 타깃은 `PREVIEW_TARGET` 조건으로 실제 LMS 구현을 제외하고 지연 없는
+Mock 조합을 사용합니다. 로컬 `LmsApi.xcframework`는 `ios-arm64` 실기기
+슬라이스만 제공하므로 Simulator에서 실제 LMS 모듈을 연결하지 않습니다.
 
-LMS-API 버전은 Xcode의 Package Dependencies와 `Package.resolved`에서
-관리합니다. 현재 최신 릴리스 `1.6.6.2`는 SwiftPM이 버전으로 인식하지
-못하는 네 구간 태그이므로, 같은 릴리스 커밋 `014b325`를 revision으로
-고정합니다.
+## 앱 업데이트 정책
 
-## LMS-API 1.6.6.2와 실행 대상
+앱 실행 시 `AppUpdateService`가
+[`ios.json`](.github/app-config/ios.json)을 5초 timeout으로 조회합니다.
+현재 버전이 `minimumVersion`보다 낮으면 필수, `latestVersion`보다 낮으면 선택
+업데이트 안내를 표시합니다. App Store URL은 HTTPS이며 `apps.apple.com` 또는
+`itunes.apple.com` 도메인일 때만 사용합니다.
 
-LMS-API 1.6.6.2의 바이너리는 `ios-arm64` 실기기 슬라이스만 제공합니다.
-따라서 스킴을 용도별로 분리했습니다.
+원격 설정 조회, JSON 파싱 또는 App Store 열기에 실패하면 fail-open으로 안내를
+닫고 앱 사용을 허용합니다. `appStoreURL`이 비어 있는 동안에는 버전 숫자와
+관계없이 업데이트 화면을 표시하지 않습니다.
 
-| 스킴 | 실행 대상 | 실제 도메인 Service | 용도 |
-| --- | --- | --- | --- |
-| `Soongsil-Life-iOS` | 실제 iPhone/iPad | 포함 | 로그인과 실제 LMS API 확인 |
-| `Soongsil-Life-iOS-Preview` | iOS Simulator | 제외 | SwiftUI Canvas와 Mock UI 확인 |
+## 이용약관과 개인정보
 
-메인 타깃은 Xcode Build Settings에서 실제 기기용으로 제한합니다.
-Preview 타깃은 `LmsApi` 패키지에 링크하지 않고
-아래 실제 구현 파일을 타깃에서 제외하며, 지연 시간이 없는 Mock을
-자동 사용합니다.
+이용약관과 개인정보 처리방침은 최초 약관 동의 화면과 마이 화면에서 모두 접근할 수
+있습니다. 앱 화면용 문서는 `Module/Setting/Models/LegalDocument.swift`, 외부
+공개용 문서는 [`TERMS.md`](TERMS.md)와 [`PRIVACY.md`](PRIVACY.md)에서
+관리합니다. 처리 정보나 보관 방식이 바뀌면 두 표현을 함께 갱신합니다.
+앱 사용 지원과 공개 문의 작성 지침은 [`SUPPORT.md`](SUPPORT.md)에서 안내합니다.
 
-```text
-Soongsil-Life-iOS/AppSource/API/Authentication/AuthenticationService.swift
-Soongsil-Life-iOS/AppSource/API/Student/StudentService.swift
-Soongsil-Life-iOS/AppSource/API/Grade/GradeService.swift
-Soongsil-Life-iOS/AppSource/API/Chapel/ChapelService.swift
-```
-
-SwiftUI Preview를 볼 때는 상단 스킴을
-`Soongsil-Life-iOS-Preview`로 바꾸고 Simulator를 선택합니다. Preview
-타깃에 `LmsApi`를 다시 추가하면 바이너리의 Simulator 슬라이스가 없어
-Canvas가 빌드되지 않습니다.
-
-## 기존 컬러와 아이콘 에셋
-
-기존 컬러와 SVG 아이콘은 삭제하지 않았습니다. 아래 원래 리소스 경로를
-Xcode 프로젝트의 File System Synchronized Group으로 연결해 메인 타깃과
-Preview 타깃이 함께 사용합니다.
-
-```text
-Soongsil-Life-iOS/Soongsil-Life-iOS/Resource/Assets Catalog
-├── Assets.xcassets
-│   ├── AppIcon
-│   ├── AccentColor
-│   └── Icon
-│       ├── ic_home
-│       ├── ic_sofa
-│       ├── ic_bell
-│       ├── ic_person
-│       ├── ic_info
-│       ├── ic_qr
-│       ├── ic_calender
-│       └── ic_alarm_setting
-└── Color.xcassets
-    ├── blue_25 ... blue_600
-    ├── gray_25 ... gray_950
-    ├── slate_100 ... slate_600
-    ├── navy_700 ... navy_900
-    └── green, orange, red, black, white, background
-```
-
-아이콘은 `Image("ic_home")`처럼 기존 이름을 그대로 사용합니다. 컬러는
-`SoomsilDesignSystem.swift`에서 `Color("blue_600")` 같은 원본 에셋을
-`soomsilBlue600`, `soomsilBackground`, `soomsilPrimaryText` 등으로
-래핑합니다. 에셋을 `Soongsil-Life-iOS/AppSource` 안에 중복 복사하면
-같은 이름의 리소스가
-두 번 포함될 수 있으므로 기존 카탈로그를 단일 원본으로 유지합니다.
+[`PrivacyInfo.xcprivacy`](Soongsil-Life-iOS/AppSource/Resource/PrivacyInfo.xcprivacy)는
+앱 타깃의 개인정보 매니페스트입니다. 현재 추적과 수집 데이터 유형은 선언하지
+않으며, 앱 전용 설정값을 위한 UserDefaults 접근 사유 `CA92.1`만 선언합니다.
 
 ## Localization
 
-사용자에게 보이는 문구는 View에 직접 쓰지 않고 `L10n`을 통해
-접근합니다. 현재 지원 언어와 기본 언어는 한국어입니다.
+사용자에게 보이는 문구는 View에 직접 쓰지 않고 `L10n`을 통해 접근합니다.
+현재 지원 언어와 기본 언어는 한국어입니다.
 
 ```text
 Soongsil-Life-iOS/AppSource/Resource/Localization
@@ -284,66 +274,65 @@ Soongsil-Life-iOS/AppSource/Resource/Localization
 
 1. `ko.lproj/Localizable.strings`에 키와 한국어 문구를 추가합니다.
 2. 포맷 문자열의 `%@`, `%d` 타입과 개수를 호출부와 맞춥니다.
-3. `L10n.swift`의 알맞은 그룹에 접근 프로퍼티 또는 포맷 함수를
-   추가합니다.
+3. `L10n.swift`의 알맞은 그룹에 접근 프로퍼티 또는 포맷 함수를 추가합니다.
 4. View에서는 `Text(L10n.Home.loading)`처럼 접근합니다.
-
-나중에 다국어를 지원하려면 한국어와 같은 키를 가진
-`<언어코드>.lproj/Localizable.strings` 파일을 추가하고 Xcode 프로젝트의
-Localizations에도 언어를 등록합니다.
 
 ## 처음 실행하기
 
 1. `Soongsil-Life-iOS/Soongsil-Life-iOS.xcodeproj`를 엽니다.
-2. Xcode가 LMS-API 1.6.6.2를 Resolve할 때까지 기다립니다.
-3. 실제 API를 확인할 때는 `Soongsil-Life-iOS` 스킴과 실제 iPhone/iPad를
+2. Xcode가 `../LocalPackages/LmsApi` 로컬 패키지를 인식했는지 확인합니다.
+3. 실제 API는 `Soongsil-Life-iOS` 스킴과 실제 iPhone에서 확인합니다.
+4. UI와 Preview는 `Soongsil-Life-iOS-Preview` 스킴과 Simulator에서
+   확인합니다.
+5. 실기기 설치가 필요할 때만 로컬 Xcode 환경에서 자신의 서명 설정을
    선택합니다.
-4. **Signing & Capabilities**에서 본인의 Team을 선택합니다.
-5. UI와 Preview를 확인할 때는 `Soongsil-Life-iOS-Preview` 스킴과
-   Simulator를 선택합니다.
 
-## `No such module 'LmsApi'`
+코드사인 없이 코드와 로컬 패키지 연결을 검증하는 명령은 다음과 같습니다.
 
-패키지 저장소 이름은 `LMS-API`지만 Swift 모듈 이름은 대소문자를
-구분하는 `LmsApi`입니다. 메인 타깃에서 오류가 나면 다음을 확인합니다.
-
-1. Xcode의 **Project → Package Dependencies**에
-   `https://github.com/chlwhdtn03/LMS-API` 1.6.6.2가 있는지 확인합니다.
-2. 메인 타깃 **General → Frameworks, Libraries, and Embedded Content**에
-   `LmsApi`가 연결됐는지 확인합니다.
-3. **File → Packages → Reset Package Caches**를 실행한 뒤
-   **Resolve Package Versions**를 실행합니다.
-4. **Product → Clean Build Folder** 후 다시 빌드합니다.
-5. 메인 스킴이라면 Simulator가 아니라 실제 기기를 선택합니다.
-
-Simulator 또는 Canvas에서 같은 오류가 나면 실제 모듈을 연결하려고 한
-것입니다. `Soongsil-Life-iOS-Preview` 스킴을 선택해야 하며, 이 타깃에는
-의도적으로 `LmsApi`가 없습니다.
-
-## Apple PLA와 Provisioning 오류
-
-다음 두 오류는 앱 코드나 LMS-API 문제가 아니라 Apple Developer 계정의
-서명 설정 문제입니다.
-
-```text
-PLA Update available
-No profiles for 'com.soongsillife.ios' were found
+```shell
+xcodebuild \
+  -project Soongsil-Life-iOS/Soongsil-Life-iOS.xcodeproj \
+  -scheme Soongsil-Life-iOS \
+  -configuration Debug \
+  -destination 'generic/platform=iOS' \
+  CODE_SIGNING_ALLOWED=NO \
+  build
 ```
 
-`PLA Update available`은 Team의 Account Holder가 Apple Developer
-계정에서 최신 Program License Agreement에 동의해야 해결됩니다. 동의가
-끝난 뒤 Xcode **Settings → Accounts**에서 계정을 다시 갱신합니다.
+### `No such module 'LmsApi'`
 
-Provisioning Profile 오류는 다음 순서로 해결합니다.
+패키지 저장소 이름은 `LMS-API`지만 Swift 모듈 이름은 대소문자를 구분하는
+`LmsApi`입니다. 오류가 나면 다음을 확인합니다.
 
-1. Xcode **Signing & Capabilities**에서 올바른 Team을 선택합니다.
-2. **Automatically manage signing**을 켭니다.
-3. 현재 Team에서 사용할 수 있는 고유한 Bundle Identifier인지
-   확인합니다.
-4. Bundle ID를 바꿔야 하면 앱 타깃의 **Signing & Capabilities**에서
-   수정합니다.
+1. `LocalPackages/LmsApi/Package.swift`와
+   `LocalPackages/LmsApi/LmsApi.xcframework/ios-arm64`가 존재하는지 확인합니다.
+2. Xcode **Project → Package Dependencies**의 참조가
+   `../LocalPackages/LmsApi`인지 확인합니다.
+3. 메인 타깃의 **Frameworks, Libraries, and Embedded Content**에 `LmsApi`가
+   연결됐는지 확인합니다.
+4. **File → Packages → Reset Package Caches**, **Resolve Package Versions**,
+   **Product → Clean Build Folder** 순서로 다시 빌드합니다.
+5. 실제 LMS 조회라면 Simulator가 아니라 실제 iPhone을 선택합니다. Simulator와
+   Canvas에서는 `Soongsil-Life-iOS-Preview` 스킴을 사용합니다.
 
-PLA 동의가 처리되지 않은 상태에서는 Xcode가 새로운 App ID나
-Provisioning Profile을 만들 수 없으므로, 반드시 PLA 문제를 먼저
-해결해야 합니다. 서명 없이 하는 로컬 빌드 검증은 가능하지만 실제
-기기 설치와 배포는 유효한 Team 및 Profile이 필요합니다.
+## 저장소 보안 원칙
+
+- 실제 학번, 비밀번호, 세션 쿠키와 개인 로그를 커밋하지 않습니다.
+- 개발자 계정 식별자, Team 설정, 인증서, private key와 provisioning profile을
+  저장소에 추가하지 않습니다.
+- 로컬 실기기 실행을 위한 서명 변경은 개인 Xcode 환경에만 남깁니다.
+- 민감 파일이 이미 추적된 경우 `.gitignore`만 추가하지 말고 Git 이력과 노출
+  범위를 별도로 점검합니다.
+
+## Git Flow
+
+| 브랜치 | 역할 |
+| --- | --- |
+| `main` | 심사와 배포를 마친 버전을 유지합니다. |
+| `dev` | 다음 배포에 포함할 변경 사항을 통합합니다. |
+
+- 작업 브랜치는 최신 `dev`에서 `{Prefix}/#{이슈번호}` 형식으로 생성합니다.
+  예: `Feat/#153`, `Fix/#204`, `Docs/#29`
+- 하나의 브랜치에서는 하나의 이슈만 다루고 PR의 base는 `dev`로 지정합니다.
+- 배포 전 QA는 최신 `dev`에서 만든 `release/{배포버전}` 브랜치에서 진행합니다.
+- 배포 커밋은 `v{배포버전}` 태그와 GitHub Release로 기록합니다.

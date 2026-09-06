@@ -3,15 +3,21 @@ import SwiftUI
 
 enum MainTabItem: CaseIterable, Hashable {
     case home
+    case chapel
     case timetable
-    case notification
     case my
+
+    static let visibleItems: [MainTabItem] = [
+        .home,
+        .timetable,
+        .my
+    ]
 
     var title: String {
         switch self {
         case .home: L10n.Common.home
+        case .chapel: L10n.Chapel.title
         case .timetable: L10n.Common.timetable
-        case .notification: L10n.Common.notifications
         case .my: L10n.Common.my
         }
     }
@@ -19,9 +25,26 @@ enum MainTabItem: CaseIterable, Hashable {
     var assetName: String {
         switch self {
         case .home: "ic_home"
+        case .chapel: "ic_sofa"
         case .timetable: "ic_calender"
-        case .notification: "ic_bell"
         case .my: "ic_person"
+        }
+    }
+
+    func assetName(isSelected: Bool) -> String {
+        guard isSelected else {
+            return assetName
+        }
+
+        switch self {
+        case .home:
+            return "ic_home_fill"
+        case .timetable:
+            return "ic_calender_fill"
+        case .my:
+            return "ic_person_fill"
+        case .chapel:
+            return assetName
         }
     }
 }
@@ -30,38 +53,77 @@ struct SoomsilTabBar: View {
     @Binding var selectedTab: MainTabItem
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(MainTabItem.allCases, id: \.self) { tab in
+        HStack(spacing: 0) {
+            ForEach(MainTabItem.visibleItems, id: \.self) { tab in
                 let selected = selectedTab == tab
                 Button {
                     selectedTab = tab
                 } label: {
-                    VStack(spacing: 4) {
-                        Image(tab.assetName)
+                    VStack(spacing: 3) {
+                        Image(tab.assetName(isSelected: selected))
                             .renderingMode(.template)
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 18, height: 18)
+                            .frame(width: 22, height: 22)
                         Text(tab.title)
-                            .font(.system(size: selected ? 12 : 10, weight: selected ? .semibold : .medium))
+                            .font(.pretendard(13, weight: .medium))
                     }
-                    .foregroundStyle(selected ? .white : Color.soomsilSecondaryText)
+                    .foregroundStyle(
+                        selected ? .serviceBlue600 : .serviceGray500
+                    )
                     .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(selected ? Color.soomsilBlue600 : .clear)
-                    .clipShape(Capsule())
+                    .frame(height: 56)
+                    .background {
+                        if selected {
+                            Capsule()
+                                .fill(
+                                    .black000.opacity(0.08)
+                                        .shadow(
+                                            .inner(
+                                                color: .white000.opacity(0.25),
+                                                radius: 4,
+                                                x: 0,
+                                                y: 4
+                                            )
+                                        )
+                                )
+                        }
+                    }
+                    .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
-        .padding(6)
-        .background(Color.soomsilSurface)
+        .padding(8)
+        .background {
+            Capsule()
+                .fill(
+                    .white000.shadow(
+                        .inner(
+                            color: .realBlack.opacity(0.02),
+                            radius: 7,
+                            x: 7,
+                            y: 7
+                        )
+                    )
+                )
+                .overlay {
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    .gray100.opacity(0.35),
+                                    .gray100.opacity(0)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: UnitPoint(x: 0.58, y: 0.72)
+                            )
+                        )
+                }
+        }
         .clipShape(Capsule())
-        .overlay { Capsule().stroke(Color.soomsilBorder, lineWidth: 1) }
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
+        .padding(.horizontal, 22)
     }
 }
 
@@ -87,20 +149,20 @@ struct StudentInfoCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(profile.name)
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .foregroundStyle(.black000)
                     .lineLimit(1)
                 Text(subtitle)
                     .font(.system(size: 12))
-                    .foregroundStyle(Color.soomsilSecondaryText)
+                    .foregroundStyle(.gray600)
                     .lineLimit(1)
             }
             Spacer()
             Text(L10n.Home.studentID(profile.studentID))
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color.soomsilPrimaryText)
+                .foregroundStyle(.black000)
                 .padding(.horizontal, 15)
                 .padding(.vertical, 10)
-                .background(Color.soomsilMutedSurface)
+                .background(.gray050)
                 .clipShape(Capsule())
         }
         .padding(.horizontal, 18)
@@ -112,43 +174,94 @@ struct StudentInfoCard: View {
 
 struct GradeOverviewCard: View {
     let cumulativeGPA: Double?
+    let earnedCredits: Double
+    let semesterRank: String
+    let totalRank: String
+
+    private let graduationCredits = 133
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(L10n.Soomsil.reportCardTitle)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.8))
-                Text(L10n.Soomsil.total)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.5))
-            }
+        VStack(alignment: .leading, spacing: 0) {
+            Text("전체 평균")
+                .font(.pretendard(15, weight: .semibold))
+                .foregroundStyle(.black000)
 
-            HStack(alignment: .lastTextBaseline, spacing: 6) {
+            HStack(alignment: .lastTextBaseline, spacing: 7) {
                 Text(cumulativeGPA.map { String(format: "%.2f", $0) } ?? "-")
-                    .font(.system(size: 76, weight: .black))
-                    .foregroundStyle(.white)
+                    .font(.pretendard(40, weight: .bold))
+                    .foregroundStyle(.black000)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
-                Text("/ 4.5")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.5))
+                Text("/ 4.50")
+                    .font(.pretendard(15, weight: .medium))
+                    .foregroundStyle(.serviceGray500)
             }
+            .padding(.top, 7)
 
-            HStack(spacing: 6) {
-                Text(L10n.Soomsil.currentSemesterGrades)
-                Image(systemName: "arrow.right")
+            VStack(spacing: 17) {
+                metricRow(
+                    title: "취득 학점",
+                    numerator: formattedCredits,
+                    denominator: "\(graduationCredits)"
+                )
+                metricRow(title: "학기별 석차", value: semesterRank)
+                metricRow(title: "전체 석차", value: totalRank)
             }
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(Color.soomsilGray950)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(.white)
-            .clipShape(Capsule())
+            .padding(.top, 27)
         }
-        .padding(24)
-        .background(Color.soomsilGray950)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var formattedCredits: String {
+        if earnedCredits.rounded() == earnedCredits {
+            return String(Int(earnedCredits))
+        }
+        return String(format: "%.1f", earnedCredits)
+    }
+
+    private func metricRow(title: String, value: String) -> some View {
+        let parts = rankParts(value)
+        return metricRow(
+            title: title,
+            numerator: parts.numerator,
+            denominator: parts.denominator
+        )
+    }
+
+    private func metricRow(
+        title: String,
+        numerator: String,
+        denominator: String
+    ) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(title)
+                .font(.pretendard(15))
+                .foregroundStyle(.serviceGray500)
+
+            Spacer(minLength: 16)
+
+            Text(numerator)
+                .font(.pretendard(16, weight: .semibold))
+                .foregroundStyle(.black000)
+
+            Text("/ \(denominator)")
+                .font(.pretendard(12))
+                .foregroundStyle(.serviceGray500)
+        }
+    }
+
+    private func rankParts(_ value: String) -> (
+        numerator: String,
+        denominator: String
+    ) {
+        let parts = value
+            .split(separator: "/", maxSplits: 1)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        guard parts.count == 2 else {
+            return (value.isEmpty ? "-" : value, "-")
+        }
+        return (parts[0], parts[1])
     }
 }
 
@@ -156,6 +269,7 @@ struct GPATrendCard: View {
     private struct DisplayedSemester: Identifiable {
         let semester: SemesterGrade
         let academicIndex: Int
+        let plotPosition: Double
 
         var id: SemesterGrade.ID { semester.id }
         var axisLabel: String {
@@ -176,70 +290,117 @@ struct GPATrendCard: View {
                 let rhs = (Int($1.year) ?? 0, $1.semester.sortOrder)
                 return lhs < rhs
             }
+        let visibleSemesters = Array(regularSemesters.suffix(8))
+        let firstAcademicIndex = regularSemesters.count - visibleSemesters.count
+
+        return visibleSemesters
             .enumerated()
-            .map {
+            .map { plotIndex, semester in
                 DisplayedSemester(
-                    semester: $0.element,
-                    academicIndex: $0.offset
+                    semester: semester,
+                    academicIndex: firstAcademicIndex + plotIndex,
+                    plotPosition: Double(plotIndex)
                 )
             }
-        return Array(regularSemesters.suffix(5))
+    }
+
+    private var xDomain: ClosedRange<Double> {
+        guard displayedSemesters.count > 1 else {
+            return -0.5...0.5
+        }
+        return 0...Double(displayedSemesters.count - 1)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text(L10n.Soomsil.overallSemesterTrend)
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
-                Spacer()
-                HStack(spacing: 4) {
-                    Text(L10n.Soomsil.details)
-                    Image(systemName: "chevron.right")
-                }
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color.soomsilBlue600)
-            }
-
-            Chart(displayedSemesters) { item in
-                let isLatest = item.id == displayedSemesters.last?.id
-                BarMark(
-                    x: .value("semester", item.axisLabel),
-                    y: .value("gpa", item.semester.gpa),
-                    width: .ratio(0.68)
+        Chart {
+            ForEach(displayedSemesters) { item in
+                AreaMark(
+                    x: .value("semester", item.plotPosition),
+                    yStart: .value("minimum", 0),
+                    yEnd: .value("gpa", item.semester.gpa)
                 )
+                .interpolationMethod(.linear)
                 .foregroundStyle(
-                    isLatest
-                    ? Color.soomsilGray950
-                    : (
-                        item.academicIndex.isMultiple(of: 2)
-                        ? Color.soomsilBlue100
-                        : Color.soomsilBlue200
+                    LinearGradient(
+                        colors: [
+                            .serviceBlue500.opacity(0.22),
+                            .serviceBlue500.opacity(0.05)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .annotation(position: .top, spacing: 5) {
-                    if isLatest {
-                        Text(String(format: "%.2f", item.semester.gpa))
-                            .font(.system(size: 11, weight: .bold))
+
+                LineMark(
+                    x: .value("semester", item.plotPosition),
+                    y: .value("gpa", item.semester.gpa)
+                )
+                .interpolationMethod(.linear)
+                .lineStyle(StrokeStyle(lineWidth: 2))
+                .foregroundStyle(.serviceBlue500)
+
+                PointMark(
+                    x: .value("semester", item.plotPosition),
+                    y: .value("gpa", item.semester.gpa)
+                )
+                .symbol {
+                    Circle()
+                        .fill(.serviceBlue500)
+                        .frame(width: 5, height: 5)
+                }
+            }
+        }
+        .chartXScale(
+            domain: xDomain,
+            range: .plotDimension(startPadding: 0, endPadding: 0)
+        )
+        .chartYScale(domain: 0...4.5)
+        .chartYAxis {
+            AxisMarks(position: .leading, values: [1.0, 2.0, 3.0, 4.0]) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 1))
+                    .foregroundStyle(.serviceBlue500.opacity(0.20))
+                AxisTick().foregroundStyle(.clear)
+                AxisValueLabel {
+                    if let axisValue = value.as(Double.self) {
+                        Text(String(format: "%.1f", axisValue))
+                            .font(.pretendard(13))
+                            .foregroundStyle(.serviceGray500)
                     }
                 }
             }
-            .chartYScale(domain: 0...4.5)
-            .chartYAxis(.hidden)
-            .chartXAxis {
-                AxisMarks { _ in
-                    AxisTick().foregroundStyle(.clear)
-                    AxisValueLabel()
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+        }
+        .chartXAxis {
+            AxisMarks(values: displayedSemesters.map(\.plotPosition)) { value in
+                AxisTick().foregroundStyle(.clear)
+                AxisGridLine().foregroundStyle(.clear)
+                AxisValueLabel(
+                    anchor: axisLabelAnchor(for: value.as(Double.self)),
+                    collisionResolution: .disabled
+                ) {
+                    if let plotPosition = value.as(Double.self),
+                       let item = displayedSemesters.first(where: {
+                           $0.plotPosition == plotPosition
+                       }) {
+                        Text(item.axisLabel)
+                            .font(.pretendard(13))
+                            .foregroundStyle(.serviceGray500)
+                    }
                 }
             }
-            .frame(height: 116)
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
-        .soomsilCard(cornerRadius: 20)
+        .frame(height: 166)
+    }
+
+    private func axisLabelAnchor(for position: Double?) -> UnitPoint {
+        guard let position else { return .top }
+        guard displayedSemesters.count > 1 else { return .top }
+        if position == displayedSemesters.first?.plotPosition {
+            return .topLeading
+        }
+        if position == displayedSemesters.last?.plotPosition {
+            return .topTrailing
+        }
+        return .top
     }
 }
 
@@ -252,25 +413,29 @@ struct ChapelAttendanceCard: View {
     let chapel: ChapelStatus?
     let style: Style
 
-    private let requiredCount = 8
+    private let requiredCount = ChapelAttendancePolicy.requiredAttendanceCount
+    private let semesterSessionCount = ChapelAttendancePolicy.semesterSessionCount
+
+    private var attendanceGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                .serviceBlue100,
+                .serviceBlue500
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
 
     private var attendanceCount: Int {
         guard let chapel else { return 0 }
-        return min(
-            chapel.attendance.filter { $0.status.isPresent }.count,
-            requiredCount
+        return ChapelAttendancePolicy.creditedAttendanceCount(
+            in: chapel.attendance
         )
     }
 
-    private var lateCount: Int {
-        chapel?.attendance.filter { $0.status == .late }.count ?? 0
-    }
-
-    private var attendancePercentage: Int {
-        guard requiredCount > 0 else { return 0 }
-        return Int(
-            (Double(attendanceCount) / Double(requiredCount) * 100).rounded()
-        )
+    private var remainingToPass: Int {
+        max(requiredCount - attendanceCount, 0)
     }
 
     var body: some View {
@@ -288,14 +453,14 @@ struct ChapelAttendanceCard: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(L10n.Soomsil.chapelAttendance)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.soomsilPrimaryText)
+                        .foregroundStyle(.black000)
                     Text(L10n.Soomsil.attendanceSummary(attendanceCount, requiredCount))
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.soomsilBlue500)
+                        .foregroundStyle(.serviceBlue500)
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .foregroundStyle(Color.soomsilSlate400)
+                    .foregroundStyle(.gray600)
             }
 
             progressBar
@@ -307,48 +472,135 @@ struct ChapelAttendanceCard: View {
     }
 
     private var detailedCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(L10n.Soomsil.remainingAttendance)
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+        VStack(spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                Text("Pass까지 ")
+                    .foregroundStyle(.black000)
+                Text("\(remainingToPass)회")
+                    .foregroundStyle(.serviceBlue500)
+                Text(" 남았어요")
+                    .foregroundStyle(.black000)
+
                 Spacer()
-                Text(L10n.Soomsil.attendanceCount(attendanceCount, requiredCount))
-                    .font(.system(size: 16, weight: .black))
-                    .foregroundStyle(Color.soomsilBlue600)
+
+                Text("\(attendanceCount)")
+                    .font(.pretendard(16, weight: .semibold))
+                    .foregroundStyle(.serviceBlue500)
+                Text(" / \(semesterSessionCount)")
+                    .font(.pretendard(12))
+                    .foregroundStyle(.serviceGray500)
             }
+            .font(.pretendard(15, weight: .medium))
 
-            progressBar
+            homeProgressBar
+                .padding(.top, 19)
 
-            Text(
-                L10n.Soomsil.attendanceDetail(
-                    attendance: attendanceCount,
-                    late: lateCount,
-                    percentage: attendancePercentage
-                )
-            )
-            .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(Color.soomsilSecondaryText)
+            Rectangle()
+                .fill(.gray100)
+                .frame(height: 1)
+                .padding(.top, 14)
+
+            HStack(alignment: .firstTextBaseline) {
+                Text("좌석 정보")
+                    .font(.pretendard(15))
+                    .foregroundStyle(.serviceGray500)
+
+                Spacer()
+
+                Text(chapel?.seat ?? "-")
+                    .font(.pretendard(16, weight: .semibold))
+                    .foregroundStyle(.serviceBlue500)
+            }
+            .padding(.top, 12)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 18)
-        .frame(maxWidth: .infinity)
-        .background(Color.soomsilMutedSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding(.horizontal, 19)
+        .padding(.top, 20)
+        .padding(.bottom, 14)
+        .frame(maxWidth: .infinity, minHeight: 155)
+        .background(.white000)
+        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .stroke(attendanceGradient, lineWidth: 1)
+                .opacity(0.75)
+        }
+    }
+
+    private var homeProgressBar: some View {
+        VStack(spacing: 3) {
+            GeometryReader { proxy in
+                Image(systemName: "triangle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 8, height: 6)
+                    .rotationEffect(.degrees(180))
+                    .foregroundStyle(.serviceBlue500)
+                    .offset(
+                        x: max(
+                            proxy.size.width
+                                * CGFloat(requiredCount)
+                                / CGFloat(semesterSessionCount) - 4,
+                            0
+                        )
+                    )
+            }
+            .frame(height: 6)
+
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(.serviceGray200)
+
+                    Capsule()
+                        .fill(
+                            attendanceGradient
+                                .shadow(
+                                    .inner(
+                                        color: .white000.opacity(0.15),
+                                        radius: 2,
+                                        x: 0.5,
+                                        y: 1
+                                    )
+                                )
+                        )
+                        .frame(
+                            width: proxy.size.width
+                                * CGFloat(attendanceCount)
+                                / CGFloat(semesterSessionCount)
+                        )
+
+                    HStack(spacing: 0) {
+                        ForEach(1..<semesterSessionCount, id: \.self) { _ in
+                            Spacer(minLength: 0)
+                            Rectangle()
+                                .fill(.white000.opacity(0.55))
+                                .frame(width: 1)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+            .frame(height: 8)
+        }
+        .frame(height: 17)
+        .accessibilityLabel("채플 출석")
+        .accessibilityValue("\(attendanceCount) / \(semesterSessionCount)")
     }
 
     private var progressBar: some View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Color.soomsilGray100)
-                Capsule()
-                    .fill(Color.soomsilBlue600)
-                    .frame(
-                        width: proxy.size.width *
-                        CGFloat(attendanceCount) /
-                        CGFloat(requiredCount)
-                    )
+                    .fill(.gray100)
+                    Capsule()
+                        .fill(.serviceBlue600)
+                        .frame(
+                            width: proxy.size.width * min(
+                                CGFloat(attendanceCount) /
+                                    CGFloat(requiredCount),
+                                1
+                            )
+                        )
             }
         }
         .frame(height: 7)
@@ -377,13 +629,13 @@ struct ChapelSeatCard: View {
         VStack(alignment: .leading, spacing: 14) {
             Text(L10n.Soomsil.mySeat)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.white.opacity(0.8))
+                .foregroundStyle(.white000.opacity(0.8))
             Text(seatPosition)
                 .font(.system(size: 44, weight: .black))
-                .foregroundStyle(.white)
+                .foregroundStyle(.white000)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
-            Divider().overlay(.white.opacity(0.16))
+            Divider().overlay(.white000.opacity(0.16))
             HStack {
                 Text(
                     L10n.Soomsil.chapelSeatDescription(
@@ -392,7 +644,7 @@ struct ChapelSeatCard: View {
                     )
                 )
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.white000)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Spacer()
@@ -401,11 +653,11 @@ struct ChapelSeatCard: View {
                 Image(systemName: "arrow.right")
                     .font(.system(size: 12, weight: .bold))
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(.white000)
         }
         .padding(24)
         .frame(maxWidth: .infinity)
-        .background(Color.soomsilBlue600)
+        .background(.serviceBlue600)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
@@ -420,43 +672,45 @@ struct HomeShortcutCard: View {
     let icon: HomeShortcutIcon
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 7) {
             shortcutIcon
-                .frame(width: 48, height: 48)
-                .background(iconBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .frame(width: 30, height: 30)
 
             Text(title)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(Color.soomsilPrimaryText)
+                .font(.pretendard(14, weight: .medium))
+                .foregroundStyle(.black000)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
-        .frame(maxWidth: .infinity, minHeight: 112)
-        .padding(.horizontal, 12)
-        .background(Color.soomsilMutedSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .frame(maxWidth: .infinity)
+        .frame(height: 82)
+        .background(.white000)
+        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .stroke(.gray100, lineWidth: 1)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
     }
 
     @ViewBuilder
     private var shortcutIcon: some View {
         switch icon {
         case .graduation:
-            Image(systemName: "graduationcap.fill")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(Color.soomsilGray950)
+            Image(systemName: "graduationcap")
+                .font(.system(size: 26, weight: .medium))
+                .foregroundStyle(.black000)
         case .tuition:
-            Text("₩")
-                .font(.system(size: 25, weight: .black))
-                .foregroundStyle(Color.soomsilGreen500)
-        }
-    }
-
-    private var iconBackground: Color {
-        switch icon {
-        case .graduation: Color.soomsilBlue50
-        case .tuition: Color.soomsilGreen50
+            ZStack {
+                Circle()
+                    .stroke(.black000, lineWidth: 2)
+                    .frame(width: 18, height: 18)
+                    .offset(x: -4, y: 4)
+                Circle()
+                    .stroke(.black000, lineWidth: 2)
+                    .frame(width: 18, height: 18)
+                    .offset(x: 4, y: -4)
+            }
         }
     }
 }
@@ -465,41 +719,110 @@ struct CourseGradeRow: View {
     let course: CourseGrade
 
     var body: some View {
-        HStack(spacing: 12) {
-            Text(course.grade)
-                .font(.system(size: 15, weight: .black))
-                .foregroundStyle(Color.soomsilBlue600)
-                .frame(width: 44, height: 44)
-                .background(Color.soomsilBlue50)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        HStack(spacing: 16) {
+            Image(gradeAssetName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 48, height: 48)
+                .accessibilityLabel(accessibilityGrade)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(course.title)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
+                    .font(.pretendard(16, weight: .semibold))
+                    .foregroundStyle(.black000)
                     .lineLimit(1)
-                Text(L10n.Grades.courseDetail(professor: course.professor, credits: course.credits))
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.soomsilSecondaryText)
+                Text(courseDetail)
+                    .font(.pretendard(14))
+                    .foregroundStyle(.serviceGray500)
             }
+
             Spacer()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .soomsilCard(cornerRadius: 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(minHeight: 100)
+    }
+
+    private var gradeAssetName: String {
+        recognizedGradeAssetName(in: course.gradePoint)
+            ?? recognizedGradeAssetName(in: course.grade)
+            ?? "UndefinedGrade"
+    }
+
+    private var accessibilityGrade: String {
+        let assetName = gradeAssetName
+        return assetName == "UndefinedGrade" ? "미정" : assetName
+    }
+
+    private var courseDetail: String {
+        let credits = course.credits.rounded() == course.credits
+            ? String(format: "%.0f", course.credits)
+            : String(format: "%.1f", course.credits)
+        return "\(course.professor) · \(credits)학점"
+    }
+
+    private func recognizedGradeAssetName(in value: String) -> String? {
+        let grade = value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "＋", with: "+")
+            .replacingOccurrences(of: "−", with: "-")
+            .replacingOccurrences(of: "–", with: "-")
+            .replacingOccurrences(of: "－", with: "-")
+            .replacingOccurrences(of: "０", with: "0")
+
+        switch grade {
+        case "A+", "A0",
+             "B+", "B0",
+             "C+", "C0",
+             "D+", "D0",
+             "F", "P", "NP":
+            return grade
+        case "A-":
+            return "AMinus"
+        case "B-":
+            return "BMinus"
+        case "C-":
+            return "CMinus"
+        case "D-":
+            return "DMinus"
+        case "A", "AO":
+            return "A0"
+        case "B", "BO":
+            return "B0"
+        case "C", "CO":
+            return "C0"
+        case "D", "DO":
+            return "D0"
+        case "PASS", "PASSED", "합격", "급제":
+            return "P"
+        case "N/P", "N-P", "NONPASS", "NON-PASS", "불합격":
+            return "NP"
+        default:
+            return nil
+        }
     }
 }
 
 struct SoomsilLoadingOverlay: View {
+    let showsDimmedBackground: Bool
+
+    init(showsDimmedBackground: Bool = true) {
+        self.showsDimmedBackground = showsDimmedBackground
+    }
+
     var body: some View {
         ZStack {
-            Color.black.opacity(0.12).ignoresSafeArea()
+            Rectangle()
+                .fill(
+                    .realBlack.opacity(showsDimmedBackground ? 0.5 : 0)
+                )
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+
             ProgressView()
                 .controlSize(.large)
-                .tint(Color.soomsilBlue600)
-                .padding(28)
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .tint(.serviceBlue600)
         }
     }
 }
@@ -509,7 +832,10 @@ struct SoomsilLoadingOverlay: View {
         VStack(spacing: 16) {
             StudentInfoCard(profile: MockLMSFixtures.profile)
             GradeOverviewCard(
-                cumulativeGPA: MockLMSFixtures.dashboard.cumulativeGPA
+                cumulativeGPA: MockLMSFixtures.dashboard.cumulativeGPA,
+                earnedCredits: MockLMSFixtures.dashboard.cumulativeEarnedCredits,
+                semesterRank: MockLMSFixtures.semesters.last?.semesterRank ?? "-",
+                totalRank: MockLMSFixtures.semesters.last?.totalRank ?? "-"
             )
             GPATrendCard(semesters: MockLMSFixtures.semesters)
             ChapelAttendanceCard(
@@ -531,5 +857,5 @@ struct SoomsilLoadingOverlay: View {
         }
         .padding(20)
     }
-    .background(Color.soomsilBackground)
+    .background(.white000)
 }
