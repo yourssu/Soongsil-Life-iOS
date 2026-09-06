@@ -44,6 +44,7 @@ struct DIContainer {
 #else
         let authenticationService = AuthenticationService()
         let gradeService = GradeService()
+        let gradeRepository = GradeRepository(service: gradeService)
         let chapelService = ChapelService()
 
         return DIContainer(
@@ -51,11 +52,8 @@ struct DIContainer {
                 service: authenticationService,
                 credentialsStore: KeychainLoginCredentialsStore()
             ),
-            homeRepository: HomeRepository(
-                studentService: StudentService(),
-                gradeService: gradeService
-            ),
-            gradeRepository: GradeRepository(service: gradeService),
+            homeRepository: HomeRepository(gradeRepository: gradeRepository),
+            gradeRepository: gradeRepository,
             chapelRepository: ChapelRepository(service: chapelService),
             graduationAuditRepository: GraduationAuditRepository(
                 service: GraduationAuditService()
@@ -78,6 +76,7 @@ struct DIContainer {
         let gradeService = MockGradeService(
             delay: delay
         )
+        let gradeRepository = GradeRepository(service: gradeService)
         let chapelService = MockChapelService(delay: delay)
 
         return DIContainer(
@@ -85,15 +84,8 @@ struct DIContainer {
                 service: authenticationService,
                 credentialsStore: InMemoryLoginCredentialsStore()
             ),
-            homeRepository: HomeRepository(
-                studentService: MockStudentService(
-                    delay: delay
-                ),
-                gradeService: gradeService
-            ),
-            gradeRepository: GradeRepository(
-                service: gradeService
-            ),
+            homeRepository: HomeRepository(gradeRepository: gradeRepository),
+            gradeRepository: gradeRepository,
             chapelRepository: ChapelRepository(service: chapelService),
             graduationAuditRepository: GraduationAuditRepository(
                 service: MockGraduationAuditService(
