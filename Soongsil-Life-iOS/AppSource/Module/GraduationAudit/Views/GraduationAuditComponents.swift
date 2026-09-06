@@ -190,7 +190,7 @@ private struct GraduationAuditStatusBadge: View {
 private struct GraduationAuditDivider: View {
     var body: some View {
         Rectangle()
-            .fill(.serviceGray200)
+            .fill(.gray100)
             .frame(height: 1)
     }
 }

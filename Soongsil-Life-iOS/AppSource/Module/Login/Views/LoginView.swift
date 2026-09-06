@@ -195,7 +195,7 @@ struct LoginView: View {
         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .stroke(.serviceGray200, lineWidth: 1)
+                .stroke(.gray100, lineWidth: 1)
         }
         .contentShape(Rectangle())
         .onTapGesture {

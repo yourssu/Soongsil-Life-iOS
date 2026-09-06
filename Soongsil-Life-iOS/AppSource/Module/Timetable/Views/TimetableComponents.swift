@@ -27,7 +27,7 @@ struct TimetableGridView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(.serviceGray200, lineWidth: 1)
+                .stroke(.gray100, lineWidth: 1)
         }
     }
 

@@ -68,7 +68,7 @@ struct ZoomableChapelSeatMapView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(.serviceGray200, lineWidth: 1)
+                .stroke(.gray100, lineWidth: 1)
         }
         .contentShape(Rectangle())
         .onTapGesture(count: 2, perform: resetTransform)

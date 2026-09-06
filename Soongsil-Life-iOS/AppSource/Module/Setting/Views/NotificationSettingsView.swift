@@ -13,7 +13,7 @@ struct NotificationSettingsView: View {
                 .font(.pretendard(20, weight: .semibold))
                 .foregroundStyle(.black000)
                 .padding(.horizontal, 20)
-                .frame(height: 48)
+                .frame(height: 56)
 
             NotificationToggleRow(
                 title: L10n.Settings.gradeNotifications,
@@ -21,7 +21,7 @@ struct NotificationSettingsView: View {
             )
 
             Rectangle()
-                .fill(.serviceGray200)
+                .fill(.gray100)
                 .frame(height: 1)
                 .padding(.horizontal, 20)
 

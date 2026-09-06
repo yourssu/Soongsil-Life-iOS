@@ -103,7 +103,7 @@ struct ChapelTabView: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .frame(height: 56)
     }
 }
 

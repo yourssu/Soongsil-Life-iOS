@@ -488,7 +488,7 @@ struct ChapelAttendanceCard: View {
                 .padding(.top, 19)
 
             Rectangle()
-                .fill(.serviceGray200)
+                .fill(.gray100)
                 .frame(height: 1)
                 .padding(.top, 14)
 
@@ -680,7 +680,7 @@ struct HomeShortcutCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .stroke(.serviceGray300, lineWidth: 1)
+                .stroke(.gray100, lineWidth: 1)
         }
         .contentShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
     }

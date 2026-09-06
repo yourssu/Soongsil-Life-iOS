@@ -18,7 +18,7 @@ struct TimetableView: View {
                     header
 
                     Rectangle()
-                        .fill(.serviceGray200)
+                        .fill(.gray100)
                         .frame(height: 1)
 
                     periodFilter
@@ -83,8 +83,7 @@ struct TimetableView: View {
             .foregroundStyle(.black000)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)
-            .padding(.top, 9)
-            .padding(.bottom, 17)
+            .frame(height: 56)
     }
 
     @ViewBuilder

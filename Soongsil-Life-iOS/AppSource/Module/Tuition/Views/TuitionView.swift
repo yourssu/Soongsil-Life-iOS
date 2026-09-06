@@ -82,7 +82,7 @@ struct TuitionView: View {
 
                         ZStack(alignment: .bottom) {
                             Rectangle()
-                                .fill(.serviceGray200)
+                                .fill(.gray100)
                                 .frame(height: 1)
 
                             if isSelected {
@@ -206,7 +206,7 @@ private struct TuitionRecordRow: View {
         .frame(maxWidth: .infinity, minHeight: 105, alignment: .topLeading)
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(.serviceGray200)
+                .fill(.gray100)
                 .frame(height: 1)
         }
     }
@@ -260,7 +260,7 @@ private struct ScholarshipRecordRow: View {
         .frame(maxWidth: .infinity, minHeight: 105, alignment: .topLeading)
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(.serviceGray200)
+                .fill(.gray100)
                 .frame(height: 1)
         }
     }
