@@ -71,14 +71,17 @@ struct SoongsilLifeApp: App {
             }
             .tint(.serviceBlue600)
             .preferredColorScheme(.light)
-            .task {
-                await appFlow.transform(input: .restoreSession)
-            }
-            .task {
-                await appUpdate.checkIfNeeded()
+            .onAppear {
+                Task {
+                    await appFlow.transform(input: .restoreSession)
+                }
+                Task {
+                    await appUpdate.checkIfNeeded()
+                }
             }
             .overlay {
-                if let prompt = appUpdate.prompt {
+                if canPresentUpdatePrompt,
+                   let prompt = appUpdate.prompt {
                     AppUpdatePromptView(
                         prompt: prompt,
                         postpone: appUpdate.postpone,
@@ -87,6 +90,18 @@ struct SoongsilLifeApp: App {
                 }
             }
         }
+    }
+
+    private var canPresentUpdatePrompt: Bool {
+        let output = appFlow.output
+
+        if output.state != .restoringSession {
+            return true
+        }
+
+        return output.restoreErrorMessage != nil
+            && !output.isRestoringSession
+            && !output.isChangingAccount
     }
 
 }
@@ -127,18 +142,17 @@ final class AppFlowViewModel: BaseViewModel {
     private(set) var output: Output
     private var restoreAttemptID: UUID?
 
+    // logoAni.mp4 is 2.0333 seconds; round up so its first loop can finish.
+    private static let minimumInitialSplashDuration: Duration =
+        .milliseconds(2_034)
+
     init(
         repository: AuthenticationRepositoryProtocol,
         consentStore: AgreementConsentStoreProtocol
     ) {
         self.repository = repository
         self.consentStore = consentStore
-        output = Output(
-            state: Self.initialState(
-                repository: repository,
-                consentStore: consentStore
-            )
-        )
+        output = Output(state: .restoringSession)
     }
 
     convenience init(repository: AuthenticationRepositoryProtocol) {
@@ -160,50 +174,16 @@ final class AppFlowViewModel: BaseViewModel {
             }
 
             let attemptID = UUID()
-            let needsSessionReset = output.restoreErrorMessage != nil
+            let isRetrying = output.restoreErrorMessage != nil
             restoreAttemptID = attemptID
             output.isRestoringSession = true
-            output.isRetryingSession = needsSessionReset
+            output.isRetryingSession = isRetrying
             output.restoreErrorMessage = nil
 
-            if needsSessionReset {
-                let didResetSession = await repository.resetCurrentSession()
-                guard restoreAttemptID == attemptID,
-                      output.state == .restoringSession
-                else {
-                    return output
-                }
-
-                guard didResetSession else {
-                    restoreAttemptID = nil
-                    output.isRestoringSession = false
-                    output.isRetryingSession = false
-                    output.restoreErrorMessage = L10n.Error.requestTimedOut
-                    return output
-                }
-            }
-
-            do {
-                try await repository.restoreSession()
-                guard restoreAttemptID == attemptID,
-                      output.state == .restoringSession
-                else {
-                    await repository.resetCurrentSession()
-                    return output
-                }
-                output.state = authenticatedDestination
-            } catch is CancellationError {
-                guard restoreAttemptID == attemptID else { return output }
-                output.restoreErrorMessage = L10n.Error.requestCancelled
-            } catch {
-                guard restoreAttemptID == attemptID else { return output }
-                output.restoreErrorMessage = error.localizedDescription
-            }
-
-            if restoreAttemptID == attemptID {
-                restoreAttemptID = nil
-                output.isRestoringSession = false
-                output.isRetryingSession = false
+            if isRetrying {
+                await retrySessionRestore(attemptID: attemptID)
+            } else {
+                await restoreInitialSession(attemptID: attemptID)
             }
 
         case .useAnotherAccount:
@@ -259,14 +239,105 @@ final class AppFlowViewModel: BaseViewModel {
         return output
     }
 
-    private static func initialState(
-        repository: AuthenticationRepositoryProtocol,
-        consentStore: AgreementConsentStoreProtocol
-    ) -> State {
-        if repository.isLoggedIn {
-            return authenticatedDestination(consentStore: consentStore)
+    private func restoreInitialSession(attemptID: UUID) async {
+        async let minimumSplashElapsed: Void = Task.sleep(
+            for: Self.minimumInitialSplashDuration
+        )
+
+        let resolution = await initialSessionResolution()
+
+        do {
+            try await minimumSplashElapsed
+        } catch {
+            guard restoreAttemptID == attemptID else { return }
+            output.restoreErrorMessage = L10n.Error.requestCancelled
+            finishRestoreAttempt(attemptID: attemptID)
+            return
         }
-        return repository.hasSavedCredentials ? .restoringSession : .login
+
+        guard restoreAttemptID == attemptID,
+              output.state == .restoringSession
+        else {
+            return
+        }
+
+        if let destination = resolution.destination {
+            output.state = destination
+        } else if resolution.error is CancellationError {
+            output.restoreErrorMessage = L10n.Error.requestCancelled
+        } else {
+            output.restoreErrorMessage = resolution.error?.localizedDescription
+                ?? L10n.Error.networkUnavailable
+        }
+
+        finishRestoreAttempt(attemptID: attemptID)
+    }
+
+    private func retrySessionRestore(attemptID: UUID) async {
+        let didResetSession = await repository.resetCurrentSession()
+        guard restoreAttemptID == attemptID,
+              output.state == .restoringSession
+        else {
+            return
+        }
+
+        guard didResetSession else {
+            output.restoreErrorMessage = L10n.Error.requestTimedOut
+            finishRestoreAttempt(attemptID: attemptID)
+            return
+        }
+
+        do {
+            try await repository.restoreSession()
+            guard restoreAttemptID == attemptID,
+                  output.state == .restoringSession
+            else {
+                return
+            }
+            output.state = authenticatedDestination
+        } catch is CancellationError {
+            guard restoreAttemptID == attemptID else { return }
+            output.restoreErrorMessage = L10n.Error.requestCancelled
+        } catch {
+            guard restoreAttemptID == attemptID else { return }
+            output.restoreErrorMessage = error.localizedDescription
+        }
+
+        finishRestoreAttempt(attemptID: attemptID)
+    }
+
+    private func initialSessionResolution() async -> InitialSessionResolution {
+        if repository.isLoggedIn {
+            return InitialSessionResolution(
+                destination: authenticatedDestination,
+                error: nil
+            )
+        }
+
+        do {
+            try await repository.restoreSession()
+            return InitialSessionResolution(
+                destination: authenticatedDestination,
+                error: nil
+            )
+        } catch LMSServiceError.noSavedCredentials {
+            return InitialSessionResolution(
+                destination: .login,
+                error: nil
+            )
+        } catch {
+            return InitialSessionResolution(
+                destination: nil,
+                error: error
+            )
+        }
+    }
+
+    private func finishRestoreAttempt(attemptID: UUID) {
+        guard restoreAttemptID == attemptID else { return }
+        restoreAttemptID = nil
+        output.isRestoringSession = false
+        output.isRetryingSession = false
     }
 
     private var authenticatedDestination: State {
@@ -283,6 +354,11 @@ final class AppFlowViewModel: BaseViewModel {
             return .agreementComplete
         }
         return .main
+    }
+
+    private struct InitialSessionResolution {
+        let destination: State?
+        let error: Error?
     }
 }
 
