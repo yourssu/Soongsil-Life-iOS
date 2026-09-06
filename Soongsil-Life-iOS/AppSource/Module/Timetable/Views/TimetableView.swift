@@ -43,14 +43,11 @@ struct TimetableView: View {
         .onDisappear {
             viewModel.stopBackgroundPrefetchAfterCurrentRequest()
         }
-        .sheet(item: $selectedBlock) { block in
-            TimetableCourseDetailSheet(block: block) {
+        .fullScreenCover(item: $selectedBlock) { block in
+            TimetableCourseDetailPresentation(block: block) {
                 selectedBlock = nil
             }
-            .presentationDetents([.height(274)])
-            .presentationCornerRadius(20)
-            .presentationDragIndicator(.visible)
-            .presentationBackground(.white000)
+            .presentationBackground(.clear)
         }
         .alert(
             L10n.Timetable.loadFailed,
