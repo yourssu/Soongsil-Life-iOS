@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct ChapelTabView: View {
@@ -80,6 +81,7 @@ struct ChapelTabView: View {
                 Text(L10n.Soomsil.chapelInfo)
             }
         }
+        .tint(.black000)
     }
 
     private var header: some View {
@@ -108,69 +110,182 @@ struct ChapelTabView: View {
 struct ChapelDetailView: View {
     let chapel: ChapelStatus
 
+    @State private var showsAbsenceInfo = false
+
+    private let semesterSessionCount = ChapelAttendancePolicy.semesterSessionCount
+    private let allowedAbsenceCount = ChapelAttendancePolicy.allowedAbsenceCount
+
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 18) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(L10n.Soomsil.mySeat)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.gray600)
-                    Text(chapel.seat)
-                        .font(.system(size: 32, weight: .black))
-                        .foregroundStyle(.pointColor500)
-                    Text(chapel.classroom)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.gray600)
-                }
-                .padding(20)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .soomsilCard(cornerRadius: 20)
+            VStack(spacing: 0) {
+                seatSummary
 
-                VStack(spacing: 4) {
-                    ZoomableChapelSeatMapView(seat: chapel.seat)
-
-                    Text(ChapelSeatLocation(seat: chapel.seat).guideText)
-                        .font(.system(size: 13))
-                        .foregroundStyle(.gray600)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                }
-
-                VStack(spacing: 0) {
-                    ForEach(chapel.attendance) { item in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(item.date)
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(.black000)
-                                Text(attendanceDetail(item))
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(.gray600)
-                            }
-                            Spacer()
-                            Text(item.status.localizedName)
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(item.status.isPresent ? .logoIndigo : .red)
-                        }
-                        .padding(16)
-
-                        if item.id != chapel.attendance.last?.id {
-                            Divider().padding(.horizontal, 16)
-                        }
-                    }
-                }
-                .soomsilCard(cornerRadius: 16)
+                ZoomableChapelSeatMapView(seat: chapel.seat)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 38)
             }
-            .padding(20)
+            .padding(.top, 29)
+            .padding(.bottom, 40)
         }
         .background(.white000)
-        .soomsilDetailNavigation(title: L10n.Soomsil.seatLocation)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarRole(.editor)
+        .tint(.black000)
+        .toolbarBackground(.white000, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
     }
 
-    private func attendanceDetail(_ attendance: ChapelAttendance) -> String {
-        [attendance.lectureType, attendance.classGroup]
-            .filter { !$0.isEmpty }
-            .joined(separator: " · ")
+    private var seatSummary: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L10n.Soomsil.mySeat)
+                .font(.pretendard(14, weight: .medium))
+                .foregroundStyle(.black000)
+
+            Text(chapel.seat.isEmpty ? "-" : chapel.seat)
+                .font(.pretendard(32, weight: .bold))
+                .foregroundStyle(.serviceBlue500)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .padding(.top, 5)
+
+            VStack(spacing: 17) {
+                countRow(
+                    title: "출석 현황",
+                    numerator: String(attendanceCount),
+                    denominator: String(semesterSessionCount)
+                )
+                countRow(
+                    title: "결석 현황",
+                    numerator: absenceCount,
+                    denominator: String(allowedAbsenceCount),
+                    showsInformationIcon: true
+                )
+                valueRow(title: "다음 출석일", value: nextAttendanceText)
+            }
+            .padding(.top, 29)
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func countRow(
+        title: String,
+        numerator: String,
+        denominator: String,
+        showsInformationIcon: Bool = false
+    ) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            HStack(spacing: 5) {
+                Text(title)
+                    .font(.pretendard(15))
+                    .foregroundStyle(.serviceGray500)
+
+                if showsInformationIcon {
+                    Button {
+                        showsAbsenceInfo.toggle()
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 15, weight: .regular))
+                            .foregroundStyle(.serviceGray500)
+                            .frame(width: 24, height: 24)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("결석 처리 기준 안내")
+                    .popover(
+                        isPresented: $showsAbsenceInfo,
+                        attachmentAnchor: .rect(.bounds),
+                        arrowEdge: .top
+                    ) {
+                        Text("지각 2회 시 결석 1회 처리")
+                            .font(.pretendard(13, weight: .medium))
+                            .foregroundStyle(.black000)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .fixedSize()
+                            .presentationCompactAdaptation(.popover)
+                    }
+                }
+            }
+
+            Spacer(minLength: 16)
+
+            Text(numerator)
+                .font(.pretendard(16, weight: .semibold))
+                .foregroundStyle(.black000)
+            Text("/ \(denominator)")
+                .font(.pretendard(12))
+                .foregroundStyle(.serviceGray500)
+        }
+    }
+
+    private func valueRow(title: String, value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(title)
+                .font(.pretendard(15))
+                .foregroundStyle(.serviceGray500)
+
+            Spacer(minLength: 16)
+
+            Text(value)
+                .font(.pretendard(16, weight: .semibold))
+                .foregroundStyle(.black000)
+        }
+    }
+
+    private var attendanceCount: Int {
+        ChapelAttendancePolicy.creditedAttendanceCount(
+            in: chapel.attendance
+        )
+    }
+
+    private var absenceCount: String {
+        let numericValue = chapel.absenceCount.filter(\.isNumber)
+        let reportedCount = Int(numericValue) ?? 0
+        let calculatedCount = ChapelAttendancePolicy.calculatedAbsenceCount(
+            in: chapel.attendance
+        )
+        return String(max(reportedCount, calculatedCount))
+    }
+
+    private var nextAttendanceText: String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
+        let today = calendar.startOfDay(for: Date())
+
+        let nextDate = chapel.attendance.compactMap { attendance -> Date? in
+            guard case .unknown = attendance.status,
+                  let date = parsedDate(attendance.date),
+                  date >= today
+            else { return nil }
+            return date
+        }
+        .min()
+
+        return nextDate.map(displayedDate) ?? "-"
+    }
+
+    private func parsedDate(_ value: String) -> Date? {
+        let formats = ["yyyy.MM.dd", "yyyy-MM-dd", "yyyy/MM/dd"]
+        for format in formats {
+            let formatter = DateFormatter()
+            formatter.calendar = Calendar(identifier: .gregorian)
+            formatter.locale = Locale(identifier: "ko_KR")
+            formatter.dateFormat = format
+            if let date = formatter.date(from: value) {
+                return date
+            }
+        }
+        return nil
+    }
+
+    private func displayedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "MM / dd (EEE)"
+        return formatter.string(from: date)
     }
 }
 
