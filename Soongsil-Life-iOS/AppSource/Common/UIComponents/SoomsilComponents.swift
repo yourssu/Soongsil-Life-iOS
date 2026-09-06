@@ -88,21 +88,17 @@ struct SoomsilTabBar: View {
         .padding(8)
         .background {
             Capsule()
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    Capsule()
-                        .fill(
-                            .white000.opacity(0.10)
-                                .shadow(
-                                    .inner(
-                                        color: .white000.opacity(0.25),
-                                        radius: 4,
-                                        x: 0,
-                                        y: 4
-                                    )
-                                )
+                .fill(
+                    .white000.opacity(0.10)
+                        .shadow(
+                            .inner(
+                                color: .white000.opacity(0.25),
+                                radius: 4,
+                                x: 0,
+                                y: 4
+                            )
                         )
-                }
+                )
         }
         .clipShape(Capsule())
         .overlay {
