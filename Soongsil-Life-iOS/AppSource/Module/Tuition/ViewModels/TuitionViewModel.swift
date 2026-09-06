@@ -30,10 +30,21 @@ final class TuitionViewModel: BaseViewModel {
         var scholarshipRecords: [ScholarshipRecord] = []
         var isLoading = false
         var hasLoaded = false
+        var loadedTabs: Set<Tab> = []
+        var loadingTabs: Set<Tab> = []
+        var failedTabMessages: [Tab: String] = [:]
         var errorMessage: String?
+
+        var hasLoadedSelectedTab: Bool {
+            loadedTabs.contains(selectedTab)
+        }
 
         var hasLoadedData: Bool {
             !tuitionRecords.isEmpty || !scholarshipRecords.isEmpty
+        }
+
+        var isLoadingSelectedTab: Bool {
+            loadingTabs.contains(selectedTab)
         }
     }
     
@@ -47,49 +58,75 @@ final class TuitionViewModel: BaseViewModel {
 
     private func selectTab(_ tab: Tab) {
         output.selectedTab = tab
-        output.errorMessage = nil
+        output.errorMessage = output.failedTabMessages[tab]
     }
 
     @discardableResult
     func transform(input: Input) async -> Output {
         switch input {
         case let .load(force):
-            guard force || !output.hasLoaded else { return output }
-
-            await loadFlight.run { [self] in
-                output.isLoading = true
-                output.errorMessage = nil
-                var didFinish = false
-                defer {
-                    output.isLoading = false
-                    if didFinish {
-                        output.hasLoaded = true
-                    }
-                }
-
-                do {
-                    async let tuitionRequest = repository.fetchTuitionRecords()
-                    async let scholarshipRequest = repository.fetchScholarshipRecords()
-
-                    let (tuition, scholarship) = try await (tuitionRequest, scholarshipRequest)
-
-                    output.tuitionRecords = tuition
-                    output.scholarshipRecords = scholarship
-                    didFinish = true
-                } catch is CancellationError {
-                    return
-                } catch {
-                    output.errorMessage = error.localizedDescription
-                    didFinish = true
-                }
+            let selectedTab = output.selectedTab
+            guard force || !output.loadedTabs.contains(selectedTab) else {
+                return output
             }
+            await loadSelectedTab(selectedTab, force: force)
 
         case let .selectTab(tab):
+            guard !output.isLoading else { return output }
             selectTab(tab)
+            if !output.loadedTabs.contains(tab) {
+                await loadSelectedTab(tab, force: false)
+            }
 
         case .errorDismissed:
             output.errorMessage = nil
         }
         return output
+    }
+
+    private func loadSelectedTab(_ tab: Tab, force: Bool) async {
+        await loadFlight.run { [self] in
+            output.isLoading = true
+            output.errorMessage = nil
+            defer {
+                output.isLoading = false
+                output.hasLoaded = true
+            }
+
+            // 처음에는 현재 탭만 요청하고, 다른 탭은 실제 선택 시 불러옵니다.
+            // 사용하지 않는 WebDynpro 화면 조회가 다음 사용자 동작을 막지 않습니다.
+            _ = await load(tab: tab, force: force)
+        }
+    }
+
+    private func load(tab: Tab, force: Bool) async -> Bool {
+        guard force || !output.loadedTabs.contains(tab) else { return true }
+
+        output.loadingTabs.insert(tab)
+        defer { output.loadingTabs.remove(tab) }
+
+        do {
+            switch tab {
+            case .tuition:
+                output.tuitionRecords = try await repository.fetchTuitionRecords()
+            case .scholarship:
+                output.scholarshipRecords = try await repository.fetchScholarshipRecords()
+            }
+            output.loadedTabs.insert(tab)
+            output.failedTabMessages[tab] = nil
+            if output.selectedTab == tab {
+                output.errorMessage = nil
+            }
+            return true
+        } catch is CancellationError {
+            return false
+        } catch {
+            // 탭별 오류를 보관해 다른 탭의 정상 데이터에는 영향을 주지 않습니다.
+            output.failedTabMessages[tab] = error.localizedDescription
+            if output.selectedTab == tab {
+                output.errorMessage = error.localizedDescription
+            }
+            return false
+        }
     }
 }
