@@ -44,6 +44,10 @@ enum LMSCallbackBridge {
                     return
                 }
 
+                // callback이 영구히 누락되면 다음 요청을 시작해 SDK 세션을
+                // 겹치게 하지 않고, 해당 세션을 격리 상태로 전환합니다.
+                lease.armWatchdog(after: remainingTimeout)
+
                 start { [weak state] result in
                     lease.release()
                     state?.resume(with: result)
@@ -66,15 +70,21 @@ private actor LMSRequestCoordinator {
         let continuation: CheckedContinuation<LMSRequestLease, Error>
     }
 
-    private var isRequestActive = false
+    private var activeRequestID: UUID?
+    private var quarantinedRequestID: UUID?
     private var waiters: [Waiter] = []
 
     func acquire(timeout: Duration) async throws -> LMSRequestLease {
         try Task.checkCancellation()
 
-        guard isRequestActive else {
-            isRequestActive = true
-            return LMSRequestLease(coordinator: self)
+        guard quarantinedRequestID == nil else {
+            throw LMSServiceError.requestTimedOut
+        }
+
+        guard activeRequestID != nil else {
+            let id = UUID()
+            activeRequestID = id
+            return LMSRequestLease(id: id, coordinator: self)
         }
 
         let id = UUID()
@@ -108,20 +118,54 @@ private actor LMSRequestCoordinator {
         return lease
     }
 
-    nonisolated func release() {
-        Task { await releaseNext() }
+    nonisolated func release(id: UUID) {
+        Task { await releaseNext(id: id) }
     }
 
-    private func releaseNext() {
+    nonisolated func quarantine(id: UUID) {
+        Task { await quarantineRequest(id: id) }
+    }
+
+    private func releaseNext(id: UUID) {
+        guard activeRequestID == id else { return }
+
+        if quarantinedRequestID == id {
+            quarantinedRequestID = nil
+            activeRequestID = nil
+            return
+        }
+
         if waiters.isEmpty {
-            isRequestActive = false
+            activeRequestID = nil
             return
         }
 
         let waiter = waiters.removeFirst()
+        activeRequestID = waiter.id
         waiter.continuation.resume(
-            returning: LMSRequestLease(coordinator: self)
+            returning: LMSRequestLease(
+                id: waiter.id,
+                coordinator: self
+            )
         )
+    }
+
+    /// callback이 없는 요청을 임의로 해제하면 늦은 callback과 다음 요청이
+    /// 다시 겹칠 수 있습니다. 따라서 대기 요청을 즉시 실패시키고, 실제
+    /// callback이 도착해 `release`될 때까지만 새 요청을 차단합니다.
+    private func quarantineRequest(id: UUID) {
+        guard activeRequestID == id, quarantinedRequestID == nil else {
+            return
+        }
+
+        quarantinedRequestID = id
+        let pendingWaiters = waiters
+        waiters.removeAll()
+        for waiter in pendingWaiters {
+            waiter.continuation.resume(
+                throwing: LMSServiceError.requestTimedOut
+            )
+        }
     }
 
     private func cancelWaiter(id: UUID, error: Error) {
@@ -136,11 +180,34 @@ private actor LMSRequestCoordinator {
 
 private nonisolated final class LMSRequestLease: @unchecked Sendable {
     private let lock = NSLock()
+    private let id: UUID
     private let coordinator: LMSRequestCoordinator
     private var isReleased = false
+    private var watchdogTask: Task<Void, Never>?
 
-    init(coordinator: LMSRequestCoordinator) {
+    init(id: UUID, coordinator: LMSRequestCoordinator) {
+        self.id = id
         self.coordinator = coordinator
+    }
+
+    func armWatchdog(after timeout: Duration) {
+        lock.lock()
+        guard !isReleased, watchdogTask == nil else {
+            lock.unlock()
+            return
+        }
+
+        let id = id
+        let coordinator = coordinator
+        watchdogTask = Task {
+            do {
+                try await Task.sleep(for: timeout)
+            } catch {
+                return
+            }
+            coordinator.quarantine(id: id)
+        }
+        lock.unlock()
     }
 
     func release() {
@@ -150,9 +217,12 @@ private nonisolated final class LMSRequestLease: @unchecked Sendable {
             return
         }
         isReleased = true
+        let watchdogTask = watchdogTask
+        self.watchdogTask = nil
         lock.unlock()
 
-        coordinator.release()
+        watchdogTask?.cancel()
+        coordinator.release(id: id)
     }
 }
 
