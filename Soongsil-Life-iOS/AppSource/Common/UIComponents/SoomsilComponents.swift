@@ -402,6 +402,17 @@ struct ChapelAttendanceCard: View {
     private let requiredCount = ChapelAttendancePolicy.requiredAttendanceCount
     private let semesterSessionCount = ChapelAttendancePolicy.semesterSessionCount
 
+    private var attendanceGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                .serviceBlue100,
+                .serviceBlue500
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+
     private var attendanceCount: Int {
         guard let chapel else { return 0 }
         return ChapelAttendancePolicy.creditedAttendanceCount(
@@ -496,7 +507,8 @@ struct ChapelAttendanceCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .stroke(.serviceBlue500, lineWidth: 1)
+                .stroke(attendanceGradient, lineWidth: 1)
+                .opacity(0.75)
         }
     }
 
@@ -526,7 +538,17 @@ struct ChapelAttendanceCard: View {
                         .fill(.serviceGray200)
 
                     Capsule()
-                        .fill(.serviceBlue500)
+                        .fill(
+                            attendanceGradient
+                                .shadow(
+                                    .inner(
+                                        color: .white000.opacity(0.15),
+                                        radius: 2,
+                                        x: 0.5,
+                                        y: 1
+                                    )
+                                )
+                        )
                         .frame(
                             width: proxy.size.width
                                 * CGFloat(attendanceCount)
