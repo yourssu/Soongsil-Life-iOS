@@ -21,11 +21,7 @@ struct MainTabView: View {
         graduationAuditRepository = container.graduationAuditRepository
         tuitionRepository = container.tuitionRepository
         _viewModel = State(
-            initialValue: viewModel ?? MainTabViewModel(
-                initialTab: CommandLine.arguments.contains("-qaTimetable")
-                    ? .timetable
-                    : .home
-            )
+            initialValue: viewModel ?? MainTabViewModel()
         )
         _homeViewModel = State(
             initialValue: HomeViewModel(repository: container.homeRepository)
