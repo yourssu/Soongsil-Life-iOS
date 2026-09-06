@@ -1,8 +1,8 @@
 diff --git a/library/src/commonMain/kotlin/io/github/chlwhdtn03/LmsApi.kt b/library/src/commonMain/kotlin/io/github/chlwhdtn03/LmsApi.kt
-index 1f7fe8e..29c8f84 100644
+index 1f7fe8e..b3f8e91 100644
 --- a/library/src/commonMain/kotlin/io/github/chlwhdtn03/LmsApi.kt
 +++ b/library/src/commonMain/kotlin/io/github/chlwhdtn03/LmsApi.kt
-@@ -1114,42 +1114,85 @@ internal fun normalizePem(raw: String): String {
+@@ -1114,42 +1114,123 @@ internal fun normalizePem(raw: String): String {
 
  @JvmSynthetic
  internal fun String.decodeHtmlEntities(): String {
@@ -73,10 +73,11 @@ index 1f7fe8e..29c8f84 100644
 +                continue
 +            }
 +
-+            val tagEnd = this@stripHtmlTags.indexOf('>', index + 1)
-+            if (tagEnd < 0) {
-+                append(this@stripHtmlTags.substring(index))
-+                break
++            val tagEnd = this@stripHtmlTags.htmlTagEnd(index)
++            if (tagEnd == null) {
++                append('<')
++                index++
++                continue
 +            }
 +
 +            val tagName = this@stripHtmlTags
@@ -90,6 +91,43 @@ index 1f7fe8e..29c8f84 100644
      return stripped.decodeHtmlEntities().trim()
  }
 
++private fun String.htmlTagEnd(tagStart: Int): Int? {
++    if (regionMatches(tagStart, "<!--", 0, 4)) {
++        val commentEnd = indexOf("-->", tagStart + 4)
++        return commentEnd.takeIf { it >= 0 }?.plus(2)
++    }
++
++    var cursor = tagStart + 1
++    if (cursor < length && this[cursor] == '/') cursor++
++    if (cursor >= length || !this[cursor].isAsciiHtmlNameStart()) return null
++    cursor++
++    while (cursor < length && this[cursor].isAsciiHtmlNameCharacter()) cursor++
++
++    var quote: Char? = null
++    while (cursor < length) {
++        val character = this[cursor]
++        if (quote != null) {
++            if (character == quote) quote = null
++        } else if (character == '"' || character == '\'') {
++            quote = character
++        } else if (character == '<') {
++            return null
++        } else if (character == '>') {
++            return cursor
++        }
++        cursor++
++    }
++    return null
++}
++
++private fun Char.isAsciiHtmlNameStart(): Boolean {
++    return this in 'a'..'z' || this in 'A'..'Z'
++}
++
++private fun Char.isAsciiHtmlNameCharacter(): Boolean {
++    return isAsciiHtmlNameStart() || isDigit() || this == ':' || this == '_' || this == '-'
++}
++
 +private fun decodeHtmlEntityToken(token: String): String? {
 +    if (token.startsWith("#")) {
 +        val number = token.substring(1)
@@ -116,7 +154,7 @@ index 1f7fe8e..29c8f84 100644
 +
  internal expect fun pemToString(rawPem: String, rawPw: String): String
 diff --git a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/ChapelService.kt b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/ChapelService.kt
-index 759501f..a8b4e78 100644
+index 759501f..8c3f967 100644
 --- a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/ChapelService.kt
 +++ b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/ChapelService.kt
 @@ -43,26 +43,13 @@ internal class ChapelService(
@@ -151,10 +189,89 @@ index 759501f..a8b4e78 100644
              ?: ""
 
          val activeYearControlId = yearControlId
-@@ -270,16 +257,11 @@ internal class ChapelService(
+@@ -119,7 +106,6 @@ internal class ChapelService(
+         defaultYear: String?,
+         defaultSemester: Semester?,
+     ): ChapelInformation {
+-        val decodedHtml = html.decodeHtmlEntities()
+         val parsedYear = webDynpro.parseYear(html)
+         val parsedSemester = webDynpro.parseSemester(html)
+         val year = parsedYear.ifBlank { defaultYear.orEmpty() }
+@@ -128,7 +114,7 @@ internal class ChapelService(
+         var attendanceTable = ChapelAttendanceTable(emptyList())
+         var absenceTable = ChapelAbsenceTable(emptyList())
+
+-        for (tableHtml in extractAllTables(decodedHtml)) {
++        for (tableHtml in extractAllTables(html)) {
+             val rawTable = parseRawTable(removeInnerTables(tableHtml)) ?: continue
+             if (rawTable.rows.isEmpty()) continue
+
+@@ -222,64 +208,33 @@ internal class ChapelService(
+     }
+
+     private fun extractAllTables(html: String): List<String> {
+-        val tables = mutableListOf<String>()
+-        var position = 0
+-        while (true) {
+-            val start = html.indexOf("<table", position, ignoreCase = true)
+-            if (start == -1) break
+-            val end = findNestedTableEnd(html, start)
+-            if (end != -1) {
+-                tables += html.substring(start, end)
+-            }
+-            position = start + 6
++        return findNestedHtmlElements(html, "table").map { table ->
++            html.substring(table.openingTag.start, table.endExclusive)
+         }
+-        return tables
+     }
+
+     private fun removeInnerTables(tableHtml: String): String {
+-        var html = tableHtml
+-        while (true) {
+-            val start = html.indexOf("<table", 1, ignoreCase = true)
+-            if (start == -1) break
+-            val end = findNestedTableEnd(html, start)
+-            if (end == -1) break
+-            html = html.substring(0, start) + html.substring(end)
+-        }
+-        return html
+-    }
+-
+-    private fun findNestedTableEnd(html: String, start: Int): Int {
+-        var depth = 1
+-        var position = start + 6
+-        while (depth > 0 && position < html.length) {
+-            val nextStart = html.indexOf("<table", position, ignoreCase = true)
+-            val nextEnd = html.indexOf("</table>", position, ignoreCase = true)
+-            if (nextEnd == -1) return -1
+-
+-            if (nextStart != -1 && nextStart < nextEnd) {
+-                depth++
+-                position = nextStart + 6
+-            } else {
+-                depth--
+-                position = nextEnd + 8
+-                if (depth == 0) return position
+-            }
++        val outerTable = findNestedHtmlElements(tableHtml, "table").firstOrNull()
++            ?: return tableHtml
++        val innerTables = findHtmlElements(
++            source = tableHtml,
++            tagName = "table",
++            startIndex = outerTable.openingTag.endExclusive,
++            limit = outerTable.contentEnd,
++        )
++        var result = tableHtml
++        for (innerTable in innerTables.asReversed()) {
++            result = result.removeRange(innerTable.openingTag.start, innerTable.endExclusive)
+         }
+-        return -1
++        return result
+     }
 
      private fun parseRawTable(tableHtml: String): RawTable? {
-         val decodedHtml = tableHtml.decodeHtmlEntities()
+-        val decodedHtml = tableHtml.decodeHtmlEntities()
 -        val rowRegex = Regex("""<tr\b[^>]*>([\s\S]*?)</tr>""", RegexOption.IGNORE_CASE)
 -        val cellRegex = Regex(
 -            """<(td|th)\b[^>]*>([\s\S]*?)</\1>""",
@@ -165,15 +282,15 @@ index 759501f..a8b4e78 100644
 -                .map { it.groupValues[2].stripHtmlTags().trim() }
 -                .toList()
 -        }.filter { it.isNotEmpty() }.toList()
-+        val allRows = findHtmlElements(decodedHtml, "tr").map { row ->
-+            val rowHtml = row.content(decodedHtml)
++        val allRows = findHtmlElements(tableHtml, "tr").map { row ->
++            val rowHtml = row.content(tableHtml)
 +            findHtmlElements(rowHtml, TABLE_CELL_TAGS)
-+                .map { it.content(rowHtml).stripHtmlTags().trim() }
++                .map { it.content(rowHtml).decodeHtmlEntities().stripHtmlTags().trim() }
 +        }.filter { it.isNotEmpty() }
          if (allRows.isEmpty()) return null
          return RawTable(headers = allRows[0], rows = allRows.drop(1))
      }
-@@ -290,6 +272,7 @@ internal class ChapelService(
+@@ -290,6 +245,7 @@ internal class ChapelService(
      )
 
      private companion object {
@@ -182,7 +299,7 @@ index 759501f..a8b4e78 100644
          const val ECC_BASE_URL = "https://ecc.ssu.ac.kr:8443"
          const val URL = "$ECC_BASE_URL/sap/bc/webdynpro/SAP/$APP_NAME"
 diff --git a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/GradeService.kt b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/GradeService.kt
-index 91f8404..841fa87 100644
+index 91f8404..3eacdb7 100644
 --- a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/GradeService.kt
 +++ b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/GradeService.kt
 @@ -45,26 +45,13 @@ internal class GradeService(
@@ -217,16 +334,17 @@ index 91f8404..841fa87 100644
              ?: DEFAULT_SEARCH_BUTTON_ID
 
          val buttonEvent =
-@@ -135,31 +122,36 @@ internal class GradeService(
+@@ -134,32 +121,36 @@ internal class GradeService(
+     }
 
      fun findSemesterGradeSummaryTableId(html: String): String? {
-         val decodedHtml = html.decodeHtmlEntities()
+-        val decodedHtml = html.decodeHtmlEntities()
 -        val controlRegex = Regex(
 -            """<(?:div|table)\b(?=[^>]*\bct="(?:ST|CT)")(?=[^>]*\bid="([^"]+)")[^>]*>""",
 -            RegexOption.IGNORE_CASE,
 -        )
 -        val controls = controlRegex.findAll(decodedHtml).toList()
-+        val controls = findOpeningHtmlTags(decodedHtml, setOf("div", "table"))
++        val controls = findOpeningHtmlTags(html, setOf("div", "table"))
 +            .filter { control ->
 +                val controlType = control.attribute("ct")
 +                !control.attribute("id").isNullOrBlank() &&
@@ -236,8 +354,8 @@ index 91f8404..841fa87 100644
          for ((index, control) in controls.withIndex()) {
 -            val end = controls.getOrNull(index + 1)?.range?.first ?: decodedHtml.length
 -            val controlHtml = decodedHtml.substring(control.range.first, end)
-+            val end = controls.getOrNull(index + 1)?.start ?: decodedHtml.length
-+            val controlHtml = decodedHtml.substring(control.start, end)
++            val end = controls.getOrNull(index + 1)?.start ?: html.length
++            val controlHtml = html.substring(control.start, end)
              if (parseSemesterGradeSummaryTable(controlHtml).items.isNotEmpty()) {
 -                return control.groupValues[1]
 +                return control.attribute("id")
@@ -249,10 +367,10 @@ index 91f8404..841fa87 100644
 -            RegexOption.IGNORE_CASE,
 -        ).findAll(decodedHtml)
 -            .firstOrNull { parseSemesterGradeSummaryTable(it.value).items.isNotEmpty() }
-+        val summaryRow = findHtmlElements(decodedHtml, "tr")
++        val summaryRow = findNestedHtmlElements(html, "tr")
 +            .firstOrNull { row ->
 +                parseSemesterGradeSummaryTable(
-+                    decodedHtml.substring(row.openingTag.start, row.endExclusive),
++                    html.substring(row.openingTag.start, row.endExclusive),
 +                ).items.isNotEmpty()
 +            }
              ?: return null
@@ -261,7 +379,7 @@ index 91f8404..841fa87 100644
 -            RegexOption.IGNORE_CASE,
 -        ).findAll(decodedHtml.substring(0, summaryRow.range.first)).lastOrNull()
 +        val tableTag = findOpeningHtmlTags(
-+            source = decodedHtml,
++            source = html,
 +            tagNames = setOf("table"),
 +            limit = summaryRow.openingTag.start,
 +        ).lastOrNull { !it.attribute("id").isNullOrBlank() }
@@ -272,10 +390,11 @@ index 91f8404..841fa87 100644
              .removeSuffix("-content")
              .removeSuffix("-table")
      }
-@@ -180,17 +172,12 @@ internal class GradeService(
+@@ -179,18 +170,12 @@ internal class GradeService(
+     }
 
      fun parseSemesterGradeSummaryTable(html: String): SemesterGradeSummaryTable {
-         val decodedHtml = html.decodeHtmlEntities()
+-        val decodedHtml = html.decodeHtmlEntities()
 -        val rowRegex = Regex("""<tr\b[^>]*>([\s\S]*?)</tr>""", RegexOption.IGNORE_CASE)
 -        val cellRegex = Regex(
 -            """<(td|th)\b[^>]*>([\s\S]*?)</\1>""",
@@ -287,14 +406,19 @@ index 91f8404..841fa87 100644
 -            val cells = cellRegex.findAll(rowMatch.groupValues[1])
 -                .map { it.groupValues[2].stripHtmlTags() }
 -                .toList()
-+        for (row in findHtmlElements(decodedHtml, "tr")) {
-+            val rowHtml = row.content(decodedHtml)
++        for (row in findNestedHtmlElements(html, "tr")) {
++            val rowHtml = row.content(html)
 +            val cells = findHtmlElements(rowHtml, TABLE_CELL_TAGS)
-+                .map { it.content(rowHtml).stripHtmlTags() }
++                .map { it.content(rowHtml).decodeHtmlEntities().stripHtmlTags() }
              if (cells.size != 14) continue
 
              val year = cells[1].trim()
-@@ -227,17 +214,12 @@ internal class GradeService(
+@@ -222,22 +207,16 @@ internal class GradeService(
+         defaultYear: String?,
+         defaultSemester: Semester?,
+     ): GradeTable {
+-        val decodedHtml = html.decodeHtmlEntities()
+         val parsedYear = webDynpro.parseYear(html)
          val parsedSemester = webDynpro.parseSemester(html)
          val finalYear = parsedYear.ifBlank { defaultYear.orEmpty() }
          val finalSemester = parsedSemester ?: defaultSemester ?: Semester.FIRST
@@ -309,14 +433,14 @@ index 91f8404..841fa87 100644
 -            val cells = cellRegex.findAll(rowMatch.groupValues[1])
 -                .map { it.groupValues[2].stripHtmlTags() }
 -                .toList()
-+        for (row in findHtmlElements(decodedHtml, "tr")) {
-+            val rowHtml = row.content(decodedHtml)
++        for (row in findNestedHtmlElements(html, "tr")) {
++            val rowHtml = row.content(html)
 +            val cells = findHtmlElements(rowHtml, TABLE_CELL_TAGS)
-+                .map { it.content(rowHtml).stripHtmlTags() }
++                .map { it.content(rowHtml).decodeHtmlEntities().stripHtmlTags() }
              if (cells.size != 9) continue
 
              val subjectCode = cells[8].trim()
-@@ -283,6 +265,7 @@ internal class GradeService(
+@@ -283,6 +262,7 @@ internal class GradeService(
      }
 
      private companion object {
@@ -513,10 +637,10 @@ index 7ae1cc1..9aea5dd 100644
              val matched = row.mapNotNull { parseHeader(it) }
 diff --git a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/LinearHtmlScanner.kt b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/LinearHtmlScanner.kt
 new file mode 100644
-index 0000000..2fafea7
+index 0000000..34d3501
 --- /dev/null
 +++ b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/LinearHtmlScanner.kt
-@@ -0,0 +1,366 @@
+@@ -0,0 +1,465 @@
 +package io.github.chlwhdtn03.internal
 +
 +import io.github.chlwhdtn03.stripHtmlTags
@@ -611,7 +735,7 @@ index 0000000..2fafea7
 +): HtmlTagSlice? {
 +    var searchIndex = startIndex.coerceAtLeast(0)
 +    val safeLimit = limit.coerceAtMost(source.length)
-+    while (searchIndex < safeLimit) {
++    tagSearch@ while (searchIndex < safeLimit) {
 +        val tagStart = source.indexOf('<', searchIndex)
 +        if (tagStart < 0 || tagStart >= safeLimit) return null
 +
@@ -628,13 +752,12 @@ index 0000000..2fafea7
 +            isClosing = true
 +            cursor++
 +        }
-+        while (cursor < safeLimit && source[cursor].isWhitespace()) cursor++
-+        val nameStart = cursor
-+        while (cursor < safeLimit && isHtmlNameCharacter(source[cursor])) cursor++
-+        if (cursor == nameStart) {
++        if (cursor >= safeLimit || !isHtmlNameStartCharacter(source[cursor])) {
 +            searchIndex = tagStart + 1
 +            continue
 +        }
++        val nameStart = cursor
++        while (cursor < safeLimit && isHtmlNameCharacter(source[cursor])) cursor++
 +
 +        val name = source.substring(nameStart, cursor)
 +        var quote: Char? = null
@@ -644,10 +767,13 @@ index 0000000..2fafea7
 +                if (character == quote) quote = null
 +            } else if (character == '"' || character == '\'') {
 +                quote = character
++            } else if (character == '<') {
++                searchIndex = cursor
++                continue@tagSearch
 +            } else if (character == '>') {
 +                var slashIndex = cursor - 1
 +                while (slashIndex > nameStart && source[slashIndex].isWhitespace()) slashIndex--
-+                return HtmlTagSlice(
++                val tag = HtmlTagSlice(
 +                    name = name,
 +                    start = tagStart,
 +                    endExclusive = cursor + 1,
@@ -655,12 +781,71 @@ index 0000000..2fafea7
 +                    isSelfClosing = !isClosing && source[slashIndex] == '/',
 +                    source = source,
 +                )
++                if (!tag.isClosing && !tag.isSelfClosing && tag.name.isRawTextElement()) {
++                    val rawTextEnd = findRawTextElementEnd(source, tag, safeLimit)
++                        ?: return null
++                    searchIndex = rawTextEnd
++                    continue@tagSearch
++                }
++                return tag
 +            }
 +            cursor++
 +        }
 +        return null
 +    }
 +    return null
++}
++
++/**
++ * Finds every element with [tagName], including same-name elements nested inside another match.
++ *
++ * [findHtmlElements] intentionally returns only outermost same-name elements, which is useful
++ * when extracting the direct cells of a row. WebDynpro pages, however, commonly place result
++ * tables inside layout tables. Page-level row/table discovery must use this variant so an outer
++ * layout `<tr>` cannot hide the result table's `<tr>` elements.
++ */
++internal fun findNestedHtmlElements(
++    source: String,
++    tagName: String,
++    startIndex: Int = 0,
++    limit: Int = source.length,
++): List<HtmlElementSlice> {
++    val safeStart = startIndex.coerceAtLeast(0)
++    val safeLimit = limit.coerceAtMost(source.length)
++    if (safeStart >= safeLimit) return emptyList()
++
++    val elementsInOpeningOrder = mutableListOf<HtmlElementSlice?>()
++    val openElements = mutableListOf<Pair<Int, HtmlTagSlice>>()
++    var cursor = safeStart
++    while (cursor < safeLimit) {
++        val tag = nextHtmlTag(source, cursor, safeLimit) ?: break
++        if (tag.name.equals(tagName, ignoreCase = true)) {
++            if (tag.isClosing) {
++                if (openElements.isNotEmpty()) {
++                    val (resultIndex, openingTag) = openElements.removeAt(openElements.lastIndex)
++                    elementsInOpeningOrder[resultIndex] = HtmlElementSlice(
++                        openingTag = openingTag,
++                        contentStart = openingTag.endExclusive,
++                        contentEnd = tag.start,
++                        endExclusive = tag.endExclusive,
++                    )
++                }
++            } else if (tag.isSelfClosing) {
++                elementsInOpeningOrder += HtmlElementSlice(
++                    openingTag = tag,
++                    contentStart = tag.endExclusive,
++                    contentEnd = tag.endExclusive,
++                    endExclusive = tag.endExclusive,
++                )
++            } else {
++                val resultIndex = elementsInOpeningOrder.size
++                elementsInOpeningOrder += null
++                openElements += resultIndex to tag
++            }
++        }
++        cursor = tag.endExclusive
++    }
++    return elementsInOpeningOrder.filterNotNull()
 +}
 +
 +internal fun findHtmlElements(
@@ -881,10 +1066,48 @@ index 0000000..2fafea7
 +}
 +
 +private fun isHtmlNameCharacter(character: Char): Boolean {
-+    return character.isLetterOrDigit() || character == ':' || character == '_' || character == '-'
++    return isHtmlNameStartCharacter(character) ||
++        character.isDigit() ||
++        character == ':' ||
++        character == '_' ||
++        character == '-'
++}
++
++private fun isHtmlNameStartCharacter(character: Char): Boolean {
++    return character in 'a'..'z' || character in 'A'..'Z'
++}
++
++private fun String.isRawTextElement(): Boolean {
++    return equals("script", ignoreCase = true) || equals("style", ignoreCase = true)
++}
++
++private fun findRawTextElementEnd(
++    source: String,
++    openingTag: HtmlTagSlice,
++    limit: Int,
++): Int? {
++    val marker = "</${openingTag.name}"
++    var searchIndex = openingTag.endExclusive
++    while (searchIndex < limit) {
++        val closingStart = source.indexOf('<', searchIndex)
++        if (closingStart < 0 || closingStart + marker.length > limit) return null
++        val boundaryIndex = closingStart + marker.length
++        if (
++            !source.regionMatches(closingStart, marker, 0, marker.length, ignoreCase = true) ||
++            boundaryIndex < limit &&
++            !source[boundaryIndex].isWhitespace() &&
++            source[boundaryIndex] != '>'
++        ) {
++            searchIndex = closingStart + 1
++            continue
++        }
++        val closingEnd = source.indexOf('>', boundaryIndex)
++        return if (closingEnd in boundaryIndex until limit) closingEnd + 1 else null
++    }
++    return null
 +}
 diff --git a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/TimetableService.kt b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/TimetableService.kt
-index b826d00..fc1cb75 100644
+index b826d00..340fd39 100644
 --- a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/TimetableService.kt
 +++ b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/TimetableService.kt
 @@ -15,26 +15,13 @@ internal class TimetableService(
@@ -919,7 +1142,7 @@ index b826d00..fc1cb75 100644
              ?: DEFAULT_SEARCH_BUTTON_ID
 
          val buttonEvent =
-@@ -67,99 +54,59 @@ internal class TimetableService(
+@@ -67,99 +54,66 @@ internal class TimetableService(
      }
 
      fun parseTimetable(html: String): Timetable {
@@ -947,28 +1170,56 @@ index b826d00..fc1cb75 100644
 -        if (year.isBlank()) {
 -            year = Regex("""value="([^"]*학년도)"""", RegexOption.IGNORE_CASE)
 -                .find(html)?.groupValues?.get(1)?.decodeHtmlEntities().orEmpty()
--        }
++        val year = findControlValue(html, "학년도")?.decodeHtmlEntities().orEmpty()
++        val semester = findControlValue(html, "학기")?.decodeHtmlEntities().orEmpty()
++        val pageHeaders = findNestedHtmlElements(html, "th")
++            .filter { it.openingTag.attribute("role").equals("columnheader", ignoreCase = true) }
++        val timetableHeader = pageHeaders.firstOrNull { header ->
++            headerText(header, html).trim() in setOf("월", "월요일")
+         }
 -        if (semester.isBlank()) {
 -            semester = Regex("""value="([^"]*학기)"""", RegexOption.IGNORE_CASE)
 -                .find(html)?.groupValues?.get(1)?.decodeHtmlEntities().orEmpty()
--        }
-+        val year = findControlValue(html, "학년도")?.decodeHtmlEntities().orEmpty()
-+        val semester = findControlValue(html, "학기")?.decodeHtmlEntities().orEmpty()
-
-         val targetHeaderIndex = html.indexOf("title=\"월요일\"", ignoreCase = true).let {
-             if (it == -1) html.indexOf("title=\"월\"", ignoreCase = true) else it
++        val timetableRows = findNestedHtmlElements(html, "tr").filter { row ->
++            val rowHtml = row.content(html)
++            findHtmlElements(rowHtml, "td").any { cell ->
++                cell.openingTag.attribute("cc")?.toIntOrNull() == 0
++            }
          }
-         var tableContent = html
-         if (targetHeaderIndex != -1) {
+-
+-        val targetHeaderIndex = html.indexOf("title=\"월요일\"", ignoreCase = true).let {
+-            if (it == -1) html.indexOf("title=\"월\"", ignoreCase = true) else it
++        val pageTables = findNestedHtmlElements(html, "table")
++        val timetableTable = timetableHeader?.let { header ->
++            pageTables
++                .filter { table ->
++                    table.openingTag.start < header.openingTag.start &&
++                        header.endExclusive <= table.endExclusive &&
++                        timetableRows.any { row ->
++                            table.openingTag.start < row.openingTag.start &&
++                                row.endExclusive <= table.endExclusive
++                        }
++                }
++                .minByOrNull { table -> table.endExclusive - table.openingTag.start }
+         }
+-        var tableContent = html
+-        if (targetHeaderIndex != -1) {
 -            val controlIndex = html.lastIndexOf("ct=\"ST\"", targetHeaderIndex, ignoreCase = true)
 -            val searchStart = if (controlIndex != -1) controlIndex else targetHeaderIndex
 -            val tableStart = html.lastIndexOf("<table", searchStart, ignoreCase = true)
-+            val tableStart = findLastOpeningTagStart(html, "table", targetHeaderIndex)
-             if (tableStart != -1) {
-                 tableContent = html.substring(tableStart, findTableEnd(html, tableStart))
+-            if (tableStart != -1) {
+-                tableContent = html.substring(tableStart, findTableEnd(html, tableStart))
++        val tableContent = timetableTable?.let { table ->
++            html.substring(table.openingTag.start, table.endExclusive)
++        } ?: html
++
++        val headers = findNestedHtmlElements(tableContent, "th")
++            .filter { it.openingTag.attribute("role").equals("columnheader", ignoreCase = true) }
++            .map { header ->
++                headerText(header, tableContent)
              }
-         }
-
+-        }
+-
 -        val headerPattern = Regex(
 -            """<th\b[^>]*role="columnheader"[^>]*>""",
 -            RegexOption.IGNORE_CASE,
@@ -999,26 +1250,12 @@ index b826d00..fc1cb75 100644
 -            """<td\b[^>]*cc="(\d+)"[^>]*>([\s\S]*?)</td>""",
 -            RegexOption.IGNORE_CASE,
 -        )
-+        val headers = findHtmlElements(tableContent, "th")
-+            .filter { it.openingTag.attribute("role").equals("columnheader", ignoreCase = true) }
-+            .map { header ->
-+                val content = header.content(tableContent)
-+                header.openingTag.attribute("title")?.decodeHtmlEntities()
-+                    ?: encodedHeaderText(content)
-+                    ?: cpSpanText(content)
-+                    ?: ""
-+            }
-+
-+        val body = findHtmlElements(tableContent, "tbody")
-+            .firstOrNull()
-+            ?.content(tableContent)
-+            ?: tableContent
          val cells = mutableListOf<TimetableCell>()
 
 -        for (rowMatch in rowRegex.findAll(body)) {
 -            val rowCells = cellRegex.findAll(rowMatch.groupValues[1]).toList()
-+        for (row in findHtmlElements(body, "tr")) {
-+            val rowHtml = row.content(body)
++        for (row in findNestedHtmlElements(tableContent, "tr")) {
++            val rowHtml = row.content(tableContent)
 +            val rowCells = findHtmlElements(rowHtml, "td").mapNotNull { cell ->
 +                val columnIndex = cell.openingTag.attribute("cc")?.toIntOrNull()
 +                    ?: return@mapNotNull null
@@ -1049,57 +1286,43 @@ index b826d00..fc1cb75 100644
                      cellHtml.contains("비어있음") ||
                      cellHtml.contains("비어 임")
                  ) {
-@@ -188,19 +135,55 @@ internal class TimetableService(
+@@ -186,19 +140,34 @@ internal class TimetableService(
+         return Timetable(year = year, semester = semester, items = cells)
+     }
 
-     private fun findTableEnd(html: String, tableStart: Int): Int {
-         var openCount = 0
+-    private fun findTableEnd(html: String, tableStart: Int): Int {
+-        var openCount = 0
 -        for (match in Regex("""</?table\b""", RegexOption.IGNORE_CASE).findAll(html, tableStart)) {
 -            if (match.value.startsWith("</", ignoreCase = true)) {
 -                openCount--
 -                if (openCount == 0) {
 -                    return match.range.last + 1
-+        var cursor = tableStart
-+        while (cursor < html.length) {
-+            val tag = nextHtmlTag(html, cursor) ?: break
-+            if (tag.name.equals("table", ignoreCase = true)) {
-+                if (tag.isClosing) {
-+                    openCount--
-+                    if (openCount == 0) return tag.endExclusive
-+                } else if (!tag.isSelfClosing) {
-+                    openCount++
-                 }
+-                }
 -            } else {
 -                openCount++
-             }
-+            cursor = tag.endExclusive
-         }
-         return html.length
-     }
-
-+    private fun findLastOpeningTagStart(html: String, name: String, beforeIndex: Int): Int {
-+        var cursor = 0
-+        var lastStart = -1
-+        while (cursor < beforeIndex) {
-+            val tag = nextHtmlTag(html, cursor, beforeIndex) ?: break
-+            if (!tag.isClosing && tag.name.equals(name, ignoreCase = true)) {
-+                lastStart = tag.start
-+            }
-+            cursor = tag.endExclusive
-+        }
-+        return lastStart
+-            }
++    private fun headerText(header: HtmlElementSlice, source: String): String {
++        val content = header.content(source)
++        val fullHeader = source.substring(header.openingTag.start, header.endExclusive)
++        return header.openingTag.attribute("title")?.decodeHtmlEntities()
++            ?: encodedHeaderText(fullHeader)
++            ?: cpSpanText(content)
++            ?: content.stripHtmlTags()
 +    }
 +
 +    private fun encodedHeaderText(content: String): String? {
++        val decodedContent = content.decodeHtmlEntities()
 +        val marker = "7:'"
-+        val start = content.indexOf(marker)
++        val start = decodedContent.indexOf(marker)
 +        if (start < 0) return null
 +        val valueStart = start + marker.length
-+        val valueEnd = content.indexOf('\'', valueStart)
++        val valueEnd = decodedContent.indexOf('\'', valueStart)
 +        return if (valueEnd >= 0) {
-+            content.substring(valueStart, valueEnd).decodeHtmlEntities()
++            decodedContent.substring(valueStart, valueEnd)
 +        } else {
 +            null
-+        }
+         }
+-        return html.length
 +    }
 +
 +    private fun cpSpanText(content: String): String? {
@@ -1107,12 +1330,10 @@ index b826d00..fc1cb75 100644
 +            .firstOrNull { it.openingTag.attribute("ct").equals("CP", ignoreCase = true) }
 +            ?.content(content)
 +            ?.stripHtmlTags()
-+    }
-+
+     }
+
      private fun dayName(headers: List<String>, columnIndex: Int): String {
-         if (columnIndex in headers.indices && headers[columnIndex].isNotBlank()) {
-             return headers[columnIndex]
-@@ -218,6 +201,11 @@ internal class TimetableService(
+@@ -218,6 +187,11 @@ internal class TimetableService(
          return defaults.getOrNull(columnIndex) ?: "알 수 없음"
      }
 
@@ -1125,7 +1346,7 @@ index b826d00..fc1cb75 100644
          const val APP_NAME = "ZCMW2102"
          const val ECC_BASE_URL = "https://ecc.ssu.ac.kr:8443"
 diff --git a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/WebDynproService.kt b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/WebDynproService.kt
-index 2245ea7..d2e2f57 100644
+index 2245ea7..0dea1e6 100644
 --- a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/WebDynproService.kt
 +++ b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/WebDynproService.kt
 @@ -53,9 +53,13 @@ internal class WebDynproService(
@@ -1142,10 +1363,11 @@ index 2245ea7..d2e2f57 100644
              }
          }
          val initialHtml = response.bodyAsText().decodeResponse()
-@@ -190,58 +194,17 @@ internal class WebDynproService(
+@@ -189,59 +193,16 @@ internal class WebDynproService(
+     }
 
      fun parseYear(html: String): String {
-         val decodedHtml = html.decodeHtmlEntities()
+-        val decodedHtml = html.decodeHtmlEntities()
 -        val labelRegex = Regex(
 -            """<label\b[^>]*for="([^"]+)"[^>]*>(?:(?!</label>)[\s\S])*?학년도""",
 -            RegexOption.IGNORE_CASE,
@@ -1171,14 +1393,14 @@ index 2245ea7..d2e2f57 100644
 -        } else {
 -            Regex("""\d{4}""").find(year)?.value ?: year
 -        }
-+        val year = findControlValue(decodedHtml, "학년도")
++        val year = findControlValue(html, "학년도")
 +            ?.decodeHtmlEntities()
 +            .orEmpty()
 +        return firstFourDigitSequence(year) ?: year
      }
 
      fun parseSemester(html: String): Semester? {
-         val decodedHtml = html.decodeHtmlEntities()
+-        val decodedHtml = html.decodeHtmlEntities()
 -        val labelRegex = Regex(
 -            """<label\b[^>]*for="([^"]+)"[^>]*>(?:(?!</label>)[\s\S])*?학기""",
 -            RegexOption.IGNORE_CASE,
@@ -1202,13 +1424,13 @@ index 2245ea7..d2e2f57 100644
 -                ?.get(1)
 -                .orEmpty()
 -        }
-+        val semester = findControlValue(decodedHtml, "학기")
++        val semester = findControlValue(html, "학기")
 +            ?.decodeHtmlEntities()
 +            .orEmpty()
          return Semester.fromName(semester)
      }
 
-@@ -309,9 +272,13 @@ internal class WebDynproService(
+@@ -309,9 +270,13 @@ internal class WebDynproService(
                  append("SAPEVENTQUEUE", eventQueue)
              },
          ) {
@@ -1222,7 +1444,7 @@ index 2245ea7..d2e2f57 100644
                  append("X-Requested-With", "XMLHttpRequest")
                  append(HttpHeaders.ContentType, "application/x-www-form-urlencoded; charset=UTF-8")
                  requestHeaders.forEach { (name, value) -> append(name, value) }
-@@ -320,11 +287,7 @@ internal class WebDynproService(
+@@ -320,11 +285,7 @@ internal class WebDynproService(
 
          val body = response.bodyAsText()
          val content = if (extractCdata) {
@@ -1235,7 +1457,7 @@ index 2245ea7..d2e2f57 100644
          } else {
              body
          }
-@@ -340,29 +303,28 @@ internal class WebDynproService(
+@@ -340,29 +301,28 @@ internal class WebDynproService(
      }
 
      private fun parseSecureId(html: String): String {
@@ -1278,7 +1500,7 @@ index 2245ea7..d2e2f57 100644
          when {
              title.contains("Application Server Error", ignoreCase = true) -> {
                  throw WebDynproSessionException("$appName Web Dynpro 서버 오류가 발생했습니다.")
-@@ -470,6 +432,9 @@ internal class WebDynproService(
+@@ -470,6 +430,9 @@ internal class WebDynproService(
          const val EXTERNAL_URL_BUTTON_BATCH_SIZE = 20
          const val MAX_ENTITY_LENGTH = 16
          const val ECC_BASE_URL = "https://ecc.ssu.ac.kr:8443"
@@ -1288,7 +1510,7 @@ index 2245ea7..d2e2f57 100644
          const val USER_AGENT =
              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
                  "(KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
-@@ -479,6 +444,124 @@ internal class WebDynproService(
+@@ -479,6 +442,124 @@ internal class WebDynproService(
      }
  }
 
@@ -1414,21 +1636,22 @@ index 2245ea7..d2e2f57 100644
      val value: String,
      val endExclusive: Int,
 diff --git a/library/src/commonTest/kotlin/io/github/chlwhdtn03/LmsApiParserSurfaceTest.kt b/library/src/commonTest/kotlin/io/github/chlwhdtn03/LmsApiParserSurfaceTest.kt
-index 081d98c..544718d 100644
+index 081d98c..cb5d747 100644
 --- a/library/src/commonTest/kotlin/io/github/chlwhdtn03/LmsApiParserSurfaceTest.kt
 +++ b/library/src/commonTest/kotlin/io/github/chlwhdtn03/LmsApiParserSurfaceTest.kt
-@@ -4,6 +4,10 @@ import io.github.chlwhdtn03.data.Lms.CourseCatalogCategory
+@@ -4,6 +4,11 @@ import io.github.chlwhdtn03.data.Lms.CourseCatalogCategory
  import io.github.chlwhdtn03.data.Lms.CourseCatalogQuery
  import io.github.chlwhdtn03.data.Lms.DayOfWeek
  import io.github.chlwhdtn03.data.Lms.Semester
 +import io.github.chlwhdtn03.internal.findControlIdBySuffix
 +import io.github.chlwhdtn03.internal.findControlValue
 +import io.github.chlwhdtn03.internal.findLabeledControlId
++import io.github.chlwhdtn03.internal.findNestedHtmlElements
 +import io.github.chlwhdtn03.internal.findSearchButtonId
  import io.github.chlwhdtn03.internal.WebDynproService
  import kotlin.test.Test
  import kotlin.test.assertEquals
-@@ -129,6 +133,72 @@ class LmsApiParserSurfaceTest {
+@@ -129,6 +134,160 @@ class LmsApiParserSurfaceTest {
          assertEquals(1, chapel.absenceTable.items.size)
      }
 
@@ -1439,7 +1662,7 @@ index 081d98c..544718d 100644
 +        val buttonId = "APP.ID:VIW_MAIN.BTN_SEARCH"
 +        val largeNoise = "x".repeat(1_000_000)
 +        val controls =
-+            "<div data-payload='$largeNoise'></div>" +
++            "<div data-payload='$largeNoise'>자료 &lt; label for='FAKE'</div>" +
 +                "<label for='$yearId'><span>학년도</span></label>" +
 +                "<input id='$yearId' value='2026학년도'>" +
 +                "<label for='$semesterId'>학기</label>" +
@@ -1498,6 +1721,144 @@ index 081d98c..544718d 100644
 +        assertEquals(1, chapel.absenceTable.items.size)
 +    }
 +
++    @Test
++    fun parsesResultTablesNestedInsideWebDynproLayoutTables() {
++        val rawTextNoise = """
++            <script>
++                const fakeRow = "<table><tr><td cc='0'>가짜 행</td></tr></table>";
++                if (1 < 2) { window.fake = "학년도"; }
++            </script>
++            <style>
++                .fake::before { content: "<table><tr><td>가짜 셀</td></tr></table>"; }
++            </style>
++        """.trimIndent()
++
++        val nestedTimetableHtml = layoutTable(rawTextNoise + timetableHtml())
++        assertEquals(4, findNestedHtmlElements(nestedTimetableHtml, "table").size)
++        val timetable = LmsApi.parseTimetable(nestedTimetableHtml)
++        assertEquals("2026학년도", timetable.year)
++        assertEquals("1학기", timetable.semester)
++        assertEquals(1, timetable.items.size)
++        assertEquals("분산시스템", timetable.items.single().subject)
++
++        val grade = LmsApi.parseGradeTable(
++            html = layoutTable(
++                rawTextNoise +
++                    tableRow(
++                        "",
++                        "A+",
++                        "4.5",
++                        "자료 < 구조",
++                        "전공",
++                        "3",
++                        "담당교수",
++                        "",
++                        "21500001",
++                    ),
++            ),
++            defaultYear = "2026",
++            defaultSemester = Semester.FIRST,
++        )
++        assertEquals(1, grade.items.size)
++        assertEquals("21500001", grade.items.single().subjectCode)
++        assertEquals("자료 < 구조", grade.items.single().subjectName)
++
++        val nestedSummaryHtml = layoutTable(
++            rawTextNoise + "<div ct='ST' id='SUMMARY_TABLE'><table>${summaryRow()}</table></div>",
++        )
++        assertEquals(
++            "SUMMARY_TABLE",
++            LmsApi.findSemesterGradeSummaryTableId(nestedSummaryHtml),
++        )
++        assertEquals(1, LmsApi.parseSemesterGradeSummaryTable(nestedSummaryHtml).items.size)
++
++        val chapel = LmsApi.parseChapelInformation(
++            html = layoutTable(
++                rawTextNoise + chapelHtml().replace("한경직기념관", "한경직 < 기념관"),
++            ),
++            defaultYear = "2026",
++            defaultSemester = Semester.FIRST,
++        )
++        assertEquals(1, chapel.seatStatusTable.items.size)
++        assertEquals("한경직 < 기념관", chapel.seatStatusTable.items.single().classroom)
++        assertEquals(1, chapel.attendanceTable.items.size)
++        assertEquals(1, chapel.absenceTable.items.size)
++    }
++
++    @Test
++    fun readsTimetableHeaderMetadataFromTheOpeningTag() {
++        val html = """
++            <label for="YEAR">학년도</label><input id="YEAR" value="2026학년도">
++            <label for="SEMESTER">학기</label><input id="SEMESTER" value="1학기">
++            <table ct="ST">
++                <tr><td><table><tr>
++                    <th role="columnheader" lsdata="{7:'시간'}"></th>
++                    <th role="columnheader" lsdata="{7:'화요일'}"></th>
++                    <th role="columnheader" lsdata="{7:'월요일'}"></th>
++                </tr></table></td></tr>
++                <tr><td><table><tr>
++                    <td cc="0">1교시<br>(09:00-09:50)</td>
++                    <td cc="1">자료 <b 구조<br>담당교수<br>화 1교시<br>정보관 101호</td>
++                </tr></table></td></tr>
++            </table>
++        """.trimIndent()
++
++        val timetable = LmsApi.parseTimetable(layoutTable(html))
++        assertEquals(1, timetable.items.size)
++        assertEquals(DayOfWeek.TUESDAY, timetable.items.single().dayOfWeek)
++        assertEquals("자료 <b 구조", timetable.items.single().subject)
++    }
++
      @Test
      fun findsAndMergesSemesterSummaryTables() {
          val html = """
+@@ -329,18 +488,26 @@ class LmsApiParserSurfaceTest {
+             <label for="SEMESTER">학기</label>
+             <input id="SEMESTER" value="1학기">
+             <table ct="ST">
+-                <thead>
+-                    <tr>
+-                        <th role="columnheader" title="시간"></th>
+-                        <th role="columnheader" title="월요일"></th>
+-                    </tr>
+-                </thead>
+-                <tbody>
+-                    <tr>
+-                        <td cc="0">1교시<br>(09:00-09:50)</td>
+-                        <td cc="1">분산시스템<br>담당교수<br>월 1교시<br>정보관 101호</td>
+-                    </tr>
+-                </tbody>
++                <tr><td>
++                    <table class="header-table">
++                        <thead>
++                            <tr>
++                                <th role="columnheader" title="시간"></th>
++                                <th role="columnheader" title="월요일"></th>
++                            </tr>
++                        </thead>
++                    </table>
++                </td></tr>
++                <tr><td>
++                    <table class="body-table">
++                        <tbody>
++                            <tr>
++                                <td cc="0">1교시<br>(09:00-09:50)</td>
++                                <td cc="1">분산시스템<br>담당교수<br>월 1교시<br>정보관 101호</td>
++                            </tr>
++                        </tbody>
++                    </table>
++                </td></tr>
+             </table>
+         """.trimIndent()
+     }
+@@ -396,6 +563,10 @@ class LmsApiParserSurfaceTest {
+
+     private fun summaryTableHtml(): String = "<table>${summaryRow()}</table>"
+
++    private fun layoutTable(content: String): String {
++        return "<table id='LAYOUT'><tbody><tr><td><div>레이아웃</div>$content</td></tr></tbody></table>"
++    }
++
+     private fun courseCatalogHtml(values: List<String>, totalCount: Int): String {
+         val cells = values.mapIndexed { index, value -> "<td cc=\"$index\">$value</td>" }
+             .joinToString("")
