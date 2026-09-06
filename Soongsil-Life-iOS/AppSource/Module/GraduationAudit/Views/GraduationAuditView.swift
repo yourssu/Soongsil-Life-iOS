@@ -2,23 +2,20 @@ import SwiftUI
 
 struct GraduationAuditView: View {
     @State private var viewModel: GraduationAuditViewModel
-    @State private var showsUsedSubjects = false
+    @State private var expandedSections = Set<GraduationAuditSection.ID>()
 
     init(viewModel: GraduationAuditViewModel) {
         _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Divider()
-            content
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.white000)
-        .soomsilDetailNavigation(title: L10n.Home.graduationAudit)
-        .task {
-            await viewModel.transform(input: .load())
-        }
+        content
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(.white000)
+            .soomsilDetailNavigation(title: L10n.Home.graduationAudit)
+            .task {
+                await viewModel.transform(input: .load())
+            }
     }
 
     @ViewBuilder
@@ -43,29 +40,28 @@ struct GraduationAuditView: View {
 
     private func loadedContent(_ audit: GraduationAudit) -> some View {
         ScrollView(showsIndicators: false) {
-            LazyVStack(spacing: 12) {
-                GraduationAuditSummaryView(
-                    audit: audit,
-                    showsUsedSubjects: showsUsedSubjects,
-                    toggleUsedSubjects: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            showsUsedSubjects.toggle()
-                        }
-                    }
-                )
-
-                GraduationAuditNoticeView()
+            LazyVStack(spacing: 0) {
+                GraduationAuditSummaryView(audit: audit)
 
                 ForEach(audit.sections) { section in
+                    let isExpanded = expandedSections.contains(section.id)
                     GraduationAuditRequirementSectionView(
                         section: section,
-                        showsUsedSubjects: showsUsedSubjects
+                        isExpanded: isExpanded,
+                        toggle: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                if expandedSections.contains(section.id) {
+                                    expandedSections.remove(section.id)
+                                } else {
+                                    expandedSections.insert(section.id)
+                                }
+                            }
+                        }
                     )
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 20)
-            .padding(.bottom, 28)
+            .padding(.bottom, 32)
         }
     }
 
