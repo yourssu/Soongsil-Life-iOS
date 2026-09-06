@@ -39,10 +39,6 @@ final class TuitionViewModel: BaseViewModel {
             loadedTabs.contains(selectedTab)
         }
 
-        var hasLoadedData: Bool {
-            !tuitionRecords.isEmpty || !scholarshipRecords.isEmpty
-        }
-
         var isLoadingSelectedTab: Bool {
             loadingTabs.contains(selectedTab)
         }

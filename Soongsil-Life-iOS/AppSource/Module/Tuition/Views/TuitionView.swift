@@ -1,23 +1,17 @@
 import SwiftUI
 
 struct TuitionView: View {
-    @State var viewModel: TuitionViewModel // ViewModel 설정
-    @Namespace private var segmentedControlNamespace
-
-    private let segmentAnimation = Animation.spring(
-        response: 0.25,
-        dampingFraction: 0.85
-    )
+    @State var viewModel: TuitionViewModel
 
     var body: some View {
         VStack(spacing: 0) {
-            // 로딩 중이거나 데이터 없음녀 ProgessView 표시
-            if (!viewModel.output.hasLoaded || viewModel.output.isLoading)
-                && !viewModel.output.hasLoadedData {
+            if (viewModel.output.isLoadingSelectedTab || !viewModel.output.hasLoaded)
+                && !viewModel.output.hasLoadedSelectedTab {
                 ProgressView()
+                    .tint(.serviceBlue600)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage = viewModel.output.errorMessage,
-                      !viewModel.output.hasLoadedData {
+                      !viewModel.output.hasLoadedSelectedTab {
                 ContentUnavailableView {
                     Label(
                         L10n.Tuition.loadFailed,
@@ -35,45 +29,44 @@ struct TuitionView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                // 실제 데이터 영역
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 11) {
-                        // 위에 Bar
+                    LazyVStack(spacing: 0) {
                         segmentedControl
-                        // 카드
+
                         content
                             .id(viewModel.output.selectedTab)
                             .transition(.opacity)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 20)
-                    .animation(segmentAnimation, value: viewModel.output.selectedTab)
+                    .padding(.top, 4)
+                    .padding(.bottom, 32)
+                    .animation(
+                        .easeInOut(duration: 0.18),
+                        value: viewModel.output.selectedTab
+                    )
                 }
-                // 아래로 당겨 API 재요청 가능
                 .refreshable {
                     await viewModel.transform(input: .load(force: true))
                 }
             }
         }
         .background(.white000)
-        .soomsilDetailNavigation(title: L10n.Home.tuitionScholarship)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarRole(.editor)
+        .tint(.black000)
+        .toolbar(.visible, for: .navigationBar)
         .task {
-            await viewModel.transform(input: .load()) // 화면 실행 시 바로 데이터 불러오기 (비동기)
+            await viewModel.transform(input: .load())
         }
-        // 에러 발생 시 알람창
         .alert(L10n.Home.tuitionScholarship, isPresented: showsError) {
-            // 에러 확인 버튼
             Button(L10n.Common.confirm, role: .cancel) {
                 Task {
-                    // 에러 메세지 지우기
                     await viewModel.transform(input: .errorDismissed)
                 }
             }
-            // 재시도 버튼
             Button(L10n.Tuition.retry) {
                 Task {
-                    // 데이터 재요청
                     await viewModel.transform(input: .load(force: true))
                 }
             }
@@ -81,12 +74,12 @@ struct TuitionView: View {
             Text(viewModel.output.errorMessage ?? "")
         }
     }
-    // errorMessage 값을 보고 alert 표시 여부 계산
+
     private var showsError: Binding<Bool> {
         Binding(
             get: {
                 viewModel.output.errorMessage != nil
-                    && viewModel.output.hasLoadedData
+                    && viewModel.output.hasLoadedSelectedTab
             },
             set: { isPresented in
                 guard !isPresented else { return }
@@ -97,9 +90,8 @@ struct TuitionView: View {
         )
     }
 
-    // 세그먼트 탭
     private var segmentedControl: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 0) {
             ForEach(TuitionViewModel.Tab.allCases, id: \.self) { tab in
                 let isSelected = viewModel.output.selectedTab == tab
                 Button {
@@ -107,80 +99,88 @@ struct TuitionView: View {
                         await viewModel.transform(input: .selectTab(tab))
                     }
                 } label: {
-                    ZStack {
-                        if isSelected {
-                            Capsule()
-                                .fill(.pointColor600)
-                                .matchedGeometryEffect(
-                                    id: "selectedSegment",
-                                    in: segmentedControlNamespace
-                                )
-                        }
-
+                    VStack(spacing: 0) {
                         Text(tab.title)
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.pretendard(14, weight: .semibold))
                             .foregroundStyle(
-                                isSelected ? Color.white : .gray600
+                                isSelected ? .serviceBlue600 : .serviceGray500
                             )
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                        ZStack(alignment: .bottom) {
+                            Rectangle()
+                                .fill(.serviceGray200)
+                                .frame(height: 1)
+
+                            if isSelected {
+                                Rectangle()
+                                    .fill(.serviceBlue600)
+                                    .frame(height: 2)
+                            }
+                        }
+                        .frame(height: 2)
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 35.5)
-                    .contentShape(Capsule())
+                    .frame(height: 43)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
-        .padding(4)
-        .frame(height: 43.5)
-        .frame(maxWidth: .infinity)
-        .frame(maxWidth: 362)
-        .background(.gray050)
-        .clipShape(Capsule())
+        .padding(.bottom, 7)
     }
 
-    @ViewBuilder 
-    // 카드 부분
+    @ViewBuilder
     private var content: some View {
         switch viewModel.output.selectedTab {
         case .tuition:
-            if viewModel.output.tuitionRecords.isEmpty {
+            if viewModel.output.isLoadingSelectedTab
+                && !viewModel.output.hasLoadedSelectedTab {
+                loadingState
+            } else if viewModel.output.tuitionRecords.isEmpty {
                 emptyState(L10n.Tuition.noTuitionRecords)
             } else {
                 ForEach(viewModel.output.tuitionRecords) { record in
-                    TuitionRecordCard(record: record)
+                    TuitionRecordRow(record: record)
                 }
             }
 
         case .scholarship:
-            if viewModel.output.scholarshipRecords.isEmpty {
+            if viewModel.output.isLoadingSelectedTab
+                && !viewModel.output.hasLoadedSelectedTab {
+                loadingState
+            } else if viewModel.output.scholarshipRecords.isEmpty {
                 emptyState(L10n.Tuition.noScholarshipRecords)
             } else {
                 ForEach(viewModel.output.scholarshipRecords) { record in
-                    ScholarshipRecordCard(record: record)
+                    ScholarshipRecordRow(record: record)
                 }
             }
         }
     }
-    // API 응답이 빈 배열일때 표시할 문구
+
+    private var loadingState: some View {
+        ProgressView()
+            .tint(.serviceBlue600)
+            .frame(maxWidth: .infinity, minHeight: 240)
+    }
+
     private func emptyState(_ message: String) -> some View {
         Text(message)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.gray600)
-                .frame(maxWidth: .infinity)
-                .frame(maxWidth: 362)
-                .frame(minHeight: 240)
+            .font(.pretendard(14, weight: .medium))
+            .foregroundStyle(.serviceGray500)
+            .frame(maxWidth: .infinity, minHeight: 240)
     }
 }
 
-// 장학금 카드
-private struct TuitionRecordCard: View {
+private struct TuitionRecordRow: View {
     let record: TuitionRecord
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3.5) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top, spacing: 8) {
                 Text("\(record.year) \(record.semester.localizedName)")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.pretendard(14, weight: .semibold))
                     .foregroundStyle(.black000)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
@@ -188,31 +188,33 @@ private struct TuitionRecordCard: View {
                 Spacer(minLength: 8)
 
                 TuitionStatusBadge(
-                    title: record.registrationType.isEmpty ? "학기등록" : record.registrationType,
+                    title: record.registrationType.isEmpty
+                        ? "학기등록"
+                        : record.registrationType,
                     style: .neutral
                 )
             }
-            .frame(height: 22, alignment: .top)
 
             Text(CurrencyFormatter.won(record.paymentAmount))
-                .font(.system(size: 18, weight: .bold))
+                .font(.pretendard(21, weight: .semibold))
                 .foregroundStyle(.black000)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
 
             Text(tuitionDetail)
-                .font(.system(size: 12, weight: .regular))
-                .foregroundStyle(.gray600)
+                .font(.pretendard(13))
+                .foregroundStyle(.serviceGray500)
                 .lineLimit(1)
-                .minimumScaleFactor(0.75)
+                .minimumScaleFactor(0.72)
         }
-        .padding(.leading, 16)
-        .padding(.trailing, 18)
-        .padding(.top, 14)
-        .frame(maxWidth: .infinity, minHeight: 93, alignment: .topLeading)
-        .frame(maxWidth: 362)
-        .background(.gray100)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.horizontal, 2)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, minHeight: 105, alignment: .topLeading)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(.serviceGray200)
+                .frame(height: 1)
+        }
     }
 
     private var tuitionDetail: String {
@@ -225,14 +227,14 @@ private struct TuitionRecordCard: View {
     }
 }
 
-private struct ScholarshipRecordCard: View {
+private struct ScholarshipRecordRow: View {
     let record: ScholarshipRecord
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top, spacing: 8) {
                 Text(record.scholarshipName)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.pretendard(14, weight: .semibold))
                     .foregroundStyle(.black000)
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
@@ -241,30 +243,32 @@ private struct ScholarshipRecordCard: View {
 
                 TuitionStatusBadge(
                     title: record.processStatus,
-                    style: record.processStatus.contains("완료") ? .success : .neutral
+                    style: record.processStatus.contains("완료")
+                        ? .success
+                        : .neutral
                 )
             }
-            .frame(height: 19, alignment: .top)
 
             Text(CurrencyFormatter.won(record.actualAmount))
-                .font(.system(size: 16, weight: .bold))
+                .font(.pretendard(21, weight: .semibold))
                 .foregroundStyle(.black000)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
 
             Text(scholarshipDetail)
-                .font(.system(size: 12, weight: .regular))
-                .foregroundStyle(.gray600)
+                .font(.pretendard(13))
+                .foregroundStyle(.serviceGray500)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
-        .padding(.leading, 16)
-        .padding(.trailing, 18)
-        .padding(.top, 14)
-        .frame(maxWidth: .infinity, minHeight: 93, alignment: .topLeading)
-        .frame(maxWidth: 362)
-        .background(.gray100)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.horizontal, 2)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, minHeight: 105, alignment: .topLeading)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(.serviceGray200)
+                .frame(height: 1)
+        }
     }
 
     private var scholarshipDetail: String {
@@ -299,30 +303,30 @@ private struct TuitionStatusBadge: View {
 
     var body: some View {
         Text(title)
-            .font(.system(size: 12, weight: .bold))
+            .font(.pretendard(12, weight: .medium))
             .foregroundStyle(foregroundColor)
             .lineLimit(1)
-            .padding(.horizontal, 8)
-            .frame(height: 19)
+            .padding(.horizontal, 7)
+            .frame(height: 22)
             .background(backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
     }
 
     private var foregroundColor: Color {
         switch style {
         case .neutral:
-            .gray600
+            .serviceGray500
         case .success:
-            .logoIndigo
+            .serviceBlue600
         }
     }
 
     private var backgroundColor: Color {
         switch style {
         case .neutral:
-            .gray050
+            .gray100
         case .success:
-            .pointColor050
+            .serviceBlue500.opacity(0.1)
         }
     }
 }
