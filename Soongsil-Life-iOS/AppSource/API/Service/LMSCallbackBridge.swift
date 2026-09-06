@@ -37,22 +37,14 @@ enum LMSCallbackBridge {
                 }
                 state.setTimeoutTask(timeoutTask)
 
-                // SDK는 Swift Task 취소를 지원하지 않습니다. Swift 쪽 timeout 뒤에도
-                // 실제 callback이 도착할 때까지 다음 WebDynpro 요청의 시작을 막습니다.
-                // callback이 영구히 오지 않는 경우에만 grace period 뒤 잠금을 풉니다.
-                let emergencyReleaseTask = Task {
-                    do {
-                        try await Task.sleep(
-                            for: remainingTimeout + .seconds(15)
-                        )
-                    } catch {
-                        return
-                    }
+                // install 직후 취소나 매우 짧은 timeout이 먼저 완료되었다면
+                // 취소된 SDK 작업을 새로 시작하지 않고 다음 대기 요청에 넘깁니다.
+                guard state.beginRequest() else {
                     lease.release()
+                    return
                 }
 
                 start { [weak state] result in
-                    emergencyReleaseTask.cancel()
                     lease.release()
                     state?.resume(with: result)
                 }
@@ -170,6 +162,7 @@ private nonisolated final class LMSCallbackState<Value>: @unchecked Sendable {
     private var pendingResult: Result<Value, Error>?
     private var timeoutTask: Task<Void, Never>?
     private var isCompleted = false
+    private var hasBegunRequest = false
 
     /// 취소가 continuation 설치보다 먼저 도착한 경우에는 즉시 resume하고
     /// 실제 LMS 요청을 시작하지 않습니다.
@@ -199,6 +192,21 @@ private nonisolated final class LMSCallbackState<Value>: @unchecked Sendable {
 
         timeoutTask = task
         lock.unlock()
+    }
+
+    /// 취소/timeout과 실제 SDK 시작 사이의 단일 전환점입니다.
+    /// 여기서 시작 권한을 얻은 요청의 lease는 SDK callback이 도착할 때만 해제해,
+    /// 늦은 callback과 다음 WebDynpro 요청이 겹치지 않게 합니다.
+    func beginRequest() -> Bool {
+        lock.lock()
+        guard !isCompleted, !hasBegunRequest else {
+            lock.unlock()
+            return false
+        }
+
+        hasBegunRequest = true
+        lock.unlock()
+        return true
     }
 
     func resume(with result: Result<Value, Error>) {
