@@ -2,125 +2,84 @@ import SwiftUI
 
 struct GraduationAuditSummaryView: View {
     let audit: GraduationAudit
-    let showsUsedSubjects: Bool
-    let toggleUsedSubjects: () -> Void
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) {
-                resultLabel
-                Spacer(minLength: 8)
-                if audit.hasUsedSubjects {
-                    toggleButton
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 12) {
-                resultLabel
-                if audit.hasUsedSubjects {
-                    toggleButton
-                }
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.gray050)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-
-    private var resultLabel: some View {
-        HStack(spacing: 0) {
-            Text("\(L10n.GraduationAudit.result) · ")
-                .font(.system(size: 13))
-                .foregroundStyle(.gray600)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(L10n.GraduationAudit.result)
+                .font(.pretendard(14, weight: .medium))
+                .foregroundStyle(.black000)
 
             Text(
                 audit.isGraduatable
                     ? L10n.GraduationAudit.eligible
                     : L10n.GraduationAudit.ineligible
             )
-            .font(.system(size: 14, weight: .bold))
+            .font(.pretendard(20, weight: .semibold))
             .foregroundStyle(
                 audit.isGraduatable
                     ? .serviceBlue500
                     : .warningRed500
             )
         }
-        .fixedSize(horizontal: true, vertical: false)
-    }
-
-    private var toggleButton: some View {
-        Button(action: toggleUsedSubjects) {
-            Text(
-                showsUsedSubjects
-                    ? L10n.GraduationAudit.hideCourseStatus
-                    : L10n.GraduationAudit.showCourseStatus
-            )
-            .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(.black000)
-            .fixedSize(horizontal: true, vertical: false)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(.white000)
-            .clipShape(Capsule())
-            .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-struct GraduationAuditNoticeView: View {
-    var body: some View {
-        Label {
-            Text(L10n.GraduationAudit.notice)
-                .fixedSize(horizontal: false, vertical: true)
-        } icon: {
-            Image(systemName: "info.circle")
-        }
-        .font(.system(size: 12, weight: .medium))
-        .foregroundStyle(.gray600)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 4)
+        .padding(.top, 19)
+        .padding(.bottom, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .bottom) {
+            GraduationAuditDivider()
+        }
     }
 }
 
 struct GraduationAuditRequirementSectionView: View {
     let section: GraduationAuditSection
-    let showsUsedSubjects: Bool
+    let isExpanded: Bool
+    let toggle: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text(section.classification.localizedName)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(.serviceBlue500)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(spacing: 0) {
+            Button(action: toggle) {
+                HStack(spacing: 12) {
+                    Text(section.classification.localizedName)
+                        .font(.pretendard(16, weight: .semibold))
+                        .foregroundStyle(.black000)
+                        .multilineTextAlignment(.leading)
 
-            ForEach(section.items) { item in
-                Divider()
-                GraduationAuditRequirementRow(
-                    item: item,
-                    showsUsedSubjects: showsUsedSubjects
-                )
+                    Spacer(minLength: 12)
+
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.black000)
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                }
+                .padding(.horizontal, 4)
+                .frame(maxWidth: .infinity, minHeight: 72)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(isExpanded ? "펼쳐짐" : "접힘")
+
+            GraduationAuditDivider()
+
+            if isExpanded {
+                ForEach(section.items) { item in
+                    GraduationAuditRequirementRow(item: item)
+                    GraduationAuditDivider()
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.gray050)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
 private struct GraduationAuditRequirementRow: View {
     let item: GraduationAuditItem
-    let showsUsedSubjects: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top, spacing: 8) {
                 Text(item.requirement.isEmpty ? "-" : item.requirement)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.pretendard(14, weight: .medium))
                     .foregroundStyle(.black000)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -130,32 +89,10 @@ private struct GraduationAuditRequirementRow: View {
             }
 
             GraduationAuditMetricsView(item: item)
-
-            if showsUsedSubjects, !item.usedSubjects.isEmpty {
-                GraduationSubjectFlowLayout(spacing: 6) {
-                    ForEach(
-                        Array(item.usedSubjects.enumerated()),
-                        id: \.offset
-                    ) { _, subject in
-                        Text(subject)
-                            .font(.system(size: 11))
-                            .foregroundStyle(.gray600)
-                            .multilineTextAlignment(.leading)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(.white000)
-                            .clipShape(
-                                RoundedRectangle(
-                                    cornerRadius: 10,
-                                    style: .continuous
-                                )
-                            )
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
         }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -177,15 +114,29 @@ private struct GraduationAuditMetricsView: View {
         return values
     }
 
+    private var displayedDifference: String? {
+        let difference = item.difference.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+        guard !difference.isEmpty else { return nil }
+
+        let numericDifference = difference
+            .replacingOccurrences(of: ",", with: "")
+        if let value = Double(numericDifference), value == 0 {
+            return nil
+        }
+        return difference
+    }
+
     var body: some View {
-        if !values.isEmpty || !item.difference.isEmpty {
+        if !values.isEmpty || displayedDifference != nil {
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                     metricValues
                     difference
                 }
 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 2) {
                     metricValues
                     difference
                 }
@@ -197,19 +148,25 @@ private struct GraduationAuditMetricsView: View {
     private var metricValues: some View {
         if !values.isEmpty {
             Text(values.joined(separator: " · "))
-                .font(.system(size: 12))
-                .foregroundStyle(.gray600)
+                .font(.pretendard(12))
+                .foregroundStyle(.serviceGray500)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     @ViewBuilder
     private var difference: some View {
-        if !item.difference.isEmpty {
-            Text(item.difference)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(item.status.foregroundColor)
-                .fixedSize(horizontal: true, vertical: false)
+        if let displayedDifference {
+            HStack(spacing: 4) {
+                if !values.isEmpty {
+                    Text("·")
+                        .foregroundStyle(.serviceGray500)
+                }
+                Text(displayedDifference)
+                    .foregroundStyle(item.status.differenceColor)
+            }
+            .font(.pretendard(12, weight: .medium))
+            .fixedSize(horizontal: true, vertical: false)
         }
     }
 }
@@ -219,14 +176,22 @@ private struct GraduationAuditStatusBadge: View {
 
     var body: some View {
         Text(status.localizedName)
-            .font(.system(size: 11, weight: .bold))
-            .foregroundStyle(status.foregroundColor)
+            .font(.pretendard(12, weight: .semibold))
+            .foregroundStyle(status.badgeForegroundColor)
             .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(status.backgroundColor)
-            .clipShape(Capsule())
+            .frame(height: 24)
+            .background(status.badgeBackgroundColor)
+            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
             .fixedSize(horizontal: true, vertical: false)
             .accessibilityLabel(status.localizedName)
+    }
+}
+
+private struct GraduationAuditDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(.serviceGray200)
+            .frame(height: 1)
     }
 }
 
@@ -278,128 +243,31 @@ struct GraduationAuditErrorStateView: View {
     }
 }
 
-private nonisolated struct GraduationSubjectFlowLayout: Layout {
-    let spacing: CGFloat
-
-    init(spacing: CGFloat = 0) {
-        self.spacing = spacing
-    }
-
-    func sizeThatFits(
-        proposal: ProposedViewSize,
-        subviews: Subviews,
-        cache: inout ()
-    ) -> CGSize {
-        layout(
-            subviews: subviews,
-            maxWidth: proposal.width ?? .infinity
-        ).size
-    }
-
-    func placeSubviews(
-        in bounds: CGRect,
-        proposal: ProposedViewSize,
-        subviews: Subviews,
-        cache: inout ()
-    ) {
-        let result = layout(
-            subviews: subviews,
-            maxWidth: bounds.width
-        )
-
-        for (index, subview) in subviews.enumerated() {
-            let size = result.sizes[index]
-            let origin = result.origins[index]
-            subview.place(
-                at: CGPoint(
-                    x: bounds.minX + origin.x,
-                    y: bounds.minY + origin.y
-                ),
-                anchor: .topLeading,
-                proposal: ProposedViewSize(
-                    width: size.width,
-                    height: size.height
-                )
-            )
-        }
-    }
-
-    private func layout(
-        subviews: Subviews,
-        maxWidth: CGFloat
-    ) -> (
-        size: CGSize,
-        sizes: [CGSize],
-        origins: [CGPoint]
-    ) {
-        var sizes: [CGSize] = []
-        var origins: [CGPoint] = []
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var rowHeight: CGFloat = 0
-        var contentWidth: CGFloat = 0
-
-        for subview in subviews {
-            let size = measuredSize(
-                of: subview,
-                maxWidth: maxWidth
-            )
-
-            if x > 0, x + size.width > maxWidth {
-                x = 0
-                y += rowHeight + spacing
-                rowHeight = 0
-            }
-
-            sizes.append(size)
-            origins.append(CGPoint(x: x, y: y))
-            contentWidth = max(contentWidth, x + size.width)
-            x += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
-        }
-
-        let contentHeight = subviews.isEmpty ? 0 : y + rowHeight
-        return (
-            CGSize(
-                width: maxWidth.isFinite ? maxWidth : contentWidth,
-                height: contentHeight
-            ),
-            sizes,
-            origins
-        )
-    }
-
-    private func measuredSize(
-        of subview: LayoutSubview,
-        maxWidth: CGFloat
-    ) -> CGSize {
-        let idealSize = subview.sizeThatFits(.unspecified)
-        guard maxWidth.isFinite, idealSize.width > maxWidth else {
-            return idealSize
-        }
-
-        return subview.sizeThatFits(
-            ProposedViewSize(width: maxWidth, height: nil)
-        )
-    }
-}
-
 private extension GraduationAuditStatus {
-    var foregroundColor: Color {
+    var badgeForegroundColor: Color {
+        switch self {
+        case .satisfied:
+            .serviceBlue500
+        case .insufficient:
+            .serviceGray500
+        }
+    }
+
+    var badgeBackgroundColor: Color {
+        switch self {
+        case .satisfied:
+            .serviceBlue500.opacity(0.10)
+        case .insufficient:
+            .gray100
+        }
+    }
+
+    var differenceColor: Color {
         switch self {
         case .satisfied:
             .serviceBlue500
         case .insufficient:
             .warningRed500
-        }
-    }
-
-    var backgroundColor: Color {
-        switch self {
-        case .satisfied:
-            .serviceBlue500.opacity(0.10)
-        case .insufficient:
-            .warningRed050
         }
     }
 }
