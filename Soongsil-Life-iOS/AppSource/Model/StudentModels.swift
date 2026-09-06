@@ -203,7 +203,9 @@ enum ChapelAttendanceStatus: Equatable, Sendable {
 }
 
 struct Dashboard: Sendable {
-    let profile: StudentProfile
+    /// 현재 홈 디자인은 사용자 프로필을 표시하지 않으므로 선택 값으로 둡니다.
+    /// 프로필이 다시 필요한 화면에서만 별도 조회해 초기 홈 로딩을 막지 않습니다.
+    let profile: StudentProfile?
     let semesters: [SemesterGrade]
     let currentCourses: [CourseGrade]
     let chapelEnrollmentState: ChapelEnrollmentState?

@@ -1,51 +1,30 @@
 import Foundation
 
 final class HomeRepository: HomeRepositoryProtocol {
-    private let studentService: StudentServiceProtocol
-    private let gradeService: GradeServiceProtocol
+    private let gradeRepository: GradeRepositoryProtocol
 
-    init(
-        studentService: StudentServiceProtocol,
-        gradeService: GradeServiceProtocol
-    ) {
-        self.studentService = studentService
-        self.gradeService = gradeService
+    init(gradeRepository: GradeRepositoryProtocol) {
+        self.gradeRepository = gradeRepository
     }
 
-    func fetchDashboard() async throws -> Dashboard {
-        async let profileRequest = studentService.fetchProfile()
-        async let semesterRequest = gradeService.fetchSemesters()
-
-        let (profile, semesters) = try await (
-            profileRequest,
-            semesterRequest
-        )
-
-        let currentCourses: [CourseGrade]
-        if let latestSemester = semesters.max(by: isEarlierSemester) {
-            currentCourses = try await gradeService.fetchCourses(
-                year: latestSemester.year,
-                semester: latestSemester.semester
-            )
-        } else {
-            currentCourses = []
-        }
+    func fetchDashboardSummary() async throws -> Dashboard {
+        let semesters = try await gradeRepository.fetchSemesters()
 
         return Dashboard(
-            profile: profile,
+            profile: nil,
             semesters: semesters,
-            currentCourses: currentCourses,
+            currentCourses: [],
             chapelEnrollmentState: nil,
             chapelErrorMessage: nil
         )
     }
 
-    private func isEarlierSemester(
-        _ lhs: SemesterGrade,
-        _ rhs: SemesterGrade
-    ) -> Bool {
-        let lhsValue = (Int(lhs.year) ?? 0, lhs.semester.sortOrder)
-        let rhsValue = (Int(rhs.year) ?? 0, rhs.semester.sortOrder)
-        return lhsValue < rhsValue
+    func fetchCourses(
+        for semester: SemesterGrade
+    ) async throws -> [CourseGrade] {
+        try await gradeRepository.fetchCourses(
+            year: semester.year,
+            semester: semester.semester
+        )
     }
 }

@@ -99,20 +99,23 @@ enum MockLMSFixtures {
     )
 
     static let chapel = ChapelStatus(
-        year: "2025",
-        semester: .first,
-        classGroup: "20250001",
+        year: "2026",
+        semester: .second,
+        classGroup: "20260001",
         timetable: "목요일 10:30",
         seat: "B-12",
         classroom: "한경직기념관 대예배실",
         absenceCount: "1",
         gradeResult: "P",
         attendance: [
-            ChapelAttendance(date: "2025.03.13", classGroup: "20250001", lectureType: "채플", status: .present),
-            ChapelAttendance(date: "2025.03.20", classGroup: "20250001", lectureType: "채플", status: .present),
-            ChapelAttendance(date: "2025.03.27", classGroup: "20250001", lectureType: "채플", status: ChapelAttendanceStatus(serverValue: "미출석")),
-            ChapelAttendance(date: "2025.04.03", classGroup: "20250001", lectureType: "채플", status: .present),
-            ChapelAttendance(date: "2025.04.10", classGroup: "20250001", lectureType: "채플", status: .present)
+            ChapelAttendance(date: "2026.05.08", classGroup: "20260001", lectureType: "채플", status: .present),
+            ChapelAttendance(date: "2026.05.15", classGroup: "20260001", lectureType: "채플", status: .present),
+            ChapelAttendance(date: "2026.05.22", classGroup: "20260001", lectureType: "채플", status: ChapelAttendanceStatus(serverValue: "미출석")),
+            ChapelAttendance(date: "2026.05.29", classGroup: "20260001", lectureType: "채플", status: .present),
+            ChapelAttendance(date: "2026.06.05", classGroup: "20260001", lectureType: "채플", status: .present),
+            ChapelAttendance(date: "2026.06.12", classGroup: "20260001", lectureType: "채플", status: .present),
+            ChapelAttendance(date: "2026.06.19", classGroup: "20260001", lectureType: "채플", status: .present),
+            ChapelAttendance(date: "2026.10.02", classGroup: "20260001", lectureType: "채플", status: .unknown(""))
         ]
     )
 
