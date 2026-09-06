@@ -30,6 +30,13 @@ enum MainTabItem: CaseIterable, Hashable {
         case .my: "ic_person"
         }
     }
+
+    func assetName(isSelected: Bool) -> String {
+        if self == .home, isSelected {
+            return "ic_home_fill"
+        }
+        return assetName
+    }
 }
 
 struct SoomsilTabBar: View {
@@ -43,7 +50,7 @@ struct SoomsilTabBar: View {
                     selectedTab = tab
                 } label: {
                     VStack(spacing: 3) {
-                        Image(tab.assetName)
+                        Image(tab.assetName(isSelected: selected))
                             .renderingMode(.template)
                             .resizable()
                             .scaledToFit()
@@ -52,14 +59,24 @@ struct SoomsilTabBar: View {
                             .font(.pretendard(13, weight: .medium))
                     }
                     .foregroundStyle(
-                        selected ? .serviceBlue500 : .serviceGray500
+                        selected ? .serviceBlue600 : .serviceGray500
                     )
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
                     .background {
                         if selected {
                             Capsule()
-                                .fill(.gray100)
+                                .fill(
+                                    .black000.opacity(0.10)
+                                        .shadow(
+                                            .inner(
+                                                color: .white000.opacity(0.25),
+                                                radius: 4,
+                                                x: 0,
+                                                y: 4
+                                            )
+                                        )
+                                )
                         }
                     }
                     .contentShape(Capsule())
@@ -69,14 +86,25 @@ struct SoomsilTabBar: View {
             }
         }
         .padding(8)
-        .background(.white000.opacity(0.97))
+        .background {
+            Capsule()
+                .fill(
+                    .white000.opacity(0.10)
+                        .shadow(
+                            .inner(
+                                color: .white000.opacity(0.25),
+                                radius: 4,
+                                x: 0,
+                                y: 4
+                            )
+                        )
+                )
+        }
         .clipShape(Capsule())
-        .shadow(
-            color: .black000.opacity(0.08),
-            radius: 14,
-            x: 0,
-            y: 2
-        )
+        .overlay {
+            Capsule()
+                .strokeBorder(.gray100, lineWidth: 1)
+        }
         .padding(.horizontal, 22)
     }
 }
@@ -370,6 +398,17 @@ struct ChapelAttendanceCard: View {
     private let requiredCount = ChapelAttendancePolicy.requiredAttendanceCount
     private let semesterSessionCount = ChapelAttendancePolicy.semesterSessionCount
 
+    private var attendanceGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                .serviceBlue100,
+                .serviceBlue500
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+
     private var attendanceCount: Int {
         guard let chapel else { return 0 }
         return ChapelAttendancePolicy.creditedAttendanceCount(
@@ -464,7 +503,8 @@ struct ChapelAttendanceCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .stroke(.serviceBlue500, lineWidth: 1)
+                .stroke(attendanceGradient, lineWidth: 1)
+                .opacity(0.75)
         }
     }
 
@@ -494,7 +534,17 @@ struct ChapelAttendanceCard: View {
                         .fill(.serviceGray200)
 
                     Capsule()
-                        .fill(.serviceBlue500)
+                        .fill(
+                            attendanceGradient
+                                .shadow(
+                                    .inner(
+                                        color: .white000.opacity(0.15),
+                                        radius: 2,
+                                        x: 0.5,
+                                        y: 1
+                                    )
+                                )
+                        )
                         .frame(
                             width: proxy.size.width
                                 * CGFloat(attendanceCount)

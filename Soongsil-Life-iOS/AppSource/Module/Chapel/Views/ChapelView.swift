@@ -200,10 +200,11 @@ struct ChapelDetailView: View {
                     ) {
                         Text("지각 2회 시 결석 1회 처리")
                             .font(.pretendard(13, weight: .medium))
-                            .foregroundStyle(.black000)
+                            .foregroundStyle(.serviceBlue500)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
                             .fixedSize()
+                            .presentationBackground(.serviceGray200)
                             .presentationCompactAdaptation(.popover)
                     }
                 }
