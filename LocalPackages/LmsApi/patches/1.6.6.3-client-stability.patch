@@ -1,0 +1,512 @@
+diff --git a/library/src/commonMain/kotlin/io/github/chlwhdtn03/LmsApi.kt b/library/src/commonMain/kotlin/io/github/chlwhdtn03/LmsApi.kt
+index 1f7fe8e..29c8f84 100644
+--- a/library/src/commonMain/kotlin/io/github/chlwhdtn03/LmsApi.kt
++++ b/library/src/commonMain/kotlin/io/github/chlwhdtn03/LmsApi.kt
+@@ -1114,42 +1114,85 @@ internal fun normalizePem(raw: String): String {
+ 
+ @JvmSynthetic
+ internal fun String.decodeHtmlEntities(): String {
+-    val regex = Regex("&(?:#(x?[0-9a-fA-F]+)|([a-zA-Z0-9]+));")
+-    return regex.replace(this) { matchResult ->
+-        val hexOrDec = matchResult.groups[1]?.value
+-        val name = matchResult.groups[2]?.value
+-        if (hexOrDec != null) {
+-            try {
+-                val codePoint = if (hexOrDec.startsWith("x", ignoreCase = true)) {
+-                    hexOrDec.substring(1).toInt(16)
+-                } else {
+-                    hexOrDec.toInt()
+-                }
+-                codePoint.toChar().toString()
+-            } catch (_: Exception) {
+-                matchResult.value
++    if ('&' !in this) return this
++
++    return buildString(length) {
++        var index = 0
++        while (index < this@decodeHtmlEntities.length) {
++            if (this@decodeHtmlEntities[index] != '&') {
++                append(this@decodeHtmlEntities[index++])
++                continue
++            }
++
++            val semicolon = this@decodeHtmlEntities.indexOf(';', index + 1)
++            if (semicolon < 0 || semicolon - index > 16) {
++                append(this@decodeHtmlEntities[index++])
++                continue
+             }
+-        } else if (name != null) {
+-            when (name) {
+-                "nbsp" -> " "
+-                "lt" -> "<"
+-                "gt" -> ">"
+-                "amp" -> "&"
+-                "quot" -> "\""
+-                "apos" -> "'"
+-                else -> matchResult.value
++
++            val token = this@decodeHtmlEntities.substring(index + 1, semicolon)
++            val decoded = decodeHtmlEntityToken(token)
++            if (decoded == null) {
++                append(this@decodeHtmlEntities[index++])
++            } else {
++                append(decoded)
++                index = semicolon + 1
+             }
+-        } else {
+-            matchResult.value
+         }
+     }
+ }
+ 
+ @JvmSynthetic
+ internal fun String.stripHtmlTags(): String {
+-    val withNewlines = this.replace(Regex("""<br\b[^>]*>""", RegexOption.IGNORE_CASE), "\n")
+-    val stripped = withNewlines.replace(Regex("""<[^>]+>"""), "")
++    if ('<' !in this) return decodeHtmlEntities().trim()
++
++    val stripped = buildString(length) {
++        var index = 0
++        while (index < this@stripHtmlTags.length) {
++            if (this@stripHtmlTags[index] != '<') {
++                append(this@stripHtmlTags[index++])
++                continue
++            }
++
++            val tagEnd = this@stripHtmlTags.indexOf('>', index + 1)
++            if (tagEnd < 0) {
++                append(this@stripHtmlTags.substring(index))
++                break
++            }
++
++            val tagName = this@stripHtmlTags
++                .substring(index + 1, tagEnd)
++                .trimStart('/', ' ', '\t', '\r', '\n')
++                .takeWhile { !it.isWhitespace() && it != '/' }
++            if (tagName.equals("br", ignoreCase = true)) append('\n')
++            index = tagEnd + 1
++        }
++    }
+     return stripped.decodeHtmlEntities().trim()
+ }
+ 
++private fun decodeHtmlEntityToken(token: String): String? {
++    if (token.startsWith("#")) {
++        val number = token.substring(1)
++        val codePoint = runCatching {
++            if (number.startsWith("x", ignoreCase = true)) {
++                number.substring(1).toInt(16)
++            } else {
++                number.toInt()
++            }
++        }.getOrNull() ?: return null
++        return codePoint.toChar().toString()
++    }
++
++    return when (token) {
++        "nbsp" -> " "
++        "lt" -> "<"
++        "gt" -> ">"
++        "amp" -> "&"
++        "quot" -> "\""
++        "apos" -> "'"
++        else -> null
++    }
++}
++
+ internal expect fun pemToString(rawPem: String, rawPw: String): String
+diff --git a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/GraduateTableService.kt b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/GraduateTableService.kt
+index 7ae1cc1..9aea5dd 100644
+--- a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/GraduateTableService.kt
++++ b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/GraduateTableService.kt
+@@ -4,6 +4,7 @@ import io.github.chlwhdtn03.data.Lms.GraduateTable
+ import io.github.chlwhdtn03.data.Lms.GraduateTableCell
+ import io.github.chlwhdtn03.decodeHtmlEntities
+ import io.github.chlwhdtn03.stripHtmlTags
++import kotlinx.coroutines.CancellationException
+ 
+ /** 졸업사정표 조회와 파싱을 담당합니다. */
+ internal class GraduateTableService(
+@@ -11,31 +12,45 @@ internal class GraduateTableService(
+ ) {
+     suspend fun getGraduateTable(): GraduateTable {
+         val initialContext = webDynpro.openSession(URL, APP_NAME)
+-        val detailButtonId = findDetailButtonId(initialContext.html)
+-        val context = webDynpro.refreshSession(
+-            context = initialContext,
+-            eventQueue = graduateTableEventQueue(URL, detailButtonId),
+-            requestHeaders = mapOf(
+-                "Origin" to ECC_ORIGIN,
+-                "Referer" to URL,
+-                "X-XHR-Logon" to "accept",
+-            ),
+-        )
+-        return parseGraduateTable(context.html)
++        val baseTable = parseGraduateTable(initialContext.html)
++        val detailButtonId = findDetailButtonId(initialContext.html) ?: return baseTable
++
++        return try {
++            val context = webDynpro.refreshSession(
++                context = initialContext,
++                eventQueue = graduateTableEventQueue(URL, detailButtonId),
++                requestHeaders = mapOf(
++                    "Origin" to ECC_ORIGIN,
++                    "Referer" to URL,
++                    "X-XHR-Logon" to "accept",
++                ),
++            )
++            parseGraduateTable(context.html).takeUnless { it.items.isEmpty() } ?: baseTable
++        } catch (throwable: Throwable) {
++            if (throwable is CancellationException) throw throwable
++            baseTable
++        }
+     }
+ 
+     // Web Dynpro 컨트롤 ID는 세션과 진입 경로에 따라 달라지므로 캡처된 WDB0를 고정하지 않습니다.
+-    private fun findDetailButtonId(html: String): String {
++    private fun findDetailButtonId(html: String): String? {
+         val captionIndex = html.indexOf("과목상세 보기")
+-        if (captionIndex < 0) {
+-            throw IllegalStateException("졸업사정표의 과목상세 보기 버튼을 찾지 못했습니다.")
++        if (captionIndex < 0) return null
++
++        var searchIndex = captionIndex
++        while (searchIndex > 0) {
++            val tagStart = html.lastIndexOf('<', searchIndex - 1)
++            if (tagStart < 0) return null
++            val tagEnd = html.indexOf('>', tagStart + 1)
++            if (tagEnd in (tagStart + 1)..captionIndex) {
++                val tag = html.substring(tagStart, tagEnd + 1)
++                if (tag.attributeValue("ct").equals("B", ignoreCase = true)) {
++                    tag.attributeValue("id")?.let { return it }
++                }
++            }
++            searchIndex = tagStart
+         }
+-        return Regex("""id="([^"]+)"[^>]*\bct="B""", RegexOption.IGNORE_CASE)
+-            .findAll(html.substring(0, captionIndex))
+-            .lastOrNull()
+-            ?.groupValues
+-            ?.get(1)
+-            ?: throw IllegalStateException("졸업사정표의 과목상세 보기 버튼 ID를 찾지 못했습니다.")
++        return null
+     }
+ 
+     private fun graduateTableEventQueue(pageUrl: String, buttonId: String): String {
+@@ -54,11 +69,10 @@ internal class GraduateTableService(
+ 
+     fun parseGraduateTable(html: String): GraduateTable {
+         val decodedHtml = html.decodeHtmlEntities()
+-        val rowRegex = Regex("""<tr\b[^>]*>([\s\S]*?)</tr>""", RegexOption.IGNORE_CASE)
+-        val cellRegex = Regex("""<(?:td|th)\b[^>]*>([\s\S]*?)</(?:td|th)>""", RegexOption.IGNORE_CASE)
+-        val rows = rowRegex.findAll(decodedHtml).map { rowMatch ->
+-            cellRegex.findAll(rowMatch.groupValues[1]).map { it.groupValues[1].stripHtmlTags().trim() }.toList()
+-        }.filter { it.isNotEmpty() }.toList()
++        val rows = extractElementBodies(decodedHtml, listOf("tr")).map { rowHtml ->
++            extractElementBodies(rowHtml, listOf("td", "th"))
++                .map { it.stripHtmlTags().trim() }
++        }.filter { it.isNotEmpty() }
+ 
+         val hasUsedSubjectsColumn = decodedHtml.contains("과목사용")
+         val headers = extractHeaders(rows).ifEmpty {
+@@ -131,6 +145,92 @@ internal class GraduateTableService(
+         return GraduateTable(items = result)
+     }
+ 
++    private fun extractElementBodies(source: String, tagNames: List<String>): List<String> {
++        val result = mutableListOf<String>()
++        var searchIndex = 0
++
++        while (searchIndex < source.length) {
++            val nextTag = tagNames.mapNotNull { tagName ->
++                findOpeningTag(source, tagName, searchIndex)?.let { tagName to it }
++            }.minByOrNull { it.second } ?: break
++
++            val tagName = nextTag.first
++            val openingStart = nextTag.second
++            val contentStart = source.indexOf('>', openingStart + tagName.length + 1)
++            if (contentStart < 0) break
++            val closingStart = source.indexOf(
++                "</$tagName>",
++                contentStart + 1,
++                ignoreCase = true,
++            )
++            if (closingStart < 0) {
++                searchIndex = contentStart + 1
++                continue
++            }
++
++            result += source.substring(contentStart + 1, closingStart)
++            searchIndex = closingStart + tagName.length + 3
++        }
++        return result
++    }
++
++    private fun findOpeningTag(source: String, tagName: String, fromIndex: Int): Int? {
++        var searchIndex = fromIndex
++        val marker = "<$tagName"
++        while (searchIndex < source.length) {
++            val candidate = source.indexOf(marker, searchIndex, ignoreCase = true)
++            if (candidate < 0) return null
++            val boundaryIndex = candidate + marker.length
++            if (
++                boundaryIndex >= source.length ||
++                source[boundaryIndex].isWhitespace() ||
++                source[boundaryIndex] == '>'
++            ) {
++                return candidate
++            }
++            searchIndex = boundaryIndex
++        }
++        return null
++    }
++
++    private fun String.attributeValue(name: String): String? {
++        var searchIndex = 0
++        while (searchIndex < length) {
++            val nameIndex = indexOf(name, searchIndex, ignoreCase = true)
++            if (nameIndex < 0) return null
++            val beforeIsBoundary = nameIndex == 0 || !this[nameIndex - 1].isLetterOrDigit()
++            var cursor = nameIndex + name.length
++            val afterIsBoundary = cursor >= length || !this[cursor].isLetterOrDigit()
++            if (!beforeIsBoundary || !afterIsBoundary) {
++                searchIndex = cursor
++                continue
++            }
++
++            while (cursor < length && this[cursor].isWhitespace()) cursor++
++            if (cursor >= length || this[cursor] != '=') {
++                searchIndex = cursor
++                continue
++            }
++            cursor++
++            while (cursor < length && this[cursor].isWhitespace()) cursor++
++            if (cursor >= length) return null
++
++            val quote = this[cursor]
++            if (quote == '"' || quote == '\'') {
++                val valueStart = cursor + 1
++                val valueEnd = indexOf(quote, valueStart)
++                return if (valueEnd >= 0) substring(valueStart, valueEnd) else null
++            }
++
++            var valueEnd = cursor
++            while (valueEnd < length && !this[valueEnd].isWhitespace() && this[valueEnd] != '>') {
++                valueEnd++
++            }
++            return substring(cursor, valueEnd)
++        }
++        return null
++    }
++
+     private fun extractHeaders(rows: List<List<String>>): List<GraduateColumn> {
+         for (row in rows) {
+             val matched = row.mapNotNull { parseHeader(it) }
+diff --git a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/WebDynproService.kt b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/WebDynproService.kt
+index 2245ea7..7f77bd3 100644
+--- a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/WebDynproService.kt
++++ b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/WebDynproService.kt
+@@ -53,9 +53,13 @@ internal class WebDynproService(
+ 
+     private suspend fun openSessionOnce(url: String, appName: String): WebDynproContext {
+         val response = client.get(url) {
++            url {
++                parameters.append(LANGUAGE_PARAMETER, KOREAN_LANGUAGE)
++            }
+             headers {
+                 append(HttpHeaders.UserAgent, USER_AGENT)
+                 append(HttpHeaders.Accept, HTML_ACCEPT)
++                append(HttpHeaders.AcceptLanguage, KOREAN_ACCEPT_LANGUAGE)
+             }
+         }
+         val initialHtml = response.bodyAsText().decodeResponse()
+@@ -309,9 +313,13 @@ internal class WebDynproService(
+                 append("SAPEVENTQUEUE", eventQueue)
+             },
+         ) {
++            url {
++                parameters.append(LANGUAGE_PARAMETER, KOREAN_LANGUAGE)
++            }
+             headers {
+                 append(HttpHeaders.UserAgent, USER_AGENT)
+                 append(HttpHeaders.Accept, "*/*")
++                append(HttpHeaders.AcceptLanguage, KOREAN_ACCEPT_LANGUAGE)
+                 append("X-Requested-With", "XMLHttpRequest")
+                 append(HttpHeaders.ContentType, "application/x-www-form-urlencoded; charset=UTF-8")
+                 requestHeaders.forEach { (name, value) -> append(name, value) }
+@@ -320,11 +328,7 @@ internal class WebDynproService(
+ 
+         val body = response.bodyAsText()
+         val content = if (extractCdata) {
+-            Regex("""<!\[CDATA\[([\s\S]*?)]]>""")
+-                .findAll(body)
+-                .map { it.groupValues[1] }
+-                .maxByOrNull { it.length }
+-                ?: body
++            largestCdataBody(body) ?: body
+         } else {
+             body
+         }
+@@ -340,29 +344,28 @@ internal class WebDynproService(
+     }
+ 
+     private fun parseSecureId(html: String): String {
+-        return Regex(
+-            """name="sap-wd-secure-id"\s+value="([^"]+)"""",
+-            RegexOption.IGNORE_CASE,
+-        ).find(html)?.groupValues?.get(1).orEmpty()
++        return findTagByAttribute(
++            html = html,
++            attributeName = "name",
++            attributeValue = "sap-wd-secure-id",
++        )?.htmlAttribute("value").orEmpty()
+     }
+ 
+     private fun parseFormAction(html: String): String {
+-        return Regex(
+-            """<form\s+[^>]*id="sap\.client\.SsrClient\.form"[^>]*action="([^"]+)"""",
+-            RegexOption.IGNORE_CASE,
+-        ).find(html)
+-            ?.groupValues
+-            ?.get(1)
++        return findTagByAttribute(
++            html = html,
++            attributeName = "id",
++            attributeValue = "sap.client.SsrClient.form",
++            tagName = "form",
++        )
++            ?.htmlAttribute("action")
+             ?.decodeHtmlEntities()
+             ?.decodeHtmlEntities()
+             .orEmpty()
+     }
+ 
+     private fun validateResponse(html: String, appName: String) {
+-        val title = Regex(
+-            """<title\b[^>]*>([\s\S]*?)</title>""",
+-            RegexOption.IGNORE_CASE,
+-        ).find(html)?.groupValues?.get(1)?.stripHtmlTags().orEmpty()
++        val title = findElementBody(html, "title")?.stripHtmlTags().orEmpty()
+         when {
+             title.contains("Application Server Error", ignoreCase = true) -> {
+                 throw WebDynproSessionException("$appName Web Dynpro 서버 오류가 발생했습니다.")
+@@ -470,6 +473,9 @@ internal class WebDynproService(
+         const val EXTERNAL_URL_BUTTON_BATCH_SIZE = 20
+         const val MAX_ENTITY_LENGTH = 16
+         const val ECC_BASE_URL = "https://ecc.ssu.ac.kr:8443"
++        const val LANGUAGE_PARAMETER = "sap-language"
++        const val KOREAN_LANGUAGE = "KO"
++        const val KOREAN_ACCEPT_LANGUAGE = "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7"
+         const val USER_AGENT =
+             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
+                 "(KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+@@ -479,6 +485,109 @@ internal class WebDynproService(
+     }
+ }
+ 
++private fun largestCdataBody(source: String): String? {
++    val opening = "<![CDATA["
++    val closing = "]] >".replace(" ", "")
++    var searchIndex = 0
++    var largest: String? = null
++
++    while (searchIndex < source.length) {
++        val start = source.indexOf(opening, searchIndex)
++        if (start < 0) break
++        val contentStart = start + opening.length
++        val end = source.indexOf(closing, contentStart)
++        if (end < 0) break
++        if (largest == null || end - contentStart > largest.length) {
++            largest = source.substring(contentStart, end)
++        }
++        searchIndex = end + closing.length
++    }
++    return largest
++}
++
++private fun findTagByAttribute(
++    html: String,
++    attributeName: String,
++    attributeValue: String,
++    tagName: String? = null,
++): String? {
++    var searchIndex = 0
++    while (searchIndex < html.length) {
++        val start = html.indexOf('<', searchIndex)
++        if (start < 0) return null
++        val end = html.indexOf('>', start + 1)
++        if (end < 0) return null
++        val tag = html.substring(start, end + 1)
++        val actualTagName = tag
++            .drop(1)
++            .trimStart()
++            .takeWhile { !it.isWhitespace() && it != '>' && it != '/' }
++        if (
++            (tagName == null || actualTagName.equals(tagName, ignoreCase = true)) &&
++            tag.htmlAttribute(attributeName).equals(attributeValue, ignoreCase = true)
++        ) {
++            return tag
++        }
++        searchIndex = end + 1
++    }
++    return null
++}
++
++private fun String.htmlAttribute(name: String): String? {
++    var searchIndex = 0
++    while (searchIndex < length) {
++        val nameIndex = indexOf(name, searchIndex, ignoreCase = true)
++        if (nameIndex < 0) return null
++        val beforeIsBoundary = nameIndex == 0 || !this[nameIndex - 1].isLetterOrDigit()
++        var cursor = nameIndex + name.length
++        val afterIsBoundary = cursor >= length || !this[cursor].isLetterOrDigit()
++        if (!beforeIsBoundary || !afterIsBoundary) {
++            searchIndex = cursor
++            continue
++        }
++
++        while (cursor < length && this[cursor].isWhitespace()) cursor++
++        if (cursor >= length || this[cursor] != '=') {
++            searchIndex = cursor
++            continue
++        }
++        cursor++
++        while (cursor < length && this[cursor].isWhitespace()) cursor++
++        if (cursor >= length) return null
++
++        val quote = this[cursor]
++        if (quote == '\"' || quote == '\'') {
++            val valueStart = cursor + 1
++            val valueEnd = indexOf(quote, valueStart)
++            return if (valueEnd >= 0) substring(valueStart, valueEnd) else null
++        }
++
++        val valueEnd = indexOfFirstFrom(cursor) { it.isWhitespace() || it == '>' }
++        return substring(cursor, valueEnd)
++    }
++    return null
++}
++
++private inline fun String.indexOfFirstFrom(
++    startIndex: Int,
++    predicate: (Char) -> Boolean,
++): Int {
++    for (index in startIndex until length) {
++        if (predicate(this[index])) return index
++    }
++    return length
++}
++
++private fun findElementBody(html: String, tagName: String): String? {
++    val openStart = html.indexOf("<$tagName", ignoreCase = true)
++    if (openStart < 0) return null
++    val contentStart = html.indexOf('>', openStart + tagName.length + 1)
++    if (contentStart < 0) return null
++    val end = html.indexOf("</$tagName>", contentStart + 1, ignoreCase = true)
++    if (end < 0) return null
++    return html.substring(contentStart + 1, end)
++}
++
+ private data class DecodedEntity(
+     val value: String,
+     val endExclusive: Int,
