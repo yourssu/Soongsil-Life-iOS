@@ -34,33 +34,31 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
-            VStack(spacing: 0) {
-                header
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    header
 
-                Rectangle()
-                    .fill(.gray100)
-                    .frame(height: 1)
+                    Rectangle()
+                        .fill(.gray100)
+                        .frame(height: 1)
 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        if let dashboard = viewModel.output.dashboard {
-                            academicSection(dashboard)
-                        } else if let errorMessage = viewModel.output.errorMessage {
-                            errorCard(errorMessage)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 32)
-                        }
-
-                        Rectangle()
-                            .fill(.gray050)
-                            .frame(height: 16)
-
-                        lowerSection
+                    if let dashboard = viewModel.output.dashboard {
+                        academicSection(dashboard)
+                    } else if let errorMessage = viewModel.output.errorMessage {
+                        errorCard(errorMessage)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 32)
                     }
+
+                    Rectangle()
+                        .fill(.gray050)
+                        .frame(height: 16)
+
+                    lowerSection
                 }
-                .refreshable {
-                    await loadContent(force: true)
-                }
+            }
+            .refreshable {
+                await loadContent(force: true)
             }
             .background(.white000)
             .navigationDestination(for: Destination.self) { destination in
