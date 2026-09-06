@@ -8,6 +8,10 @@ while scanning large single-line Web Dynpro HTML. The local client-only patch:
 
 - replaces recursive timetable control, header, row/cell, and nested-table
   regular expressions with a non-recursive linear scanner;
+- preserves nested Web Dynpro layout/result tables and split timetable
+  header/body tables while scanning grade, timetable, and chapel pages;
+- ignores fake markup inside script/style blocks and preserves literal `<`
+  text without losing later cells or line breaks;
 - uses the same scanner for grade and chapel control/row parsing and common
   year/semester parsing, preventing the same Kotlin/Native stack overflow on
   large single-line Web Dynpro responses;
@@ -24,7 +28,7 @@ provisioning assets. The official LMS-API repository is not modified by this
 app package.
 
 The bundled framework binary SHA-256 is
-`74f0c62f0c01ba8a8dab4e6cbd0d9cb152ed3d7b9caf339f2bbaba853f2cfa42`.
+`5927e414101efbd36a2b7922c60a68ee9c600e3db84bf4ed7adb1db21e68506e`.
 
 ## Rebuilding
 
