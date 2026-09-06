@@ -153,9 +153,9 @@ enum GraduationAuditStatus: Equatable, Sendable {
     init?(apiValue: String) {
         let value = apiValue.trimmingCharacters(in: .whitespacesAndNewlines)
         switch value {
-        case "충족":
+        case "충족", "면제", "해당없음", "이수", "통과":
             self = .satisfied
-        case "부족":
+        case "부족", "미이수":
             self = .insufficient
         default:
             return nil
