@@ -77,7 +77,7 @@ struct SoomsilTabBar: View {
                         if selected {
                             Capsule()
                                 .fill(
-                                    .black000.opacity(0.10)
+                                    .black000.opacity(0.08)
                                         .shadow(
                                             .inner(
                                                 color: .white000.opacity(0.25),
@@ -99,22 +99,30 @@ struct SoomsilTabBar: View {
         .background {
             Capsule()
                 .fill(
-                    .white000.opacity(0.10)
-                        .shadow(
-                            .inner(
-                                color: .white000.opacity(0.25),
-                                radius: 4,
-                                x: 0,
-                                y: 4
+                    .white000.shadow(
+                        .inner(
+                            color: .realBlack.opacity(0.02),
+                            radius: 7,
+                            x: 7,
+                            y: 7
+                        )
+                    )
+                )
+                .overlay {
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    .gray100.opacity(0.35),
+                                    .gray100.opacity(0)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: UnitPoint(x: 0.58, y: 0.72)
                             )
                         )
-                )
+                }
         }
         .clipShape(Capsule())
-        .overlay {
-            Capsule()
-                .strokeBorder(.gray100, lineWidth: 1)
-        }
         .padding(.horizontal, 22)
     }
 }
@@ -800,14 +808,12 @@ struct SoomsilLoadingOverlay: View {
     var body: some View {
         ZStack {
             Rectangle()
-                .fill(.realBlack.opacity(0.12))
+                .fill(.realBlack.opacity(0.5))
                 .ignoresSafeArea()
+
             ProgressView()
                 .controlSize(.large)
                 .tint(.serviceBlue600)
-                .padding(28)
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
     }
 }

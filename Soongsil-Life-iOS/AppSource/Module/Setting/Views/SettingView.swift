@@ -15,65 +15,63 @@ struct SettingView: View {
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
-            VStack(spacing: 0) {
-                Text(L10n.Common.my)
-                    .font(.pretendard(20, weight: .semibold))
-                    .foregroundStyle(.black000)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .frame(height: 56)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    Text(L10n.Common.my)
+                        .font(.pretendard(20, weight: .semibold))
+                        .foregroundStyle(.black000)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .frame(height: 56)
 
-                Rectangle()
-                    .fill(.gray100)
-                    .frame(height: 1)
+                    Rectangle()
+                        .fill(.gray100)
+                        .frame(height: 1)
 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        SettingSection(title: L10n.Soomsil.account) {
-                            SettingActionRow(
-                                title: L10n.Settings.logout,
-                                accessory: .chevron
-                            ) {
-                                Task {
-                                    await viewModel.transform(input: .logoutButtonTapped)
-                                }
+                    SettingSection(title: L10n.Soomsil.account) {
+                        SettingActionRow(
+                            title: L10n.Settings.logout,
+                            accessory: .chevron
+                        ) {
+                            Task {
+                                await viewModel.transform(input: .logoutButtonTapped)
                             }
-                        }
-
-                        if AppFeatureAvailability.showsNotificationSettings {
-                            SettingSection(title: L10n.Settings.notifications) {
-                                SettingNavigationRow(
-                                    title: L10n.Settings.notificationSettings,
-                                    destination: .notifications
-                                )
-                                SettingDivider()
-                            }
-                        }
-
-                        SettingSection(title: L10n.Soomsil.agreements) {
-                            SettingNavigationRow(
-                                title: L10n.Settings.terms,
-                                destination: .legal(.terms)
-                            )
-                            SettingDivider()
-                            SettingNavigationRow(
-                                title: L10n.Settings.privacy,
-                                destination: .legal(.privacy)
-                            )
-                        }
-
-                        SettingSection(title: L10n.Settings.version) {
-                            SettingActionRow(
-                                title: L10n.Soomsil.versionInfo,
-                                accessory: .text(
-                                    L10n.Soomsil.appVersion(viewModel.output.appVersion)
-                                ),
-                                action: nil
-                            )
                         }
                     }
-                    .padding(.bottom, 32)
+
+                    if AppFeatureAvailability.showsNotificationSettings {
+                        SettingSection(title: L10n.Settings.notifications) {
+                            SettingNavigationRow(
+                                title: L10n.Settings.notificationSettings,
+                                destination: .notifications
+                            )
+                            SettingDivider()
+                        }
+                    }
+
+                    SettingSection(title: L10n.Soomsil.agreements) {
+                        SettingNavigationRow(
+                            title: L10n.Settings.terms,
+                            destination: .legal(.terms)
+                        )
+                        SettingDivider()
+                        SettingNavigationRow(
+                            title: L10n.Settings.privacy,
+                            destination: .legal(.privacy)
+                        )
+                    }
+
+                    SettingSection(title: L10n.Settings.version) {
+                        SettingActionRow(
+                            title: L10n.Soomsil.versionInfo,
+                            accessory: .text(
+                                L10n.Soomsil.appVersion(viewModel.output.appVersion)
+                            ),
+                            action: nil
+                        )
+                    }
                 }
+                .padding(.bottom, 32)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(.white000)

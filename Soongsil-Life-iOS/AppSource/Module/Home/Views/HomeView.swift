@@ -11,7 +11,6 @@ struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var chapelViewModel: ChapelViewModel
     @State private var navigationPath: [Destination] = []
-    @State private var showsCurrentGrades = false
     private let gradeRepository: GradeRepositoryProtocol
     private let graduationAuditRepository: GraduationAuditRepositoryProtocol
     private let tuitionRepository: TuitionRepositoryProtocol
@@ -35,33 +34,31 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
-            VStack(spacing: 0) {
-                header
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    header
 
-                Rectangle()
-                    .fill(.gray100)
-                    .frame(height: 1)
+                    Rectangle()
+                        .fill(.gray100)
+                        .frame(height: 1)
 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        if let dashboard = viewModel.output.dashboard {
-                            academicSection(dashboard)
-                        } else if let errorMessage = viewModel.output.errorMessage {
-                            errorCard(errorMessage)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 32)
-                        }
-
-                        Rectangle()
-                            .fill(.gray050)
-                            .frame(height: 16)
-
-                        lowerSection
+                    if let dashboard = viewModel.output.dashboard {
+                        academicSection(dashboard)
+                    } else if let errorMessage = viewModel.output.errorMessage {
+                        errorCard(errorMessage)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 32)
                     }
+
+                    Rectangle()
+                        .fill(.gray050)
+                        .frame(height: 16)
+
+                    lowerSection
                 }
-                .refreshable {
-                    await loadContent(force: true)
-                }
+            }
+            .refreshable {
+                await loadContent(force: true)
             }
             .background(.white000)
             .navigationDestination(for: Destination.self) { destination in
@@ -78,23 +75,6 @@ struct HomeView: View {
         }
         .onChange(of: navigationPath) { _, path in
             onNavigationDepthChanged(!path.isEmpty)
-        }
-        .sheet(isPresented: $showsCurrentGrades) {
-            NavigationStack {
-                CurrentSemesterGradesView(
-                    semester: viewModel.output.dashboard?.latestSemester,
-                    courses: viewModel.output.dashboard?.currentCourses ?? [],
-                    isLoading: viewModel.output.isLoadingCurrentCourses
-                )
-                .presentationCornerRadius(20)
-                .presentationDragIndicator(.visible)
-                .presentationDetents([.fraction(0.67), .large])
-            }
-        }
-        .overlay {
-            if viewModel.output.isLoading && viewModel.output.dashboard == nil {
-                SoomsilLoadingOverlay()
-            }
         }
     }
 
@@ -118,9 +98,7 @@ struct HomeView: View {
                     .padding(.bottom, 20)
             }
 
-            Button {
-                showsCurrentGrades = true
-            } label: {
+            NavigationLink(value: Destination.semesterGrades) {
                 GradeOverviewCard(
                     cumulativeGPA: dashboard.cumulativeGPA,
                     earnedCredits: dashboard.cumulativeEarnedCredits,

@@ -85,6 +85,12 @@ struct MainTabView: View {
                     .transition(.opacity)
                     .zIndex(2)
             }
+
+            if showsHomeLoadingOverlay {
+                SoomsilLoadingOverlay()
+                    .transition(.opacity)
+                    .zIndex(2)
+            }
         }
         .animation(
             .easeInOut(duration: 0.18),
@@ -93,6 +99,10 @@ struct MainTabView: View {
         .animation(
             .easeInOut(duration: 0.18),
             value: settingViewModel.output.isLoggingOut
+        )
+        .animation(
+            .easeInOut(duration: 0.18),
+            value: showsHomeLoadingOverlay
         )
     }
 
@@ -148,6 +158,12 @@ struct MainTabView: View {
         case .chapel, .timetable:
             true
         }
+    }
+
+    private var showsHomeLoadingOverlay: Bool {
+        viewModel.output.selectedTab == .home
+            && homeViewModel.output.isLoading
+            && homeViewModel.output.dashboard == nil
     }
 }
 
