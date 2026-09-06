@@ -8,7 +8,7 @@ iPhone에서 한곳에 모아 확인할 수 있도록 만든 SwiftUI 앱입니�
 - iOS 17 이상, iPhone 세로 화면
 - SwiftUI + Observation(`@Observable`)
 - MVVM Input/Output + 생성자 기반 의존성 주입
-- 홈 / 채플 / 시간표 / 마이 탭
+- 홈 / 시간표 / 마이 탭과 홈에서 진입하는 채플 상세
 - Keychain 기반 자동 로그인과 세션 복원
 - 로딩·빈 데이터·오류·재시도 상태 분리
 - 한국어 현지화
@@ -22,10 +22,10 @@ iPhone에서 한곳에 모아 확인할 수 있도록 만든 SwiftUI 앱입니�
   현재 수강 정보가 없으면 과거 이수 횟수에 따라 수료 완료와 미수강을 구분합니다.
 - **시간표**: LMS가 반환한 학기를 최신순으로 선택하고 수업 블록과 과목 상세를
   표시합니다. 시간이 정해진 수업이 없는 학기도 정상적인 빈 상태로 처리합니다.
-- **마이**: 로그아웃, 이용약관, 개인정보 처리방침, 오픈소스 라이선스와 앱 버전을
-  제공합니다. 알림 기능과 알림 설정은 현재 출시 범위에 포함하지 않습니다.
-- **졸업사정표**: 졸업 요건을 분류별로 묶고 서버의 `충족` / `부족` 상태와
-  사용 과목을 표시합니다.
+- **마이**: 로그아웃, 이용약관, 개인정보 처리방침과 앱 버전을 제공합니다.
+  알림 기능과 알림 설정은 현재 출시 범위에 포함하지 않습니다.
+- **졸업사정표**: 졸업 요건 분류를 기본 접힌 아코디언으로 표시하고, 펼친
+  분류에서 기준·계산 값과 서버의 `충족` / `부족` 상태를 확인할 수 있습니다.
 - **등록금·장학금**: 등록금과 장학금 이력을 탭으로 구분해 최신 학기부터
   표시합니다.
 - **앱 업데이트**: 원격 버전 정책에 따라 선택 또는 필수 업데이트 안내를
@@ -74,6 +74,7 @@ iPhone에서 한곳에 모아 확인할 수 있도록 만든 SwiftUI 앱입니�
 │   │   └── Resource
 │   │       ├── Licenses                오픈소스 라이선스
 │   │       ├── Localization            L10n과 한국어 문자열
+│   │       ├── logoAni.mp4             앱 시작용 무음 반복 로고 영상
 │   │       └── PrivacyInfo.xcprivacy   개인정보 매니페스트
 │   └── Soongsil-Life-iOS.xcodeproj
 ├── TERMS.md                            외부 공개용 이용약관
@@ -115,6 +116,10 @@ protocol BaseViewModel: AnyObject {
   소유합니다. 같은 `ChapelViewModel`을 홈의 채플 카드와 채플 탭에 전달해
   상태와 중복 요청 방지를 공유합니다.
 
+모든 콜드 런치는 중앙 로고 애니메이션을 먼저 표시합니다. 최소 표시 시간과
+로그인 세션 판정을 병렬로 진행한 뒤 저장 자격 증명 및 동의 완료 상태에 따라
+로그인·약관 동의·완료·홈 중 알맞은 루트 화면으로 전환합니다.
+
 ```text
 View
   → ViewModel.transform(input:)
@@ -143,11 +148,14 @@ View
 시간표는 45초, 졸업사정표와 채플 이수 횟수 조회는 60초를 사용합니다.
 취소, timeout과 실제 callback이 경쟁해도 continuation은 한 번만 완료됩니다.
 
-`AsyncSingleFlight`는 같은 ViewModel의 중복 로드 요청을 하나로 합칩니다. 인증과
-시간표는 Swift Task가 timeout된 뒤에도 취소할 수 없는 SDK 요청이 남을 수
-있으므로 별도 gate가 실제 callback 전까지 다음 SDK 요청 시작을 막습니다.
-화면에는 SDK 원문 대신 네트워크 단절, timeout과 기능별 fallback 문구를
-표시합니다.
+`AsyncSingleFlight`는 같은 ViewModel의 중복 로드 요청을 하나로 합칩니다. 모든
+`LmsApi.shared` 요청은 전역 FIFO coordinator를 거쳐 직렬화되며, 순서를 기다리는
+Swift Task는 메인 스레드를 점유하지 않습니다. 시작된 Kotlin/Native 요청은 Swift
+Task가 취소되거나 timeout되어도 실제 callback이 도착할 때까지 다음 SDK 요청과
+겹치지 않습니다. callback이 누락된 요청은 coordinator를 격리 상태로 전환해 대기
+요청과 신규 요청을 timeout으로 종료하고, 늦은 callback이 도착한 뒤에만 정상
+상태로 돌아옵니다. 화면에는 SDK 원문 대신 네트워크 단절, timeout과 기능별
+fallback 문구를 표시합니다.
 
 각 기능의 상태 기준은 다음과 같습니다.
 
@@ -182,21 +190,22 @@ Keychain 저장이 실패해도 이미 성공한 수동 로그인 세션은 유�
 ## 로컬 LmsApi 패키지
 
 실제 서버 연결은
-[`chlwhdtn03/LMS-API`](https://github.com/chlwhdtn03/LMS-API/tree/014b325fea9bcd234a21edaf0f8e41b0debadcba)의
+[`chlwhdtn03/LMS-API`](https://github.com/chlwhdtn03/LMS-API/tree/64ecd286ff1cc022e25cd96e96ace99b400cd7d7)의
 `LmsApi.shared`를 사용합니다. 이 앱은 서버를 포함하거나 대체하지 않으며 별도
 REST Base URL도 두지 않습니다.
 
 Xcode 프로젝트는 원격 패키지를 직접 가져오는 대신
 [`LocalPackages/LmsApi`](LocalPackages/LmsApi/README.md)를 로컬 Swift
 Package로 참조합니다. 이 패키지는 upstream revision
-`014b325fea9bcd234a21edaf0f8e41b0debadcba`에서 빌드한 iOS 클라이언트
-바이너리를 앱 저장소 안에서 감싸는 래퍼입니다.
+`64ecd286ff1cc022e25cd96e96ace99b400cd7d7` (LMS-API `1.6.6.3`)에서 빌드한
+iOS 클라이언트 바이너리를 앱 저장소 안에서 감싸는 래퍼입니다.
 
 로컬 클라이언트의 보완 범위는 다음으로 제한됩니다.
 
 - 큰 단일 행 Web Dynpro HTML을 재귀 정규식 대신 선형으로 탐색
-- 선택 과목 상세 동작을 사용할 수 없을 때 기본 졸업사정표 유지
+- SDK의 선택 과목 상세 응답을 사용할 수 없을 때 기본 졸업사정표 파싱 유지
 - 선택 과목 열 유무와 관계없이 서버의 `충족` / `부족` 계약 유지
+- SAP Web Dynpro 요청 언어를 한국어로 고정해 기기 언어와 무관하게 파싱
 
 공식 LMS-API 저장소 자체는 수정하지 않았습니다. 로컬 패키지에는 서버,
 실계정 자격 증명, 코드사인 설정, 인증서 또는 provisioning asset이 없습니다.
@@ -240,7 +249,7 @@ Mock 조합을 사용합니다. 로컬 `LmsApi.xcframework`는 `ios-arm64` 실�
 
 ## 이용약관과 개인정보
 
-이용약관과 개인정보 처리방침은 로그인 화면과 마이 화면에서 모두 접근할 수
+이용약관과 개인정보 처리방침은 최초 약관 동의 화면과 마이 화면에서 모두 접근할 수
 있습니다. 앱 화면용 문서는 `Module/Setting/Models/LegalDocument.swift`, 외부
 공개용 문서는 [`TERMS.md`](TERMS.md)와 [`PRIVACY.md`](PRIVACY.md)에서
 관리합니다. 처리 정보나 보관 방식이 바뀌면 두 표현을 함께 갱신합니다.
