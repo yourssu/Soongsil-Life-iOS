@@ -6,7 +6,11 @@ upstream revision `64ecd286ff1cc022e25cd96e96ace99b400cd7d7`.
 The binary is kept local because the upstream release crashes in Kotlin/Native
 while scanning large single-line Web Dynpro HTML. The local client-only patch:
 
-- replaces recursive control-search regular expressions with a linear scanner;
+- replaces recursive timetable control, header, row/cell, and nested-table
+  regular expressions with a non-recursive linear scanner;
+- uses the same scanner for grade and chapel control/row parsing and common
+  year/semester parsing, preventing the same Kotlin/Native stack overflow on
+  large single-line Web Dynpro responses;
 - returns the base graduation-audit table when the optional detail action is
   unavailable or its response cannot be parsed;
 - accepts graduation-audit rows both with and without the optional used-subject
@@ -20,7 +24,7 @@ provisioning assets. The official LMS-API repository is not modified by this
 app package.
 
 The bundled framework binary SHA-256 is
-`51bf41d867c3a511c5f0fd4497c167eb4e3ddaef7be8eb548d64d1b56dbcf6de`.
+`74f0c62f0c01ba8a8dab4e6cbd0d9cb152ed3d7b9caf339f2bbaba853f2cfa42`.
 
 ## Rebuilding
 

@@ -141,9 +141,7 @@ struct TimetableGridView: View {
     }
 
     private var displayStartMinutes: Int {
-        let firstCourse = schedule.blocks.map(\.startMinutes).min() ?? 9 * 60
-        let boundedFirstCourse = min(max(firstCourse, minimumMinute), maximumMinute)
-        return min(9 * 60, boundedFirstCourse / 60 * 60)
+        min(max(schedule.startMinutes, minimumMinute), maximumMinute)
     }
 
     private var displayEndMinutes: Int {

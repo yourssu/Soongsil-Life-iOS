@@ -167,11 +167,12 @@ struct TimetableSchedule: Sendable {
     }
 
     var startMinutes: Int {
-        let earliest = min(
-            8 * 60,
-            blocks.map(\.startMinutes).min() ?? 8 * 60
-        )
-        return earliest / 60 * 60
+        let defaultStart = 9 * 60
+        guard let earliestCourse = blocks.map(\.startMinutes).min() else {
+            return defaultStart
+        }
+
+        return min(defaultStart, earliestCourse / 60 * 60)
     }
 
     var endMinutes: Int {
@@ -319,7 +320,9 @@ struct TimetableSchedule: Sendable {
         }
 
         guard (1...16).contains(period) else { return nil }
-        let fallbackStart = 8 * 60 + max(period - 1, 0) * 60
+        // 시간이 누락된 응답만 교시로 보완합니다. 9시 이전 칸은 서버가
+        // 실제 시작 시간을 반환한 경우에만 노출합니다.
+        let fallbackStart = 9 * 60 + max(period - 1, 0) * 60
         return (fallbackStart, fallbackStart + 50)
     }
 

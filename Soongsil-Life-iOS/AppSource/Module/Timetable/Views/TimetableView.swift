@@ -182,3 +182,16 @@ struct TimetableView: View {
         )
     }
 }
+
+#Preview("8시 수업") {
+    NavigationStack {
+        TimetableView(
+            viewModel: TimetableViewModel(
+                service: MockTimetableService(
+                    cells: MockTimetableFixtures.earlyStartCells,
+                    delay: .zero
+                )
+            )
+        )
+    }
+}
