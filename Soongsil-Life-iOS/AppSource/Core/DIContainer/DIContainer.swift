@@ -7,6 +7,8 @@ struct DIContainer {
     let chapelRepository: ChapelRepositoryProtocol
     let graduationAuditRepository: GraduationAuditRepositoryProtocol
     let timetableService: TimetableServiceProtocol
+    let timetableCacheStore: TimetableCacheStoreProtocol
+    let timetableCatalogDidChange: () -> Void
     let tuitionRepository: TuitionRepositoryProtocol
 
     init(
@@ -16,6 +18,8 @@ struct DIContainer {
         chapelRepository: ChapelRepositoryProtocol,
         graduationAuditRepository: GraduationAuditRepositoryProtocol,
         timetableService: TimetableServiceProtocol,
+        timetableCacheStore: TimetableCacheStoreProtocol,
+        timetableCatalogDidChange: @escaping () -> Void,
         tuitionRepository: TuitionRepositoryProtocol
     ) {
         self.authenticationRepository = authenticationRepository
@@ -24,6 +28,8 @@ struct DIContainer {
         self.chapelRepository = chapelRepository
         self.graduationAuditRepository = graduationAuditRepository
         self.timetableService = timetableService
+        self.timetableCacheStore = timetableCacheStore
+        self.timetableCatalogDidChange = timetableCatalogDidChange
         self.tuitionRepository = tuitionRepository
     }
 
@@ -44,16 +50,47 @@ struct DIContainer {
 #else
         let authenticationService = AuthenticationService()
         let gradeService = GradeService()
-        let gradeRepository = GradeRepository(service: gradeService)
         let chapelService = ChapelService()
-        let chapelCacheStore = UserDefaultsChapelCacheStore()
+        let chapelCacheStore = FileChapelCacheStore()
+        let gradeCacheStore = FileGradeCacheStore()
+        let timetableCacheStore = FileTimetableCacheStore()
+        let tuitionCacheStore = FileTuitionCacheStore()
+        let graduationAuditCacheStore = FileGraduationAuditCacheStore()
+        let tuitionRepository = TuitionRepository(
+            service: TuitionService(),
+            cacheStore: tuitionCacheStore
+        )
+        let graduationAuditRepository = GraduationAuditRepository(
+            service: GraduationAuditService(),
+            cacheStore: graduationAuditCacheStore
+        )
+        let gradeRepository = GradeRepository(
+            service: gradeService,
+            cacheStore: gradeCacheStore,
+            onSummaryChanged: {
+                tuitionCacheStore.markStale()
+                graduationAuditCacheStore.markStale()
+            }
+        )
 
         return DIContainer(
             authenticationRepository: AuthenticationRepository(
                 service: authenticationService,
                 credentialsStore: KeychainLoginCredentialsStore(),
-                activateAccountCache: chapelCacheStore.activateAccount,
-                deactivateAccountCache: chapelCacheStore.deactivateAccount
+                activateAccountCache: { studentID in
+                    chapelCacheStore.activateAccount(studentID: studentID)
+                    gradeCacheStore.activateAccount(studentID: studentID)
+                    timetableCacheStore.activateAccount(studentID: studentID)
+                    tuitionCacheStore.activate(accountIdentifier: studentID)
+                    graduationAuditCacheStore.activate(accountIdentifier: studentID)
+                },
+                deactivateAccountCache: {
+                    chapelCacheStore.deactivateAccount()
+                    gradeCacheStore.deactivateAccount()
+                    timetableCacheStore.deactivateAccount()
+                    tuitionCacheStore.deactivateAndClear()
+                    graduationAuditCacheStore.deactivateAndClear()
+                }
             ),
             homeRepository: HomeRepository(gradeRepository: gradeRepository),
             gradeRepository: gradeRepository,
@@ -61,11 +98,15 @@ struct DIContainer {
                 service: chapelService,
                 cacheStore: chapelCacheStore
             ),
-            graduationAuditRepository: GraduationAuditRepository(
-                service: GraduationAuditService()
-            ),
+            graduationAuditRepository: graduationAuditRepository,
             timetableService: TimetableService(),
-            tuitionRepository: TuitionRepository(service: TuitionService())
+            timetableCacheStore: timetableCacheStore,
+            timetableCatalogDidChange: {
+                chapelCacheStore.markStale()
+                tuitionCacheStore.markStale()
+                graduationAuditCacheStore.markStale()
+            },
+            tuitionRepository: tuitionRepository
         )
 #endif
     }
@@ -82,17 +123,53 @@ struct DIContainer {
         let gradeService = MockGradeService(
             delay: delay
         )
-        let gradeRepository = GradeRepository(service: gradeService)
         let chapelService = MockChapelService(delay: delay)
         let chapelCacheStore = InMemoryChapelCacheStore()
-        chapelCacheStore.activateAccount(studentID: "mock-preview")
+        let gradeCacheStore = InMemoryGradeCacheStore()
+        let timetableCacheStore = InMemoryTimetableCacheStore()
+        let tuitionCacheStore = InMemoryTuitionCacheStore()
+        let graduationAuditCacheStore = InMemoryGraduationAuditCacheStore()
+        let cacheAccount = "mock-preview"
+        chapelCacheStore.activateAccount(studentID: cacheAccount)
+        gradeCacheStore.activateAccount(studentID: cacheAccount)
+        timetableCacheStore.activateAccount(studentID: cacheAccount)
+        tuitionCacheStore.activate(accountIdentifier: cacheAccount)
+        graduationAuditCacheStore.activate(accountIdentifier: cacheAccount)
+        let tuitionRepository = TuitionRepository(
+            service: MockTuitionService(delay: delay),
+            cacheStore: tuitionCacheStore
+        )
+        let graduationAuditRepository = GraduationAuditRepository(
+            service: MockGraduationAuditService(delay: delay),
+            cacheStore: graduationAuditCacheStore
+        )
+        let gradeRepository = GradeRepository(
+            service: gradeService,
+            cacheStore: gradeCacheStore,
+            onSummaryChanged: {
+                tuitionCacheStore.markStale()
+                graduationAuditCacheStore.markStale()
+            }
+        )
 
         return DIContainer(
             authenticationRepository: AuthenticationRepository(
                 service: authenticationService,
                 credentialsStore: InMemoryLoginCredentialsStore(),
-                activateAccountCache: chapelCacheStore.activateAccount,
-                deactivateAccountCache: chapelCacheStore.deactivateAccount
+                activateAccountCache: { studentID in
+                    chapelCacheStore.activateAccount(studentID: studentID)
+                    gradeCacheStore.activateAccount(studentID: studentID)
+                    timetableCacheStore.activateAccount(studentID: studentID)
+                    tuitionCacheStore.activate(accountIdentifier: studentID)
+                    graduationAuditCacheStore.activate(accountIdentifier: studentID)
+                },
+                deactivateAccountCache: {
+                    chapelCacheStore.deactivateAccount()
+                    gradeCacheStore.deactivateAccount()
+                    timetableCacheStore.deactivateAccount()
+                    tuitionCacheStore.deactivateAndClear()
+                    graduationAuditCacheStore.deactivateAndClear()
+                }
             ),
             homeRepository: HomeRepository(gradeRepository: gradeRepository),
             gradeRepository: gradeRepository,
@@ -100,17 +177,15 @@ struct DIContainer {
                 service: chapelService,
                 cacheStore: chapelCacheStore
             ),
-            graduationAuditRepository: GraduationAuditRepository(
-                service: MockGraduationAuditService(
-                    delay: delay
-                )
-            ),
+            graduationAuditRepository: graduationAuditRepository,
             timetableService: MockTimetableService(delay: delay),
-            tuitionRepository: TuitionRepository(
-                service: MockTuitionService(
-                    delay: delay
-                )
-            )
+            timetableCacheStore: timetableCacheStore,
+            timetableCatalogDidChange: {
+                chapelCacheStore.markStale()
+                tuitionCacheStore.markStale()
+                graduationAuditCacheStore.markStale()
+            },
+            tuitionRepository: tuitionRepository
         )
     }
 }

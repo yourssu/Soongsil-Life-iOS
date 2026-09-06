@@ -3,17 +3,31 @@ import Foundation
 final class ChapelRepository: ChapelRepositoryProtocol {
     private let service: ChapelServiceProtocol
     private let cacheStore: ChapelCacheStoreProtocol
+    private let refreshInterval: TimeInterval
+    private let now: @Sendable () -> Date
 
     init(
         service: ChapelServiceProtocol,
-        cacheStore: ChapelCacheStoreProtocol = InMemoryChapelCacheStore()
+        cacheStore: ChapelCacheStoreProtocol = InMemoryChapelCacheStore(),
+        refreshInterval: TimeInterval = 24 * 60 * 60,
+        now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.service = service
         self.cacheStore = cacheStore
+        self.refreshInterval = refreshInterval
+        self.now = now
     }
 
     var cachedChapelEnrollmentState: ChapelEnrollmentState? {
-        cacheStore.currentChapel.map(ChapelEnrollmentState.enrolled)
+        cacheStore.currentEnrollmentState
+    }
+
+    var isCachedChapelFresh: Bool {
+        guard let refreshedAt = cacheStore.currentChapelRefreshedAt else {
+            return false
+        }
+        let age = now().timeIntervalSince(refreshedAt)
+        return age >= 0 && age < refreshInterval
     }
 
     func fetchChapelEnrollmentState() async throws -> ChapelEnrollmentState {
@@ -26,20 +40,13 @@ final class ChapelRepository: ChapelRepositoryProtocol {
             return state
         }
 
-        switch state {
-        case let .enrolled(chapel):
-            guard let displayedChapel = cacheStore.save(
-                chapel,
-                using: writeContext
-            ) else {
-                throw CancellationError()
-            }
-            return .enrolled(displayedChapel)
-        case .completed, .notEnrolled:
-            guard cacheStore.clear(using: writeContext) else {
-                throw CancellationError()
-            }
-            return state
+        guard let displayedState = cacheStore.save(
+            state,
+            refreshedAt: now(),
+            using: writeContext
+        ) else {
+            throw CancellationError()
         }
+        return displayedState
     }
 }

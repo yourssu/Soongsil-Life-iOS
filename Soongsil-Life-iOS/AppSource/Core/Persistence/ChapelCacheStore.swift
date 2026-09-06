@@ -7,7 +7,8 @@ struct ChapelCacheWriteContext: Equatable, Sendable {
 }
 
 protocol ChapelCacheStoreProtocol: AnyObject {
-    var currentChapel: ChapelStatus? { get }
+    var currentEnrollmentState: ChapelEnrollmentState? { get }
+    var currentChapelRefreshedAt: Date? { get }
 
     /// 인증에 성공한 계정을 활성화합니다. 학번 원문은 메모리 밖에 저장하지 않습니다.
     func activateAccount(studentID: String)
@@ -17,59 +18,99 @@ protocol ChapelCacheStoreProtocol: AnyObject {
     func makeWriteContext() -> ChapelCacheWriteContext?
     /// 요청 시작 뒤 계정이 바뀌지 않은 경우에만 저장하고, 실제 표시할 값을 반환합니다.
     func save(
-        _ chapel: ChapelStatus,
+        _ state: ChapelEnrollmentState,
+        refreshedAt: Date,
         using context: ChapelCacheWriteContext
-    ) -> ChapelStatus?
+    ) -> ChapelEnrollmentState?
+    /// 저장된 화면은 유지하면서 다음 접근에서 백그라운드 갱신하도록 표시합니다.
+    func markStale()
     /// 요청 시작 뒤 계정이 바뀌지 않은 경우에만 캐시를 제거합니다.
     @discardableResult
     func clear(using context: ChapelCacheWriteContext) -> Bool
 }
 
-final class UserDefaultsChapelCacheStore: ChapelCacheStoreProtocol {
-    private struct AcademicTerm: Codable, Equatable {
-        let year: String
-        let semester: AcademicSemester
+final class FileChapelCacheStore: ChapelCacheStoreProtocol {
+    private enum CachedEnrollmentState: Codable {
+        case enrolled(ChapelStatus)
+        case completed(Int)
+        case notEnrolled(Int)
 
-        init(chapel: ChapelStatus) {
-            year = chapel.year.trimmingCharacters(in: .whitespacesAndNewlines)
-            semester = chapel.semester
+        init(_ state: ChapelEnrollmentState) {
+            switch state {
+            case let .enrolled(chapel):
+                self = .enrolled(chapel)
+            case let .completed(completedSemesterCount):
+                self = .completed(completedSemesterCount)
+            case let .notEnrolled(completedSemesterCount):
+                self = .notEnrolled(completedSemesterCount)
+            }
+        }
+
+        var value: ChapelEnrollmentState {
+            switch self {
+            case let .enrolled(chapel):
+                .enrolled(chapel)
+            case let .completed(completedSemesterCount):
+                .completed(completedSemesterCount: completedSemesterCount)
+            case let .notEnrolled(completedSemesterCount):
+                .notEnrolled(completedSemesterCount: completedSemesterCount)
+            }
         }
     }
 
     private struct CacheEnvelope: Codable {
         let schemaVersion: Int
         let accountKey: String
-        let term: AcademicTerm
-        let chapel: ChapelStatus
+        let state: CachedEnrollmentState
+        let refreshedAt: Date
     }
 
-    private static let schemaVersion = 1
+    private static let schemaVersion = 3
 
-    private let userDefaults: UserDefaults
-    private let cacheKey: String
+    private let directoryURL: URL
+    private let fileManager: FileManager
+    private let legacyUserDefaults: UserDefaults
+    private let legacyCacheKey: String
     private let lock = NSLock()
     private var activeAccountKey: String?
     private var epoch: UInt64 = 0
 
     init(
-        userDefaults: UserDefaults = .standard,
-        cacheKey: String = "currentChapelStatus"
+        directoryURL: URL? = nil,
+        fileManager: FileManager = .default,
+        legacyUserDefaults: UserDefaults = .standard,
+        legacyCacheKey: String = "currentChapelStatus"
     ) {
-        self.userDefaults = userDefaults
-        self.cacheKey = cacheKey
+        self.fileManager = fileManager
+        self.directoryURL = directoryURL
+            ?? AcademicCacheFileSecurity.defaultDirectoryURL(fileManager: fileManager)
+        self.legacyUserDefaults = legacyUserDefaults
+        self.legacyCacheKey = legacyCacheKey
     }
 
-    var currentChapel: ChapelStatus? {
+    var currentEnrollmentState: ChapelEnrollmentState? {
         lock.withLock {
             guard let activeAccountKey,
-                  let envelope = decodedEnvelope(),
+                  let envelope = decodedEnvelope(for: activeAccountKey),
                   envelope.schemaVersion == Self.schemaVersion,
-                  envelope.accountKey == activeAccountKey,
-                  envelope.term == AcademicTerm(chapel: envelope.chapel)
+                  envelope.accountKey == activeAccountKey
             else {
                 return nil
             }
-            return envelope.chapel
+            return envelope.state.value
+        }
+    }
+
+    var currentChapelRefreshedAt: Date? {
+        lock.withLock {
+            guard let activeAccountKey,
+                  let envelope = decodedEnvelope(for: activeAccountKey),
+                  envelope.schemaVersion == Self.schemaVersion,
+                  envelope.accountKey == activeAccountKey
+            else {
+                return nil
+            }
+            return envelope.refreshedAt
         }
     }
 
@@ -78,19 +119,20 @@ final class UserDefaultsChapelCacheStore: ChapelCacheStoreProtocol {
 
         lock.withLock {
             advanceEpoch()
-            activeAccountKey = accountKey
-
-            guard let envelope = decodedEnvelope() else {
-                // 소유 계정이 없는 이전 형식 캐시는 안전하게 마이그레이션할 수 없습니다.
-                userDefaults.removeObject(forKey: cacheKey)
-                return
+            if let previousAccountKey = activeAccountKey,
+               previousAccountKey != accountKey {
+                try? fileManager.removeItem(at: cacheURL(for: previousAccountKey))
             }
+            activeAccountKey = accountKey
+            // 기존 UserDefaults 형식은 백업 제외를 적용할 수 없어 폐기합니다.
+            legacyUserDefaults.removeObject(forKey: legacyCacheKey)
+
+            guard let envelope = decodedEnvelope(for: accountKey) else { return }
 
             guard envelope.schemaVersion == Self.schemaVersion,
-                  envelope.accountKey == accountKey,
-                  envelope.term == AcademicTerm(chapel: envelope.chapel)
+                  envelope.accountKey == accountKey
             else {
-                userDefaults.removeObject(forKey: cacheKey)
+                try? fileManager.removeItem(at: cacheURL(for: accountKey))
                 return
             }
         }
@@ -99,8 +141,11 @@ final class UserDefaultsChapelCacheStore: ChapelCacheStoreProtocol {
     func deactivateAccount() {
         lock.withLock {
             advanceEpoch()
+            if let activeAccountKey {
+                try? fileManager.removeItem(at: cacheURL(for: activeAccountKey))
+            }
             activeAccountKey = nil
-            userDefaults.removeObject(forKey: cacheKey)
+            legacyUserDefaults.removeObject(forKey: legacyCacheKey)
         }
     }
 
@@ -115,52 +160,105 @@ final class UserDefaultsChapelCacheStore: ChapelCacheStoreProtocol {
     }
 
     func save(
-        _ chapel: ChapelStatus,
+        _ state: ChapelEnrollmentState,
+        refreshedAt: Date,
         using context: ChapelCacheWriteContext
-    ) -> ChapelStatus? {
+    ) -> ChapelEnrollmentState? {
         lock.withLock {
             guard isCurrent(context) else { return nil }
 
-            let freshTerm = AcademicTerm(chapel: chapel)
-            let valueToSave: ChapelStatus
-            if let envelope = decodedEnvelope(),
+            let valueToSave: ChapelEnrollmentState
+            if case let .enrolled(freshChapel) = state,
+               let envelope = decodedEnvelope(for: context.accountKey),
                envelope.schemaVersion == Self.schemaVersion,
                envelope.accountKey == context.accountKey,
-               envelope.term == freshTerm,
-               envelope.term == AcademicTerm(chapel: envelope.chapel) {
-                valueToSave = envelope.chapel.updatingAttendance(from: chapel)
+               case let .enrolled(cachedChapel) = envelope.state,
+               cachedChapel.academicTerm == freshChapel.academicTerm {
+                valueToSave = .enrolled(
+                    cachedChapel.updatingAttendance(from: freshChapel)
+                )
             } else {
-                // 서버가 다른 year/semester를 반환하면 좌석을 포함한 학기 전체를 교체합니다.
-                valueToSave = chapel
+                // 학기가 달라졌거나 수료/미수강 상태가 바뀌면 전체 상태를 교체합니다.
+                valueToSave = state
             }
 
             let envelope = CacheEnvelope(
                 schemaVersion: Self.schemaVersion,
                 accountKey: context.accountKey,
-                term: AcademicTerm(chapel: valueToSave),
-                chapel: valueToSave
+                state: CachedEnrollmentState(valueToSave),
+                refreshedAt: refreshedAt
             )
-            guard let data = try? JSONEncoder().encode(envelope) else {
+            guard persist(envelope) else {
                 return nil
             }
-            userDefaults.set(data, forKey: cacheKey)
             return valueToSave
+        }
+    }
+
+    func markStale() {
+        lock.withLock {
+            guard let activeAccountKey else { return }
+            advanceEpoch()
+
+            guard let envelope = decodedEnvelope(for: activeAccountKey),
+                  envelope.schemaVersion == Self.schemaVersion,
+                  envelope.accountKey == activeAccountKey
+            else {
+                return
+            }
+            let staleEnvelope = CacheEnvelope(
+                schemaVersion: envelope.schemaVersion,
+                accountKey: envelope.accountKey,
+                state: envelope.state,
+                refreshedAt: .distantPast
+            )
+            _ = persist(staleEnvelope)
         }
     }
 
     func clear(using context: ChapelCacheWriteContext) -> Bool {
         lock.withLock {
             guard isCurrent(context) else { return false }
-            userDefaults.removeObject(forKey: cacheKey)
+            try? fileManager.removeItem(at: cacheURL(for: context.accountKey))
             return true
         }
     }
 
-    private func decodedEnvelope() -> CacheEnvelope? {
-        guard let data = userDefaults.data(forKey: cacheKey) else {
+    private func decodedEnvelope(for accountKey: String) -> CacheEnvelope? {
+        guard let data = try? Data(contentsOf: cacheURL(for: accountKey)) else {
             return nil
         }
         return try? JSONDecoder().decode(CacheEnvelope.self, from: data)
+    }
+
+    private func persist(_ envelope: CacheEnvelope) -> Bool {
+        guard let data = try? JSONEncoder().encode(envelope),
+              AcademicCacheFileSecurity.prepareDirectory(
+                  at: directoryURL,
+                  fileManager: fileManager
+              )
+        else {
+            return false
+        }
+
+        let fileURL = cacheURL(for: envelope.accountKey)
+        do {
+            try data.write(to: fileURL, options: .atomic)
+            AcademicCacheFileSecurity.secureFile(
+                at: fileURL,
+                fileManager: fileManager
+            )
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private func cacheURL(for accountKey: String) -> URL {
+        directoryURL.appendingPathComponent(
+            "chapel-\(accountKey).json",
+            isDirectory: false
+        )
     }
 
     private func isCurrent(_ context: ChapelCacheWriteContext) -> Bool {
@@ -176,16 +274,18 @@ final class UserDefaultsChapelCacheStore: ChapelCacheStoreProtocol {
         let digest = SHA256.hash(data: Data(normalized.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
     }
+
 }
 
 final class InMemoryChapelCacheStore: ChapelCacheStoreProtocol {
     private let lock = NSLock()
-    private var current: ChapelStatus?
+    private var current: ChapelEnrollmentState?
     private var currentAccountKey: String?
+    private var refreshedAt: Date?
     private var activeAccountKey: String?
     private var epoch: UInt64 = 0
 
-    var currentChapel: ChapelStatus? {
+    var currentEnrollmentState: ChapelEnrollmentState? {
         lock.withLock {
             guard let activeAccountKey,
                   currentAccountKey == activeAccountKey
@@ -196,11 +296,22 @@ final class InMemoryChapelCacheStore: ChapelCacheStoreProtocol {
         }
     }
 
+    var currentChapelRefreshedAt: Date? {
+        lock.withLock {
+            guard activeAccountKey != nil,
+                  currentAccountKey == activeAccountKey
+            else {
+                return nil
+            }
+            return refreshedAt
+        }
+    }
+
     init(
         currentChapel: ChapelStatus? = nil,
         activeStudentID: String = "in-memory"
     ) {
-        current = currentChapel
+        current = currentChapel.map(ChapelEnrollmentState.enrolled)
         currentAccountKey = currentChapel == nil ? nil : activeStudentID
         activeAccountKey = activeStudentID
     }
@@ -211,6 +322,7 @@ final class InMemoryChapelCacheStore: ChapelCacheStoreProtocol {
             if currentAccountKey != studentID {
                 current = nil
                 currentAccountKey = nil
+                refreshedAt = nil
             }
             activeAccountKey = studentID
         }
@@ -222,6 +334,7 @@ final class InMemoryChapelCacheStore: ChapelCacheStoreProtocol {
             activeAccountKey = nil
             current = nil
             currentAccountKey = nil
+            refreshedAt = nil
         }
     }
 
@@ -236,19 +349,33 @@ final class InMemoryChapelCacheStore: ChapelCacheStoreProtocol {
     }
 
     func save(
-        _ chapel: ChapelStatus,
+        _ state: ChapelEnrollmentState,
+        refreshedAt: Date,
         using context: ChapelCacheWriteContext
-    ) -> ChapelStatus? {
+    ) -> ChapelEnrollmentState? {
         lock.withLock {
             guard isCurrent(context) else { return nil }
-            if let current,
-               current.academicTerm == chapel.academicTerm {
-                self.current = current.updatingAttendance(from: chapel)
+            if case let .enrolled(freshChapel) = state,
+               case let .enrolled(cachedChapel)? = current,
+               cachedChapel.academicTerm == freshChapel.academicTerm {
+                current = .enrolled(
+                    cachedChapel.updatingAttendance(from: freshChapel)
+                )
             } else {
-                current = chapel
+                current = state
             }
             currentAccountKey = context.accountKey
+            self.refreshedAt = refreshedAt
             return current
+        }
+    }
+
+    func markStale() {
+        lock.withLock {
+            guard activeAccountKey != nil else { return }
+            advanceEpoch()
+            guard currentAccountKey == activeAccountKey else { return }
+            refreshedAt = .distantPast
         }
     }
 
@@ -257,6 +384,7 @@ final class InMemoryChapelCacheStore: ChapelCacheStoreProtocol {
             guard isCurrent(context) else { return false }
             current = nil
             currentAccountKey = nil
+            refreshedAt = nil
             return true
         }
     }

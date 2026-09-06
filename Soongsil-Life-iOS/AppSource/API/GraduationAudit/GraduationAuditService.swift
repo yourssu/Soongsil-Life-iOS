@@ -30,11 +30,6 @@ final class GraduationAuditService: GraduationAuditServiceProtocol, @unchecked S
                     return
                 }
 
-                guard !table.items.isEmpty else {
-                    completion(.failure(LMSServiceError.invalidResponse))
-                    return
-                }
-
                 let items = table.items.compactMap { item -> GraduationAuditItem? in
                     guard let status = GraduationAuditStatus(
                         apiValue: item.result

@@ -81,7 +81,7 @@ struct ChapelTabView: View {
         }
         .tint(.black000)
         .task {
-            await viewModel.transform(input: .load(force: true))
+            await viewModel.transform(input: .load())
         }
     }
 

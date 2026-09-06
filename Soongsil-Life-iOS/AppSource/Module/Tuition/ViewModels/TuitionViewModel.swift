@@ -49,6 +49,7 @@ final class TuitionViewModel: BaseViewModel {
     private let repository: TuitionRepositoryProtocol
     private let loadFlight = AsyncSingleFlight()
     private var pendingTab: Tab?
+    private var tabsNeedingRefresh: Set<Tab> = []
 
     init(repository: TuitionRepositoryProtocol) {
         self.repository = repository
@@ -64,9 +65,6 @@ final class TuitionViewModel: BaseViewModel {
         switch input {
         case let .load(force):
             let selectedTab = output.selectedTab
-            guard force || !output.loadedTabs.contains(selectedTab) else {
-                return output
-            }
             guard !output.isLoading else {
                 pendingTab = selectedTab
                 return output
@@ -76,12 +74,10 @@ final class TuitionViewModel: BaseViewModel {
 
         case let .selectTab(tab):
             selectTab(tab)
-            guard !output.loadedTabs.contains(tab) else {
-                pendingTab = nil
-                return output
-            }
             guard !output.isLoading else {
-                pendingTab = tab
+                // 다른 탭의 느린 갱신 중에도 이 탭의 캐시는 즉시 표시합니다.
+                let cacheIsFresh = restoreCachedData(for: tab)
+                pendingTab = cacheIsFresh ? nil : tab
                 return output
             }
             await loadSelectedTab(tab, force: false)
@@ -95,16 +91,28 @@ final class TuitionViewModel: BaseViewModel {
 
     private func loadSelectedTab(_ tab: Tab, force: Bool) async {
         await loadFlight.run { [self] in
+            let cachedDataIsFresh = force ? false : restoreCachedData(for: tab)
+            if cachedDataIsFresh {
+                output.hasLoaded = true
+                return
+            }
+
+            let hadUsableData = output.loadedTabs.contains(tab)
             output.isLoading = true
             output.errorMessage = nil
             defer {
                 output.isLoading = false
                 output.hasLoaded = true
+                tabsNeedingRefresh.remove(tab)
             }
 
             // 처음에는 현재 탭만 요청하고, 다른 탭은 실제 선택 시 불러옵니다.
             // 사용하지 않는 WebDynpro 화면 조회가 다음 사용자 동작을 막지 않습니다.
-            _ = await load(tab: tab, force: force)
+            _ = await load(
+                tab: tab,
+                force: force,
+                hadUsableData: hadUsableData
+            )
         }
     }
 
@@ -113,16 +121,25 @@ final class TuitionViewModel: BaseViewModel {
             pendingTab = nil
             guard output.selectedTab == tab,
                   !output.loadedTabs.contains(tab)
+                    || tabsNeedingRefresh.contains(tab)
             else { continue }
             await loadSelectedTab(tab, force: false)
         }
     }
 
-    private func load(tab: Tab, force: Bool) async -> Bool {
-        guard force || !output.loadedTabs.contains(tab) else { return true }
-
-        output.loadingTabs.insert(tab)
-        defer { output.loadingTabs.remove(tab) }
+    private func load(
+        tab: Tab,
+        force: Bool,
+        hadUsableData: Bool
+    ) async -> Bool {
+        if !hadUsableData {
+            output.loadingTabs.insert(tab)
+        }
+        defer {
+            if !hadUsableData {
+                output.loadingTabs.remove(tab)
+            }
+        }
 
         do {
             switch tab {
@@ -140,12 +157,54 @@ final class TuitionViewModel: BaseViewModel {
         } catch is CancellationError {
             return false
         } catch {
+            // 오래된 캐시가 있으면 백그라운드 갱신 실패로 화면을 막지 않습니다.
+            if hadUsableData && !force {
+                return false
+            }
             // 탭별 오류를 보관해 다른 탭의 정상 데이터에는 영향을 주지 않습니다.
             output.failedTabMessages[tab] = error.localizedDescription
             if output.selectedTab == tab {
                 output.errorMessage = error.localizedDescription
             }
             return false
+        }
+    }
+
+    /// 캐시는 빈 배열도 정상 조회 결과로 취급합니다.
+    /// 반환값은 해당 캐시가 아직 주간 갱신 주기 안에 있는지를 뜻합니다.
+    private func restoreCachedData(for tab: Tab) -> Bool {
+        switch tab {
+        case .tuition:
+            guard let cached = repository.cachedTuitionRecords() else {
+                return output.loadedTabs.contains(tab)
+                    && !tabsNeedingRefresh.contains(tab)
+            }
+            output.tuitionRecords = cached.records
+            output.loadedTabs.insert(tab)
+            output.failedTabMessages[tab] = nil
+            output.errorMessage = nil
+            if cached.isFresh {
+                tabsNeedingRefresh.remove(tab)
+            } else {
+                tabsNeedingRefresh.insert(tab)
+            }
+            return cached.isFresh
+
+        case .scholarship:
+            guard let cached = repository.cachedScholarshipRecords() else {
+                return output.loadedTabs.contains(tab)
+                    && !tabsNeedingRefresh.contains(tab)
+            }
+            output.scholarshipRecords = cached.records
+            output.loadedTabs.insert(tab)
+            output.failedTabMessages[tab] = nil
+            output.errorMessage = nil
+            if cached.isFresh {
+                tabsNeedingRefresh.remove(tab)
+            } else {
+                tabsNeedingRefresh.insert(tab)
+            }
+            return cached.isFresh
         }
     }
 }

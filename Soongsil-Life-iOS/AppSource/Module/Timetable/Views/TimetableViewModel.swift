@@ -3,6 +3,8 @@ import Foundation
 @Observable
 @MainActor
 final class TimetableViewModel: BaseViewModel {
+    private static let foregroundRefreshInterval: TimeInterval = 24 * 60 * 60
+
     private struct PrefetchFlight {
         let id: UUID
         let task: Task<Void, Never>
@@ -22,6 +24,7 @@ final class TimetableViewModel: BaseViewModel {
         var isLoading = false
         var showsSelectionLoadingOverlay = false
         var hasLoaded = false
+        var hasResolvedContent = false
         var errorMessage: String?
 
         var showsGrid: Bool {
@@ -39,26 +42,36 @@ final class TimetableViewModel: BaseViewModel {
 
         /// 조회는 성공했지만 화면에 배치할 시간이 정해진 수업이 없는 상태입니다.
         var showsEmptyState: Bool {
-            hasLoaded
-                && (!isLoading || isChangingPeriod)
+            hasResolvedContent
                 && !showsGrid
-                && errorMessage == nil
         }
 
         var showsErrorState: Bool {
-            hasLoaded && !isLoading && !showsGrid && errorMessage != nil
+            hasLoaded
+                && !hasResolvedContent
+                && !isLoading
+                && !showsGrid
+                && errorMessage != nil
         }
 
         var showsLoading: Bool {
-            isLoading && !isChangingPeriod && !showsGrid
+            isLoading
+                && !hasResolvedContent
+                && !isChangingPeriod
+                && !showsGrid
         }
     }
 
     private(set) var output = Output()
     private let service: TimetableServiceProtocol
+    private let cacheStore: TimetableCacheStoreProtocol
+    private let now: () -> Date
+    private let onCatalogChanged: (() -> Void)?
     private let loadFlight = AsyncSingleFlight()
     private var cachedSchedules: [TimetablePeriod: TimetableSchedule] = [:]
     private var emptyPeriods = Set<TimetablePeriod>()
+    private var scheduleRefreshDates: [TimetablePeriod: Date] = [:]
+    private var catalogRefreshedAt: Date?
     private var prefetchFlight: PrefetchFlight?
     private var shouldStopPrefetch = false
     private var allowsBackgroundPrefetch = true
@@ -66,8 +79,25 @@ final class TimetableViewModel: BaseViewModel {
     private var isProcessingSelection = false
     private var selectionLoadingTask: Task<Void, Never>?
 
-    init(service: TimetableServiceProtocol) {
+    convenience init(service: TimetableServiceProtocol) {
+        self.init(
+            service: service,
+            cacheStore: InMemoryTimetableCacheStore(),
+            onCatalogChanged: nil
+        )
+    }
+
+    init(
+        service: TimetableServiceProtocol,
+        cacheStore: TimetableCacheStoreProtocol,
+        now: @escaping () -> Date = Date.init,
+        onCatalogChanged: (() -> Void)? = nil
+    ) {
         self.service = service
+        self.cacheStore = cacheStore
+        self.now = now
+        self.onCatalogChanged = onCatalogChanged
+        restoreCachedState()
     }
 
     @discardableResult
@@ -78,13 +108,35 @@ final class TimetableViewModel: BaseViewModel {
             guard !output.isLoading,
                   !isProcessingSelection
             else { return output }
-            guard output.schedule == nil || force else {
-                startBackgroundPrefetchIfNeeded()
-                return output
-            }
-            output.isLoading = true
             await stopBackgroundPrefetch()
-            await load(period: output.selectedPeriod)
+
+            let newPeriods = await refreshCatalogIfNeeded(force: force)
+            let latestPeriod = output.availablePeriods.first
+            let requestedPeriod: TimetablePeriod?
+            if !force,
+               let latestPeriod,
+               newPeriods.contains(latestPeriod) {
+                requestedPeriod = latestPeriod
+                // 새 학기의 캐시가 아직 없으면 기존 학기 화면을 유지한 채 조회합니다.
+                // 성공하기 전 라벨만 새 학기로 바꾸면 실패 시 이전 시간표와 섞입니다.
+                _ = applyCachedResult(for: latestPeriod)
+            } else {
+                requestedPeriod = output.selectedPeriod ?? latestPeriod
+            }
+
+            if force {
+                await load(period: requestedPeriod)
+            } else if let requestedPeriod {
+                if !hasCachedResult(for: requestedPeriod) {
+                    await load(period: requestedPeriod)
+                } else if shouldRefreshSchedule(for: requestedPeriod) {
+                    // 캐시 화면은 유지하고 최신/현재 학기만 조용히 재검증합니다.
+                    await load(period: requestedPeriod, exposesError: false)
+                }
+            } else if !output.hasLoaded {
+                await load(period: nil)
+            }
+
             await processPendingSelectionIfNeeded()
             startBackgroundPrefetchIfNeeded()
 
@@ -103,9 +155,12 @@ final class TimetableViewModel: BaseViewModel {
                 hideSelectionLoadingOverlay()
                 if isProcessingSelection {
                     output.isLoading = false
-                } else {
-                    startBackgroundPrefetchIfNeeded()
                 }
+
+                if shouldRefreshSchedule(for: period) {
+                    await refreshCachedScheduleAfterSelection(period)
+                }
+                startBackgroundPrefetchIfNeeded()
                 return output
             }
 
@@ -123,14 +178,20 @@ final class TimetableViewModel: BaseViewModel {
         return output
     }
 
-    private func load(period: TimetablePeriod?) async {
+    private func load(
+        period: TimetablePeriod?,
+        exposesError: Bool = true
+    ) async {
         await loadFlight.run { [self] in
             let previousSchedule = output.schedule
             let previousSelectedPeriod = output.selectedPeriod
+            let writeContext = cacheStore.makeWriteContext()
 
             output.isLoading = true
             output.pendingPeriod = period
-            output.errorMessage = nil
+            if exposesError {
+                output.errorMessage = nil
+            }
             defer {
                 output.isLoading = false
                 if pendingSelection == nil {
@@ -141,21 +202,37 @@ final class TimetableViewModel: BaseViewModel {
             do {
                 let requestedPeriod = await requestedPeriod(for: period)
                 let schedule = try await service.fetchTimetable(for: requestedPeriod)
-                if let requestedPeriod {
-                    cache(schedule, for: requestedPeriod)
+                let cachePeriod = requestedPeriod ?? schedule?.period
+                if let cachePeriod {
+                    cache(
+                        schedule,
+                        for: cachePeriod,
+                        refreshedAt: now(),
+                        writeContext: writeContext
+                    )
+                    if output.availablePeriods.isEmpty {
+                        saveCatalog(
+                            [cachePeriod],
+                            refreshedAt: now(),
+                            writeContext: writeContext
+                        )
+                    }
                 }
 
                 guard pendingSelection == nil else { return }
                 output.schedule = schedule
                 output.selectedPeriod = schedule?.period ?? requestedPeriod
                 output.hasLoaded = true
+                output.hasResolvedContent = true
             } catch is CancellationError {
                 return
             } catch {
                 guard pendingSelection == nil else { return }
                 output.schedule = previousSchedule
                 output.selectedPeriod = previousSelectedPeriod
-                output.errorMessage = error.localizedDescription
+                if exposesError {
+                    output.errorMessage = error.localizedDescription
+                }
                 output.hasLoaded = true
             }
         }
@@ -164,10 +241,17 @@ final class TimetableViewModel: BaseViewModel {
     private func requestedPeriod(
         for selectedPeriod: TimetablePeriod?
     ) async -> TimetablePeriod? {
-        if output.availablePeriods.isEmpty {
+        if output.availablePeriods.isEmpty,
+           !isFresh(catalogRefreshedAt) {
             do {
-                output.availablePeriods = Self.sortedUniquePeriods(
+                let writeContext = cacheStore.makeWriteContext()
+                let periods = Self.sortedUniquePeriods(
                     try await service.fetchAvailablePeriods()
+                )
+                saveCatalog(
+                    periods,
+                    refreshedAt: now(),
+                    writeContext: writeContext
                 )
             } catch is CancellationError {
                 return selectedPeriod
@@ -226,14 +310,14 @@ final class TimetableViewModel: BaseViewModel {
             else { return }
 
             do {
+                let writeContext = cacheStore.makeWriteContext()
                 let schedule = try await service.fetchTimetable(for: period)
-                if let schedule {
-                    cachedSchedules[period] = schedule
-                    emptyPeriods.remove(period)
-                } else {
-                    cachedSchedules[period] = nil
-                    emptyPeriods.insert(period)
-                }
+                cache(
+                    schedule,
+                    for: period,
+                    refreshedAt: now(),
+                    writeContext: writeContext
+                )
             } catch is CancellationError {
                 return
             } catch {
@@ -279,8 +363,14 @@ final class TimetableViewModel: BaseViewModel {
             }
 
             do {
+                let writeContext = cacheStore.makeWriteContext()
                 let schedule = try await service.fetchTimetable(for: period)
-                cache(schedule, for: period)
+                cache(
+                    schedule,
+                    for: period,
+                    refreshedAt: now(),
+                    writeContext: writeContext
+                )
 
                 guard pendingSelection == nil,
                       output.pendingPeriod == period
@@ -344,10 +434,26 @@ final class TimetableViewModel: BaseViewModel {
         return false
     }
 
+    private func hasCachedResult(for period: TimetablePeriod) -> Bool {
+        cachedSchedules[period] != nil || emptyPeriods.contains(period)
+    }
+
     private func cache(
         _ schedule: TimetableSchedule?,
-        for period: TimetablePeriod
+        for period: TimetablePeriod,
+        refreshedAt: Date,
+        writeContext: TimetableCacheWriteContext?
     ) {
+        if let writeContext,
+           !cacheStore.saveSchedule(
+               schedule,
+               for: period,
+               refreshedAt: refreshedAt,
+               using: writeContext
+           ) {
+            return
+        }
+
         if let schedule {
             cachedSchedules[period] = schedule
             emptyPeriods.remove(period)
@@ -355,6 +461,7 @@ final class TimetableViewModel: BaseViewModel {
             cachedSchedules[period] = nil
             emptyPeriods.insert(period)
         }
+        scheduleRefreshDates[period] = refreshedAt
     }
 
     private func apply(
@@ -365,6 +472,117 @@ final class TimetableViewModel: BaseViewModel {
         output.selectedPeriod = schedule?.period ?? requestedPeriod
         output.errorMessage = nil
         output.hasLoaded = true
+        output.hasResolvedContent = true
+    }
+
+    private func restoreCachedState() {
+        let state = cacheStore.currentState
+        output.availablePeriods = Self.sortedUniquePeriods(state.periods)
+        catalogRefreshedAt = state.catalogRefreshedAt
+
+        for (period, cached) in state.schedules {
+            scheduleRefreshDates[period] = cached.refreshedAt
+            if let schedule = cached.schedule {
+                cachedSchedules[period] = schedule
+            } else {
+                emptyPeriods.insert(period)
+            }
+        }
+
+        guard let initialPeriod = output.availablePeriods.first else {
+            output.hasLoaded = catalogRefreshedAt != nil
+            output.hasResolvedContent = catalogRefreshedAt != nil
+            return
+        }
+        _ = applyCachedResult(for: initialPeriod)
+    }
+
+    private func refreshCatalogIfNeeded(force: Bool) async -> Set<TimetablePeriod> {
+        if !force, isFresh(catalogRefreshedAt) {
+            return []
+        }
+
+        let previousPeriods = Set(output.availablePeriods)
+        let hadResolvedCatalog = catalogRefreshedAt != nil
+        let writeContext = cacheStore.makeWriteContext()
+        do {
+            let fetchedPeriods = Self.sortedUniquePeriods(
+                try await service.fetchAvailablePeriods()
+            )
+            // 서버 목록이 일시적으로 축소되어도 이미 저장한 과거 학기는 보존합니다.
+            let periods = Self.sortedUniquePeriods(
+                fetchedPeriods + output.availablePeriods
+            )
+            let refreshedAt = now()
+            let didSaveCatalog = saveCatalog(
+                periods,
+                refreshedAt: refreshedAt,
+                writeContext: writeContext
+            )
+            if didSaveCatalog,
+               hadResolvedCatalog,
+               Set(periods) != previousPeriods {
+                onCatalogChanged?()
+            }
+            return Set(fetchedPeriods).subtracting(previousPeriods)
+        } catch {
+            // 저장된 목록이 있으면 네트워크 실패로 화면을 가리지 않습니다.
+            return []
+        }
+    }
+
+    @discardableResult
+    private func saveCatalog(
+        _ periods: [TimetablePeriod],
+        refreshedAt: Date,
+        writeContext: TimetableCacheWriteContext?
+    ) -> Bool {
+        if let writeContext,
+           !cacheStore.saveCatalog(
+               periods,
+               refreshedAt: refreshedAt,
+               using: writeContext
+           ) {
+            return false
+        }
+        output.availablePeriods = periods
+        catalogRefreshedAt = refreshedAt
+        if periods.isEmpty, output.schedule == nil {
+            output.selectedPeriod = nil
+            output.hasLoaded = true
+            output.hasResolvedContent = true
+        }
+        return true
+    }
+
+    private func shouldRefreshSchedule(for period: TimetablePeriod) -> Bool {
+        guard period == output.availablePeriods.first else {
+            // 지난 학기 스냅샷은 불변으로 취급하고 명시적 새로고침 때만 다시 받습니다.
+            return false
+        }
+        return !isFresh(scheduleRefreshDates[period])
+    }
+
+    private func isFresh(_ date: Date?) -> Bool {
+        guard let date else { return false }
+        let age = now().timeIntervalSince(date)
+        return age >= 0 && age < Self.foregroundRefreshInterval
+    }
+
+    private func refreshCachedScheduleAfterSelection(
+        _ period: TimetablePeriod
+    ) async {
+        output.isLoading = true
+        output.pendingPeriod = period
+        scheduleSelectionLoadingOverlayIfNeeded()
+        defer {
+            hideSelectionLoadingOverlay()
+            output.isLoading = false
+            output.pendingPeriod = nil
+        }
+
+        await stopBackgroundPrefetch()
+        await load(period: period, exposesError: false)
     }
 
     private static func sortedUniquePeriods(
