@@ -71,14 +71,17 @@ struct SoongsilLifeApp: App {
             }
             .tint(.serviceBlue600)
             .preferredColorScheme(.light)
-            .task {
-                await appFlow.transform(input: .restoreSession)
-            }
-            .task {
-                await appUpdate.checkIfNeeded()
+            .onAppear {
+                Task {
+                    await appFlow.transform(input: .restoreSession)
+                }
+                Task {
+                    await appUpdate.checkIfNeeded()
+                }
             }
             .overlay {
-                if let prompt = appUpdate.prompt {
+                if canPresentUpdatePrompt,
+                   let prompt = appUpdate.prompt {
                     AppUpdatePromptView(
                         prompt: prompt,
                         postpone: appUpdate.postpone,
@@ -87,6 +90,18 @@ struct SoongsilLifeApp: App {
                 }
             }
         }
+    }
+
+    private var canPresentUpdatePrompt: Bool {
+        let output = appFlow.output
+
+        if output.state != .restoringSession {
+            return true
+        }
+
+        return output.restoreErrorMessage != nil
+            && !output.isRestoringSession
+            && !output.isChangingAccount
     }
 
 }
@@ -295,13 +310,6 @@ final class AppFlowViewModel: BaseViewModel {
         if repository.isLoggedIn {
             return InitialSessionResolution(
                 destination: authenticatedDestination,
-                error: nil
-            )
-        }
-
-        guard repository.hasSavedCredentials else {
-            return InitialSessionResolution(
-                destination: .login,
                 error: nil
             )
         }
