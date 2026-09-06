@@ -46,9 +46,11 @@ final class ChapelViewModel: BaseViewModel {
     func transform(input: Input) async -> Output {
         switch input {
         case let .load(force):
-            // 실패 상태는 다른 탭에서 다시 진입할 때 자동으로 한 번 더 조회합니다.
-            // 성공적으로 판정된 상태만 세션 동안 재사용합니다.
-            guard force || !output.loadState.hasResolvedContent else {
+            // 저장된 화면은 즉시 사용하고, 하루가 지난 경우에만 뒤에서 갱신합니다.
+            guard force
+                    || !output.loadState.hasResolvedContent
+                    || !repository.isCachedChapelFresh
+            else {
                 return output
             }
 

@@ -17,11 +17,11 @@ final class GraduationAuditViewModel: BaseViewModel {
             return false
         }
 
-        var hasFinished: Bool {
+        var hasUsableContent: Bool {
             switch self {
-            case .loaded, .empty, .failed:
+            case .loaded, .empty:
                 true
-            case .idle, .loading:
+            case .idle, .loading, .failed:
                 false
             }
         }
@@ -47,25 +47,43 @@ final class GraduationAuditViewModel: BaseViewModel {
     func transform(input: Input) async -> Output {
         switch input {
         case let .load(force):
-            guard force || !output.loadState.hasFinished else { return output }
-
             await loadFlight.run { [self] in
+                if !force,
+                   let cached = repository.cachedGraduationAudit() {
+                    output.loadState = state(for: cached.audit)
+                    if cached.isFresh {
+                        return
+                    }
+                } else if !force, output.loadState.hasUsableContent {
+                    // 메모리에는 결과가 있지만 저장소가 아직 연결되지 않은
+                    // Preview/테스트 환경에서는 기존 결과를 그대로 사용합니다.
+                    return
+                }
+
                 let previousState = output.loadState
-                output.loadState = .loading
+                let hadUsableData = previousState.hasUsableContent
+                if !hadUsableData {
+                    output.loadState = .loading
+                }
 
                 do {
                     let audit = try await repository.fetchGraduationAudit()
-                    output.loadState = audit.items.isEmpty
-                        ? .empty
-                        : .loaded(audit)
+                    output.loadState = state(for: audit)
                 } catch is CancellationError {
                     output.loadState = previousState
                 } catch {
-                    output.loadState = .failed(error.localizedDescription)
+                    // 오래된 캐시가 있으면 백그라운드 갱신 실패로 화면을 막지 않습니다.
+                    output.loadState = hadUsableData
+                        ? previousState
+                        : .failed(error.localizedDescription)
                 }
             }
         }
 
         return output
+    }
+
+    private func state(for audit: GraduationAudit) -> LoadState {
+        audit.items.isEmpty ? .empty : .loaded(audit)
     }
 }
