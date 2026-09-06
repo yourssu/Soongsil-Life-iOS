@@ -27,6 +27,8 @@ final class ChapelViewModel: BaseViewModel {
 
     struct Output {
         var loadState: LoadState = .idle
+        var isRefreshing = false
+        var refreshErrorMessage: String?
     }
 
     private(set) var output = Output()
@@ -35,6 +37,9 @@ final class ChapelViewModel: BaseViewModel {
 
     init(repository: ChapelRepositoryProtocol) {
         self.repository = repository
+        if let cachedState = repository.cachedChapelEnrollmentState {
+            output.loadState = cachedState.loadState
+        }
     }
 
     @discardableResult
@@ -49,7 +54,17 @@ final class ChapelViewModel: BaseViewModel {
 
             await loadFlight.run { [self] in
                 let previousState = output.loadState
-                output.loadState = .loading
+                let preservesResolvedContent = previousState.hasResolvedContent
+
+                output.isRefreshing = preservesResolvedContent
+                output.refreshErrorMessage = nil
+                if !preservesResolvedContent {
+                    output.loadState = .loading
+                }
+
+                defer {
+                    output.isRefreshing = false
+                }
 
                 do {
                     switch try await repository.fetchChapelEnrollmentState() {
@@ -67,11 +82,29 @@ final class ChapelViewModel: BaseViewModel {
                 } catch is CancellationError {
                     output.loadState = previousState
                 } catch {
-                    output.loadState = .failed(error.localizedDescription)
+                    if preservesResolvedContent {
+                        output.loadState = previousState
+                        output.refreshErrorMessage = error.localizedDescription
+                    } else {
+                        output.loadState = .failed(error.localizedDescription)
+                    }
                 }
             }
         }
 
         return output
+    }
+}
+
+private extension ChapelEnrollmentState {
+    var loadState: ChapelViewModel.LoadState {
+        switch self {
+        case let .enrolled(chapel):
+            .loaded(chapel)
+        case let .completed(completedSemesterCount):
+            .completed(completedSemesterCount: completedSemesterCount)
+        case let .notEnrolled(completedSemesterCount):
+            .notEnrolled(completedSemesterCount: completedSemesterCount)
+        }
     }
 }
