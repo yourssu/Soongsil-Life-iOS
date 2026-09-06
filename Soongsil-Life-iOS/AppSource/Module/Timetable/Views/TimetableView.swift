@@ -51,7 +51,7 @@ struct TimetableView: View {
             L10n.Timetable.loadFailed,
             isPresented: Binding(
                 get: {
-                    viewModel.output.showsGrid
+                    viewModel.output.hasResolvedContent
                         && viewModel.output.errorMessage != nil
                 },
                 set: { isPresented in

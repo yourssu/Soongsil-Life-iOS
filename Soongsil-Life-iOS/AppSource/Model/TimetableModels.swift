@@ -1,6 +1,6 @@
 import Foundation
 
-struct TimetablePeriod: Hashable, Sendable {
+struct TimetablePeriod: Codable, Hashable, Sendable {
     let year: String
     let semester: AcademicSemester
 
@@ -48,7 +48,7 @@ struct TimetableCellData: Sendable {
     let classroom: String
 }
 
-enum TimetableWeekday: Int, CaseIterable, Hashable, Sendable {
+enum TimetableWeekday: Int, CaseIterable, Codable, Hashable, Sendable {
     case monday, tuesday, wednesday, thursday, friday, saturday, sunday
 
     init?(serverName: String) {
@@ -77,7 +77,7 @@ enum TimetableWeekday: Int, CaseIterable, Hashable, Sendable {
     }
 }
 
-struct TimetableCourseBlock: Identifiable, Sendable {
+struct TimetableCourseBlock: Codable, Identifiable, Sendable {
     let id: String
     let weekday: TimetableWeekday
     let period: Int
@@ -89,7 +89,7 @@ struct TimetableCourseBlock: Identifiable, Sendable {
     let time: String
 }
 
-struct TimetableSchedule: Sendable {
+struct TimetableSchedule: Codable, Sendable {
     let title: String
     let period: TimetablePeriod?
     let blocks: [TimetableCourseBlock]

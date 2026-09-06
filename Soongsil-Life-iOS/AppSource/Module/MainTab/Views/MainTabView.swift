@@ -32,7 +32,9 @@ struct MainTabView: View {
         )
         _timetableViewModel = State(
             initialValue: TimetableViewModel(
-                service: container.timetableService
+                service: container.timetableService,
+                cacheStore: container.timetableCacheStore,
+                onCatalogChanged: container.timetableCatalogDidChange
             )
         )
         _settingViewModel = State(

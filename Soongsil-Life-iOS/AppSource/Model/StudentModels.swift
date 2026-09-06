@@ -19,7 +19,7 @@ enum AcademicSemester: String, CaseIterable, Codable, Hashable, Sendable {
         }
     }
 
-    var sortOrder: Int {
+    nonisolated var sortOrder: Int {
         switch self {
         case .first: 0
         case .summer: 1
@@ -89,7 +89,7 @@ struct StudentProfile: Sendable {
     }
 }
 
-struct SemesterGrade: Identifiable, Sendable {
+struct SemesterGrade: Codable, Equatable, Identifiable, Sendable {
     var id: String { "\(year)-\(semester.rawValue)" }
 
     let year: String
@@ -120,7 +120,7 @@ struct SemesterGrade: Identifiable, Sendable {
     }
 }
 
-struct CourseGrade: Identifiable, Sendable {
+struct CourseGrade: Codable, Equatable, Identifiable, Sendable {
     var id: String { courseCode }
 
     let courseCode: String
