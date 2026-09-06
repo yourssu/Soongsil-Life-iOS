@@ -298,6 +298,53 @@ struct TimetableCourseDetailSheet: View {
     }
 }
 
+struct TimetableCourseDetailPresentation: View {
+    let block: TimetableCourseBlock
+    let close: () -> Void
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .bottom) {
+                Rectangle()
+                    .fill(.realBlack.opacity(0.5))
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: close)
+
+                VStack(spacing: 0) {
+                    TimetableCourseDetailSheet(block: block, close: close)
+                        .frame(height: 274)
+
+                    Rectangle()
+                        .fill(.white000)
+                        .frame(height: geometry.safeAreaInsets.bottom)
+                }
+                .frame(maxWidth: .infinity)
+                .background(.white000)
+                .clipShape(
+                    UnevenRoundedRectangle(
+                        cornerRadii: RectangleCornerRadii(
+                            topLeading: 20,
+                            bottomLeading: 0,
+                            bottomTrailing: 0,
+                            topTrailing: 20
+                        ),
+                        style: .continuous
+                    )
+                )
+                .overlay(alignment: .top) {
+                    Capsule()
+                        .fill(.gray300)
+                        .frame(width: 36, height: 5)
+                        .padding(.top, 8)
+                }
+            }
+            .ignoresSafeArea()
+        }
+        .background(.clear)
+    }
+}
+
 struct TimetableLoadingView: View {
     var body: some View {
         ProgressView(L10n.Timetable.loading)
