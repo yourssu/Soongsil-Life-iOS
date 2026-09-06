@@ -16,6 +16,11 @@ enum L10n {
         static let studentID = text("login.student_id")
         static let password = text("login.password")
         static let action = text("login.action")
+        static let forgotPassword = text("login.forgot_password")
+        static let passwordHelpTitle = text("login.password_help_title")
+        static let passwordHelpMessage = text("login.password_help_message")
+        static let loadingTitle = text("login.loading_title")
+        static let loadingDescription = text("login.loading_description")
         static let unofficialNotice = text("login.unofficial_notice")
         static let credentialNotice = text("login.credential_notice")
     }
