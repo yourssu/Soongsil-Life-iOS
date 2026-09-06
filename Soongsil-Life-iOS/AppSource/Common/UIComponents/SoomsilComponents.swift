@@ -32,10 +32,20 @@ enum MainTabItem: CaseIterable, Hashable {
     }
 
     func assetName(isSelected: Bool) -> String {
-        if self == .home, isSelected {
-            return "ic_home_fill"
+        guard isSelected else {
+            return assetName
         }
-        return assetName
+
+        switch self {
+        case .home:
+            return "ic_home_fill"
+        case .timetable:
+            return "ic_calender_fill"
+        case .my:
+            return "ic_person_fill"
+        case .chapel:
+            return assetName
+        }
     }
 }
 
