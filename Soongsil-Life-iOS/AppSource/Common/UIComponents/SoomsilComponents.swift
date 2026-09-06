@@ -465,28 +465,88 @@ struct CourseGradeRow: View {
     let course: CourseGrade
 
     var body: some View {
-        HStack(spacing: 12) {
-            Text(course.grade)
-                .font(.system(size: 15, weight: .black))
-                .foregroundStyle(.pointColor600)
-                .frame(width: 44, height: 44)
-                .background(.pointColor050)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        HStack(spacing: 16) {
+            Image(gradeAssetName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 48, height: 48)
+                .accessibilityLabel(accessibilityGrade)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(course.title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.pretendard(16, weight: .semibold))
                     .foregroundStyle(.black000)
                     .lineLimit(1)
-                Text(L10n.Grades.courseDetail(professor: course.professor, credits: course.credits))
-                    .font(.system(size: 12))
-                    .foregroundStyle(.gray600)
+                Text(courseDetail)
+                    .font(.pretendard(14))
+                    .foregroundStyle(.serviceGray500)
             }
+
             Spacer()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .soomsilCard(cornerRadius: 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(minHeight: 100)
+    }
+
+    private var gradeAssetName: String {
+        recognizedGradeAssetName(in: course.gradePoint)
+            ?? recognizedGradeAssetName(in: course.grade)
+            ?? "UndefinedGrade"
+    }
+
+    private var accessibilityGrade: String {
+        let assetName = gradeAssetName
+        return assetName == "UndefinedGrade" ? "미정" : assetName
+    }
+
+    private var courseDetail: String {
+        let credits = course.credits.rounded() == course.credits
+            ? String(format: "%.0f", course.credits)
+            : String(format: "%.1f", course.credits)
+        return "\(course.professor) · \(credits)학점"
+    }
+
+    private func recognizedGradeAssetName(in value: String) -> String? {
+        let grade = value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "＋", with: "+")
+            .replacingOccurrences(of: "−", with: "-")
+            .replacingOccurrences(of: "–", with: "-")
+            .replacingOccurrences(of: "－", with: "-")
+            .replacingOccurrences(of: "０", with: "0")
+
+        switch grade {
+        case "A+", "A0",
+             "B+", "B0",
+             "C+", "C0",
+             "D+", "D0",
+             "F", "P", "NP":
+            return grade
+        case "A-":
+            return "AMinus"
+        case "B-":
+            return "BMinus"
+        case "C-":
+            return "CMinus"
+        case "D-":
+            return "DMinus"
+        case "A", "AO":
+            return "A0"
+        case "B", "BO":
+            return "B0"
+        case "C", "CO":
+            return "C0"
+        case "D", "DO":
+            return "D0"
+        case "PASS", "PASSED", "합격", "급제":
+            return "P"
+        case "N/P", "N-P", "NONPASS", "NON-PASS", "불합격":
+            return "NP"
+        default:
+            return nil
+        }
     }
 }
 
