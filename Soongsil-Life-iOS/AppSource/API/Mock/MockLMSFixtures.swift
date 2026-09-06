@@ -43,6 +43,16 @@ enum MockLMSFixtures {
         ),
         semesterGrade(
             year: "2024",
+            semester: .summer,
+            attemptedCredits: 3,
+            earnedCredits: 3,
+            gpa: 4.50,
+            gradePointSum: 13.50,
+            semesterRank: "-/-",
+            totalRank: "-/-"
+        ),
+        semesterGrade(
+            year: "2024",
             semester: .second,
             attemptedCredits: 18,
             earnedCredits: 18,
@@ -50,6 +60,16 @@ enum MockLMSFixtures {
             gradePointSum: 70.56,
             semesterRank: "11/114",
             totalRank: "18/228"
+        ),
+        semesterGrade(
+            year: "2024",
+            semester: .winter,
+            attemptedCredits: 3,
+            earnedCredits: 3,
+            gpa: 4.00,
+            gradePointSum: 12.00,
+            semesterRank: "-/-",
+            totalRank: "-/-"
         ),
         semesterGrade(
             year: "2025",
