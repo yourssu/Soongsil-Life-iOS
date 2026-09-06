@@ -100,17 +100,23 @@ struct GPALineGraphView: View {
                         .overlay {
                             if point.id == highlightedGPAID {
                                 Circle()
-                                    .stroke(.white000, lineWidth: 2.5)
+                                    .strokeBorder(.white000, lineWidth: 2)
                             }
                         }
                 }
                 .annotation(
                     position: .top,
-                    alignment: annotationAlignment(for: point),
-                    spacing: 4
+                    alignment: .center,
+                    spacing: 5,
+                    overflowResolution: AnnotationOverflowResolution(
+                        x: .disabled,
+                        y: .disabled
+                    )
                 ) {
                     if point.id == highlightedGPAID {
-                        GPAValueBubble(value: point.gpa.gpa.formattedGPA)
+                        GPAValueBubble(
+                            value: String(format: "%.2f", point.gpa.gpa)
+                        )
                     }
                 }
             }
@@ -156,25 +162,16 @@ struct GPALineGraphView: View {
                 }
             }
         }
-        // The value bubble sits above the selected point. Reserve its full
-        // height so a GPA near 4.5 never escapes into the rank summary.
-        .padding(.top, 48)
-        .frame(height: 214)
+        // Bubble 37 + highlighted point radius 6 + exact gap 5 = 48pt.
+        // Keep an extra 4pt guard above a maximum 4.50 point, while the
+        // trailing reserve contains a centered final-point bubble.
+        .padding(.top, 52)
+        .padding(.trailing, 24)
+        .frame(height: 218)
     }
 
     private func plotPoint(at position: Double) -> PlotPoint? {
         plotPoints.first { $0.position == position }
-    }
-
-    private func annotationAlignment(for point: PlotPoint) -> Alignment {
-        guard plotPoints.count > 1 else { return .center }
-        if point.position == plotPoints.first?.position {
-            return .leading
-        }
-        if point.position == plotPoints.last?.position {
-            return .trailing
-        }
-        return .center
     }
 
     private func axisLabelAnchor(for position: Double?) -> UnitPoint {
@@ -260,7 +257,7 @@ private extension Double {
             .init(year: "2023", semester: .second, gpa: 3.50),
             .init(year: "2024", semester: .first, gpa: 4.10),
             .init(year: "2024", semester: .summer, gpa: 4.50),
-            .init(year: "2024", semester: .second, gpa: 3.80)
+            .init(year: "2024", semester: .second, gpa: 4.50)
         ]
     )
     .padding(24)

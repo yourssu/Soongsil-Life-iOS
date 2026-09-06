@@ -77,8 +77,8 @@ enum MockLMSFixtures {
             attemptedCredits: 18,
             earnedCredits: 17.5,
             passFailCredits: 0.5,
-            gpa: 4.22,
-            gradePointSum: 73.85,
+            gpa: 4.50,
+            gradePointSum: 78.75,
             semesterRank: "5/110",
             totalRank: "12/220"
         )
