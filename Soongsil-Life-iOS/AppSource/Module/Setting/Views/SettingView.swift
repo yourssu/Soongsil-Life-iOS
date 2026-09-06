@@ -24,7 +24,7 @@ struct SettingView: View {
                     .frame(height: 48)
 
                 Rectangle()
-                    .fill(.serviceGray200)
+                    .fill(.gray100)
                     .frame(height: 1)
 
                 ScrollView(showsIndicators: false) {
@@ -60,7 +60,6 @@ struct SettingView: View {
                                 title: L10n.Settings.privacy,
                                 destination: .legal(.privacy)
                             )
-                            SettingDivider()
                         }
 
                         SettingSection(title: L10n.Settings.version) {
@@ -191,7 +190,7 @@ private struct SettingSection<Content: View>: View {
 private struct SettingDivider: View {
     var body: some View {
         Rectangle()
-            .fill(.serviceGray200)
+            .fill(.gray100)
             .frame(height: 1)
     }
 }
