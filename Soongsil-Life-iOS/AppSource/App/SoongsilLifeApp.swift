@@ -30,6 +30,7 @@ struct SoongsilLifeApp: App {
                 case .restoringSession:
                     SessionRestoreView(
                         isLoading: appFlow.output.isRestoringSession,
+                        isRetrying: appFlow.output.isRetryingSession,
                         isChangingAccount: appFlow.output.isChangingAccount,
                         errorMessage: appFlow.output.restoreErrorMessage,
                         retry: {
@@ -114,6 +115,7 @@ final class AppFlowViewModel: BaseViewModel {
     struct Output {
         var state: State
         var isRestoringSession = false
+        var isRetryingSession = false
         var isChangingAccount = false
         var restoreErrorMessage: String?
     }
@@ -159,6 +161,7 @@ final class AppFlowViewModel: BaseViewModel {
             let needsSessionReset = output.restoreErrorMessage != nil
             restoreAttemptID = attemptID
             output.isRestoringSession = true
+            output.isRetryingSession = needsSessionReset
             output.restoreErrorMessage = nil
 
             if needsSessionReset {
@@ -172,6 +175,7 @@ final class AppFlowViewModel: BaseViewModel {
                 guard didResetSession else {
                     restoreAttemptID = nil
                     output.isRestoringSession = false
+                    output.isRetryingSession = false
                     output.restoreErrorMessage = L10n.Error.requestTimedOut
                     return output
                 }
@@ -197,6 +201,7 @@ final class AppFlowViewModel: BaseViewModel {
             if restoreAttemptID == attemptID {
                 restoreAttemptID = nil
                 output.isRestoringSession = false
+                output.isRetryingSession = false
             }
 
         case .useAnotherAccount:
@@ -209,6 +214,7 @@ final class AppFlowViewModel: BaseViewModel {
 
             restoreAttemptID = nil
             output.isChangingAccount = true
+            output.isRetryingSession = false
             let didLogout = await repository.logout()
             output.isRestoringSession = false
             output.isChangingAccount = false
@@ -280,13 +286,16 @@ final class AppFlowViewModel: BaseViewModel {
 
 private struct SessionRestoreView: View {
     let isLoading: Bool
+    let isRetrying: Bool
     let isChangingAccount: Bool
     let errorMessage: String?
     let retry: () -> Void
     let useAnotherAccount: () -> Void
 
     var body: some View {
-        if !isChangingAccount, isLoading || errorMessage == nil {
+        if isRetrying, isLoading, !isChangingAccount {
+            LoginLoadingView()
+        } else if !isChangingAccount, isLoading || errorMessage == nil {
             SessionSplashView()
         } else {
             sessionRecoveryContent
