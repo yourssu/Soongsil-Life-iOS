@@ -469,13 +469,21 @@ private struct SessionSplashView: View {
                 .fill(.white000)
                 .ignoresSafeArea()
 
-            staticLogo
-
             if !reduceMotion, let videoURL {
-                LoopingLogoVideoView(url: videoURL)
-                    .frame(width: 350, height: 350)
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
+                GeometryReader { geometry in
+                    let sideLength = min(350, geometry.size.width)
+
+                    LoopingLogoVideoView(url: videoURL)
+                        .frame(width: sideLength, height: sideLength)
+                        .position(
+                            x: geometry.size.width / 2,
+                            y: geometry.size.height / 2
+                        )
+                }
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+            } else {
+                staticLogo
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -550,6 +558,18 @@ private struct LoopingLogoVideoView: UIViewRepresentable {
             backgroundColor = .clear
             playerLayer.backgroundColor = UIColor.clear.cgColor
             playerLayer.videoGravity = .resizeAspect
+            playerLayer.shouldRasterize = false
+        }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+
+            let displayScale = window?.screen.scale
+                ?? traitCollection.displayScale
+            if contentScaleFactor != displayScale {
+                contentScaleFactor = displayScale
+            }
+            playerLayer.contentsScale = displayScale
         }
 
         @available(*, unavailable)
