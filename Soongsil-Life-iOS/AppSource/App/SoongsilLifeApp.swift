@@ -3,15 +3,22 @@ import SwiftUI
 @main
 struct SoongsilLifeApp: App {
     @State private var appFlow: AppFlowViewModel
+    @State private var loginViewModel: LoginViewModel
     @State private var appUpdate = AppUpdateViewModel()
     private let container: DIContainer
 
     init() {
         let container = DIContainer.app
+        let appFlow = AppFlowViewModel(
+            repository: container.authenticationRepository,
+            consentStore: UserDefaultsAgreementConsentStore()
+        )
         self.container = container
-        _appFlow = State(
-            initialValue: AppFlowViewModel(
-                repository: container.authenticationRepository
+        _appFlow = State(initialValue: appFlow)
+        _loginViewModel = State(
+            initialValue: LoginViewModel(
+                repository: container.authenticationRepository,
+                appFlow: appFlow
             )
         )
     }
@@ -37,13 +44,20 @@ struct SoongsilLifeApp: App {
                         }
                     )
                 case .login:
-                    NavigationStack {
-                        LoginView(
-                            viewModel: LoginViewModel(
-                                repository: container.authenticationRepository,
-                                appFlow: appFlow
-                            )
-                        )
+                    LoginView(viewModel: loginViewModel)
+                case .loginLoading:
+                    LoginLoadingView()
+                case .agreement:
+                    AgreementView {
+                        Task {
+                            await appFlow.transform(input: .didAcceptRequiredAgreements)
+                        }
+                    }
+                case .agreementComplete:
+                    AgreementCompleteView {
+                        Task {
+                            await appFlow.transform(input: .didFinishAgreement)
+                        }
                     }
                 case .main:
                     MainTabView(
@@ -52,7 +66,8 @@ struct SoongsilLifeApp: App {
                     )
                 }
             }
-            .tint(.pointColor600)
+            .tint(.serviceBlue600)
+            .preferredColorScheme(.light)
             .task {
                 await appFlow.transform(input: .restoreSession)
             }
@@ -70,6 +85,7 @@ struct SoongsilLifeApp: App {
             }
         }
     }
+
 }
 
 @Observable
@@ -78,13 +94,20 @@ final class AppFlowViewModel: BaseViewModel {
     enum State: Equatable {
         case restoringSession
         case login
+        case loginLoading
+        case agreement
+        case agreementComplete
         case main
     }
 
     enum Input {
         case restoreSession
         case useAnotherAccount
+        case didStartLogin
+        case didFailLogin
         case didLogin
+        case didAcceptRequiredAgreements
+        case didFinishAgreement
         case didLogout
     }
 
@@ -96,13 +119,28 @@ final class AppFlowViewModel: BaseViewModel {
     }
 
     private let repository: AuthenticationRepositoryProtocol
+    private let consentStore: AgreementConsentStoreProtocol
     private(set) var output: Output
     private var restoreAttemptID: UUID?
 
-    init(repository: AuthenticationRepositoryProtocol) {
+    init(
+        repository: AuthenticationRepositoryProtocol,
+        consentStore: AgreementConsentStoreProtocol
+    ) {
         self.repository = repository
+        self.consentStore = consentStore
         output = Output(
-            state: Self.initialState(repository: repository)
+            state: Self.initialState(
+                repository: repository,
+                consentStore: consentStore
+            )
+        )
+    }
+
+    convenience init(repository: AuthenticationRepositoryProtocol) {
+        self.init(
+            repository: repository,
+            consentStore: UserDefaultsAgreementConsentStore()
         )
     }
 
@@ -147,7 +185,7 @@ final class AppFlowViewModel: BaseViewModel {
                     await repository.resetCurrentSession()
                     return output
                 }
-                output.state = .main
+                output.state = authenticatedDestination
             } catch is CancellationError {
                 guard restoreAttemptID == attemptID else { return output }
                 output.restoreErrorMessage = L10n.Error.requestCancelled
@@ -182,23 +220,61 @@ final class AppFlowViewModel: BaseViewModel {
                 output.restoreErrorMessage = L10n.Error.requestTimedOut
             }
 
+        case .didStartLogin:
+            guard output.state == .login else { return output }
+            output.state = .loginLoading
+
+        case .didFailLogin:
+            guard output.state == .loginLoading else { return output }
+            output.state = .login
+
         case .didLogin:
             restoreAttemptID = nil
+            output.state = authenticatedDestination
+
+        case .didAcceptRequiredAgreements:
+            guard output.state == .agreement else { return output }
+            consentStore.acceptCurrentVersion()
+            output.state = .agreementComplete
+
+        case .didFinishAgreement:
+            guard output.state == .agreementComplete else { return output }
+            consentStore.completeCurrentVersion()
             output.state = .main
+
         case .didLogout:
             restoreAttemptID = nil
-            output.state = repository.isLoggedIn ? .main : .login
+            output.state = repository.isLoggedIn
+                ? authenticatedDestination
+                : .login
         }
         return output
     }
 
     private static func initialState(
-        repository: AuthenticationRepositoryProtocol
+        repository: AuthenticationRepositoryProtocol,
+        consentStore: AgreementConsentStoreProtocol
     ) -> State {
         if repository.isLoggedIn {
-            return .main
+            return authenticatedDestination(consentStore: consentStore)
         }
         return repository.hasSavedCredentials ? .restoringSession : .login
+    }
+
+    private var authenticatedDestination: State {
+        Self.authenticatedDestination(consentStore: consentStore)
+    }
+
+    private static func authenticatedDestination(
+        consentStore: AgreementConsentStoreProtocol
+    ) -> State {
+        guard consentStore.hasAcceptedCurrentVersion else {
+            return .agreement
+        }
+        guard consentStore.hasCompletedCurrentVersion else {
+            return .agreementComplete
+        }
+        return .main
     }
 }
 
@@ -210,6 +286,14 @@ private struct SessionRestoreView: View {
     let useAnotherAccount: () -> Void
 
     var body: some View {
+        if !isChangingAccount, isLoading || errorMessage == nil {
+            SessionSplashView()
+        } else {
+            sessionRecoveryContent
+        }
+    }
+
+    private var sessionRecoveryContent: some View {
         VStack(spacing: 24) {
             Image("soomsilAppIcon")
                 .resizable()
@@ -226,23 +310,11 @@ private struct SessionRestoreView: View {
             if isChangingAccount {
                 VStack(spacing: 12) {
                     ProgressView()
-                        .tint(.pointColor600)
+                        .tint(.serviceBlue600)
                     Text(L10n.Session.changingAccount)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(.black000)
                 }
-            } else if isLoading || errorMessage == nil {
-                VStack(spacing: 12) {
-                    ProgressView()
-                        .tint(.pointColor600)
-                    Text(L10n.Session.restoringTitle)
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(.black000)
-                    Text(L10n.Session.restoringDescription)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.gray600)
-                }
-
             } else {
                 VStack(spacing: 10) {
                     Image(systemName: "exclamationmark.triangle")
@@ -260,10 +332,10 @@ private struct SessionRestoreView: View {
                 VStack(spacing: 10) {
                     Button(L10n.Session.retry, action: retry)
                         .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.white000)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
-                        .background(.pointColor600)
+                        .background(.serviceBlue600)
                         .clipShape(
                             RoundedRectangle(
                                 cornerRadius: 12,
@@ -294,5 +366,36 @@ private struct SessionRestoreView: View {
         .foregroundStyle(.gray600)
         .frame(height: 44)
         .buttonStyle(.plain)
+    }
+}
+
+private struct SessionSplashView: View {
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(.white000)
+                .ignoresSafeArea()
+
+            ZStack(alignment: .leading) {
+                Circle()
+                    .fill(.splashViolet)
+                    .frame(width: 90, height: 90)
+                    .offset(x: 55)
+
+                Circle()
+                    .fill(.white000)
+                    .frame(width: 102, height: 102)
+                    .offset(x: -6)
+
+                Circle()
+                    .fill(.splashIndigo)
+                    .frame(width: 90, height: 90)
+            }
+            .frame(width: 145, height: 90, alignment: .leading)
+            .offset(x: 75)
+            .accessibilityHidden(true)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
     }
 }

@@ -112,8 +112,12 @@ struct DIContainer {
 
 enum AppConfig {
     static let lmsPackageURL = "https://github.com/chlwhdtn03/LMS-API"
-    static let termsURL = URL(string: "https://scatch.ssu.ac.kr/terms")!
-    static let privacyURL = URL(string: "https://scatch.ssu.ac.kr/privacy")!
+    static let termsURL = URL(
+        string: "https://app.notion.com/p/3cf5364b6dbf804eac29dced5d4c9001?source=copy_link"
+    )!
+    static let privacyURL = URL(
+        string: "https://app.notion.com/p/3cf5364b6dbf805a8904f98c452f0cb1?source=copy_link"
+    )!
     static let appUpdateConfigurationURL = URL(
         string: "https://raw.githubusercontent.com/yourssu/Soongsil-Life-iOS/main/.github/app-config/ios.json"
     )!
