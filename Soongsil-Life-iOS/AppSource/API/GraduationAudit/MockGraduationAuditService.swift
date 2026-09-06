@@ -1,19 +1,25 @@
 import Foundation
 
-final class MockGraduationAuditService: GraduationAuditServiceProtocol {
-    private let delayNanoseconds: UInt64
+final class MockGraduationAuditService: GraduationAuditServiceProtocol, @unchecked Sendable {
+    private let audit: GraduationAudit
+    private let delay: Duration
+    private let error: Error?
 
-    init(delayNanoseconds: UInt64 = 0) {
-        self.delayNanoseconds = delayNanoseconds
+    init(
+        audit: GraduationAudit = MockLMSFixtures.graduationAudit,
+        delay: Duration = .milliseconds(150),
+        error: Error? = nil
+    ) {
+        self.audit = audit
+        self.delay = delay
+        self.error = error
     }
 
-    func fetchGraduateTable() async throws -> GraduationAudit {
-        await delay()
-        
-        return MockLMSFixtures.graduateTable
-    }
-    
-    private func delay() async {
-        try? await Task.sleep(nanoseconds: delayNanoseconds)
+    func fetchGraduationAudit() async throws -> GraduationAudit {
+        try await MockDelay.wait(delay)
+        if let error {
+            throw error
+        }
+        return audit
     }
 }

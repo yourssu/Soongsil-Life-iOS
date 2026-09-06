@@ -1,64 +1,71 @@
 import Foundation
-import Observation
 
-@MainActor
 @Observable
+@MainActor
 final class GraduationAuditViewModel: BaseViewModel {
+    enum LoadState {
+        case idle
+        case loading
+        case loaded(GraduationAudit)
+        case empty
+        case failed(String)
+
+        var isLoading: Bool {
+            if case .loading = self {
+                return true
+            }
+            return false
+        }
+
+        var hasFinished: Bool {
+            switch self {
+            case .loaded, .empty, .failed:
+                true
+            case .idle, .loading:
+                false
+            }
+        }
+    }
 
     enum Input {
-        case onAppear
-        case retry
+        case load(force: Bool = false)
     }
-
 
     struct Output {
-        var graduationAudit: GraduationAudit?
-
-        var isLoading: Bool = false
-        var errorMessage: String?
+        var loadState: LoadState = .idle
     }
 
-
-    private let repository: GraduationAuditRepositoryProtocol
-
     private(set) var output = Output()
+    private let repository: GraduationAuditRepositoryProtocol
+    private let loadFlight = AsyncSingleFlight()
 
-
-    init(
-        repository: GraduationAuditRepositoryProtocol
-    ) {
+    init(repository: GraduationAuditRepositoryProtocol) {
         self.repository = repository
     }
 
     @discardableResult
     func transform(input: Input) async -> Output {
         switch input {
-        case .onAppear, .retry:
-            await fetchGraduateTable()
+        case let .load(force):
+            guard force || !output.loadState.hasFinished else { return output }
+
+            await loadFlight.run { [self] in
+                let previousState = output.loadState
+                output.loadState = .loading
+
+                do {
+                    let audit = try await repository.fetchGraduationAudit()
+                    output.loadState = audit.items.isEmpty
+                        ? .empty
+                        : .loaded(audit)
+                } catch is CancellationError {
+                    output.loadState = previousState
+                } catch {
+                    output.loadState = .failed(error.localizedDescription)
+                }
+            }
         }
-        
+
         return output
-    }
-
-    private func fetchGraduateTable() async {
-        guard !output.isLoading else {
-            return
-        }
-
-        output.isLoading = true
-        output.errorMessage = nil
-
-        defer {
-            output.isLoading = false
-        }
-
-        do {
-            output.graduationAudit =
-                try await repository.fetchGraduateTable()
-
-        } catch {
-            output.errorMessage =
-                error.localizedDescription
-        }
     }
 }

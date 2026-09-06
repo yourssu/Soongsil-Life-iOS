@@ -4,87 +4,112 @@ struct DIContainer {
     let authenticationRepository: AuthenticationRepositoryProtocol
     let homeRepository: HomeRepositoryProtocol
     let gradeRepository: GradeRepositoryProtocol
+    let chapelRepository: ChapelRepositoryProtocol
     let graduationAuditRepository: GraduationAuditRepositoryProtocol
+    let timetableService: TimetableServiceProtocol
+    let tuitionRepository: TuitionRepositoryProtocol
 
     init(
         authenticationRepository: AuthenticationRepositoryProtocol,
         homeRepository: HomeRepositoryProtocol,
         gradeRepository: GradeRepositoryProtocol,
-        graduationAuditRepository: GraduationAuditRepositoryProtocol
+        chapelRepository: ChapelRepositoryProtocol,
+        graduationAuditRepository: GraduationAuditRepositoryProtocol,
+        timetableService: TimetableServiceProtocol,
+        tuitionRepository: TuitionRepositoryProtocol
     ) {
         self.authenticationRepository = authenticationRepository
         self.homeRepository = homeRepository
         self.gradeRepository = gradeRepository
+        self.chapelRepository = chapelRepository
         self.graduationAuditRepository = graduationAuditRepository
+        self.timetableService = timetableService
+        self.tuitionRepository = tuitionRepository
     }
 
     static let mock = makeMockContainer()
-    static let preview = makeMockContainer(delayNanoseconds: 0)
+    static let preview = makeMockContainer(delay: .zero)
 
     static var app: DIContainer {
         if ProcessInfo.processInfo.arguments.contains("-useMockData") {
             return .mock
         }
+
         return makeAppContainer()
     }
 
     private static func makeAppContainer() -> DIContainer {
 #if targetEnvironment(simulator)
-        makeMockContainer(delayNanoseconds: 0)
+        makeMockContainer(delay: .zero)
 #else
         let authenticationService = AuthenticationService()
         let gradeService = GradeService()
-        let graduationAuditService = GraduationAuditService()
+        let gradeRepository = GradeRepository(service: gradeService)
+        let chapelService = ChapelService()
+        let chapelCacheStore = UserDefaultsChapelCacheStore()
 
         return DIContainer(
             authenticationRepository: AuthenticationRepository(
-                service: authenticationService
+                service: authenticationService,
+                credentialsStore: KeychainLoginCredentialsStore(),
+                activateAccountCache: chapelCacheStore.activateAccount,
+                deactivateAccountCache: chapelCacheStore.deactivateAccount
             ),
-            homeRepository: HomeRepository(
-                studentService: StudentService(),
-                gradeService: gradeService,
-                chapelService: ChapelService()
+            homeRepository: HomeRepository(gradeRepository: gradeRepository),
+            gradeRepository: gradeRepository,
+            chapelRepository: ChapelRepository(
+                service: chapelService,
+                cacheStore: chapelCacheStore
             ),
-            gradeRepository: GradeRepository(service: gradeService),
             graduationAuditRepository: GraduationAuditRepository(
-                service: graduationAuditService
-            )
+                service: GraduationAuditService()
+            ),
+            timetableService: TimetableService(),
+            tuitionRepository: TuitionRepository(service: TuitionService())
         )
 #endif
     }
 
     private static func makeMockContainer(
         isLoggedIn: Bool = true,
-        delayNanoseconds: UInt64 = 150_000_000
+        delay: Duration = .milliseconds(150)
     ) -> DIContainer {
         let authenticationService = MockAuthenticationService(
             isLoggedIn: isLoggedIn,
-            delayNanoseconds: delayNanoseconds
+            delay: delay
         )
+
         let gradeService = MockGradeService(
-            delayNanoseconds: delayNanoseconds
+            delay: delay
         )
-        
-        let graduationAuditService = MockGraduationAuditService(
-            delayNanoseconds: delayNanoseconds
-        )
+        let gradeRepository = GradeRepository(service: gradeService)
+        let chapelService = MockChapelService(delay: delay)
+        let chapelCacheStore = InMemoryChapelCacheStore()
+        chapelCacheStore.activateAccount(studentID: "mock-preview")
 
         return DIContainer(
             authenticationRepository: AuthenticationRepository(
-                service: authenticationService
+                service: authenticationService,
+                credentialsStore: InMemoryLoginCredentialsStore(),
+                activateAccountCache: chapelCacheStore.activateAccount,
+                deactivateAccountCache: chapelCacheStore.deactivateAccount
             ),
-            homeRepository: HomeRepository(
-                studentService: MockStudentService(
-                    delayNanoseconds: delayNanoseconds
-                ),
-                gradeService: gradeService,
-                chapelService: MockChapelService(
-                    delayNanoseconds: delayNanoseconds
+            homeRepository: HomeRepository(gradeRepository: gradeRepository),
+            gradeRepository: gradeRepository,
+            chapelRepository: ChapelRepository(
+                service: chapelService,
+                cacheStore: chapelCacheStore
+            ),
+            graduationAuditRepository: GraduationAuditRepository(
+                service: MockGraduationAuditService(
+                    delay: delay
                 )
             ),
-            gradeRepository: GradeRepository(service: gradeService),
-            graduationAuditRepository: GraduationAuditRepository(
-                service: graduationAuditService
+            timetableService: MockTimetableService(delay: delay),
+            tuitionRepository: TuitionRepository(
+                service: MockTuitionService(
+                    delay: delay
+                )
             )
         )
     }
@@ -92,6 +117,13 @@ struct DIContainer {
 
 enum AppConfig {
     static let lmsPackageURL = "https://github.com/chlwhdtn03/LMS-API"
-    static let termsURL = URL(string: "https://scatch.ssu.ac.kr/terms")!
-    static let privacyURL = URL(string: "https://scatch.ssu.ac.kr/privacy")!
+    static let termsURL = URL(
+        string: "https://app.notion.com/p/3cf5364b6dbf804eac29dced5d4c9001?source=copy_link"
+    )!
+    static let privacyURL = URL(
+        string: "https://app.notion.com/p/3cf5364b6dbf805a8904f98c452f0cb1?source=copy_link"
+    )!
+    static let appUpdateConfigurationURL = URL(
+        string: "https://raw.githubusercontent.com/yourssu/Soongsil-Life-iOS/main/.github/app-config/ios.json"
+    )!
 }

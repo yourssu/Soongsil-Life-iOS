@@ -1,18 +1,21 @@
 import Foundation
 
 final class MockChapelService: ChapelServiceProtocol {
-    private let delayNanoseconds: UInt64
+    private let delay: Duration
 
-    init(delayNanoseconds: UInt64 = 150_000_000) {
-        self.delayNanoseconds = delayNanoseconds
+    init(delay: Duration = .milliseconds(150)) {
+        self.delay = delay
     }
 
     func fetchChapel() async throws -> ChapelStatus? {
-        await delay()
+        try await MockDelay.wait(delay)
         return MockLMSFixtures.chapel
     }
 
-    private func delay() async {
-        try? await Task.sleep(nanoseconds: delayNanoseconds)
+    func fetchChapelEnrollmentState() async throws -> ChapelEnrollmentState {
+        guard let chapel = try await fetchChapel() else {
+            return .notEnrolled(completedSemesterCount: 0)
+        }
+        return .enrolled(chapel)
     }
 }

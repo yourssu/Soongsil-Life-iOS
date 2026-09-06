@@ -21,115 +21,207 @@ struct GPALineGraphView: View {
         }
     }
 
-    private let yAxisValues = [1.5, 3.0, 4.5]
-    private let gpaList: [GPAInfo]
+    private struct PlotPoint: Identifiable {
+        let position: Double
+        let gpa: GPAInfo
 
-    init(gpaList: [GPAInfo]) {
-        self.gpaList = gpaList.sorted {
+        var id: GPAInfo.ID { gpa.id }
+    }
+
+    private let yAxisValues = [1.0, 2.0, 3.0, 4.0]
+    private let gpaList: [GPAInfo]
+    private let highlightedGPAID: GPAInfo.ID?
+
+    private var plotPoints: [PlotPoint] {
+        gpaList.enumerated().map { index, gpa in
+            PlotPoint(position: Double(index), gpa: gpa)
+        }
+    }
+
+    private var xDomain: ClosedRange<Double> {
+        guard plotPoints.count > 1 else {
+            return -0.5...0.5
+        }
+        return 0...Double(plotPoints.count - 1)
+    }
+
+    init(
+        gpaList: [GPAInfo],
+        highlightedGPAID: GPAInfo.ID? = nil
+    ) {
+        let sortedGPAList = gpaList.sorted {
             let lhs = (Int($0.year.filter(\.isNumber)) ?? 0, $0.semester.sortOrder)
             let rhs = (Int($1.year.filter(\.isNumber)) ?? 0, $1.semester.sortOrder)
             return lhs < rhs
         }
-    }
-
-    private var latestGPAID: GPAInfo.ID? {
-        gpaList.last?.id
+        self.gpaList = Array(sortedGPAList.suffix(8))
+        self.highlightedGPAID = highlightedGPAID ?? sortedGPAList.last?.id
     }
 
     var body: some View {
         Chart {
-            ForEach(gpaList) { gpa in
+            ForEach(plotPoints) { point in
                 AreaMark(
-                    x: .value(L10n.Grades.semesterSection, gpa.id),
-                    yStart: .value(L10n.Soomsil.totalGPA, 1.5),
-                    yEnd: .value(L10n.Soomsil.totalGPA, gpa.gpa)
+                    x: .value(L10n.Grades.semesterSection, point.position),
+                    yStart: .value(L10n.Soomsil.totalGPA, 0),
+                    yEnd: .value(L10n.Soomsil.totalGPA, point.gpa.gpa)
                 )
-                .interpolationMethod(.monotone)
+                .interpolationMethod(.linear)
                 .foregroundStyle(
                     LinearGradient(
                         colors: [
-                            Color.soomsilBlue600.opacity(0.02),
-                            Color.soomsilBlue600.opacity(0.19)
+                            .serviceBlue500.opacity(0.24),
+                            .serviceBlue500.opacity(0.03)
                         ],
-                        startPoint: .leading,
-                        endPoint: .trailing
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
                 )
 
                 LineMark(
-                    x: .value(L10n.Grades.semesterSection, gpa.id),
-                    y: .value(L10n.Soomsil.totalGPA, gpa.gpa)
+                    x: .value(L10n.Grades.semesterSection, point.position),
+                    y: .value(L10n.Soomsil.totalGPA, point.gpa.gpa)
                 )
-                .interpolationMethod(.monotone)
-                .lineStyle(StrokeStyle(lineWidth: 2))
-                .foregroundStyle(Color.soomsilBlue600)
+                .interpolationMethod(.linear)
+                .lineStyle(StrokeStyle(lineWidth: 2.5))
+                .foregroundStyle(.serviceBlue500)
 
                 PointMark(
-                    x: .value(L10n.Grades.semesterSection, gpa.id),
-                    y: .value(L10n.Soomsil.totalGPA, gpa.gpa)
+                    x: .value(L10n.Grades.semesterSection, point.position),
+                    y: .value(L10n.Soomsil.totalGPA, point.gpa.gpa)
                 )
                 .symbol {
                     Circle()
-                        .fill(Color.soomsilBlue600)
-                        .frame(width: 10, height: 10)
+                        .fill(.serviceBlue500)
+                        .frame(
+                            width: point.id == highlightedGPAID ? 12 : 7,
+                            height: point.id == highlightedGPAID ? 12 : 7
+                        )
                         .overlay {
-                            Circle()
-                                .stroke(.white, lineWidth: 2)
+                            if point.id == highlightedGPAID {
+                                Circle()
+                                    .strokeBorder(.white000, lineWidth: 2)
+                            }
                         }
                 }
-                .annotation(position: .top, spacing: 2) {
-                    Text(gpa.gpa.formattedGPA)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.soomsilBlue600)
+                .annotation(
+                    position: .top,
+                    alignment: .center,
+                    spacing: 5,
+                    overflowResolution: AnnotationOverflowResolution(
+                        x: .disabled,
+                        y: .disabled
+                    )
+                ) {
+                    if point.id == highlightedGPAID {
+                        GPAValueBubble(
+                            value: String(format: "%.2f", point.gpa.gpa)
+                        )
+                    }
                 }
             }
         }
         .chartXScale(
-            range: .plotDimension(startPadding: -16, endPadding: -16)
+            domain: xDomain,
+            range: .plotDimension(startPadding: 0, endPadding: 0)
         )
-        .chartYScale(domain: 1.5...4.5)
+        .chartYScale(domain: 0...4.5)
         .chartYAxis {
             AxisMarks(position: .leading, values: yAxisValues) { value in
                 AxisGridLine()
-                    .foregroundStyle(Color.soomsilBorder)
+                    .foregroundStyle(.serviceBlue500.opacity(0.2))
                 AxisTick()
-                    .foregroundStyle(Color.soomsilBorder)
+                    .foregroundStyle(.clear)
                 AxisValueLabel {
                     if let axisValue = value.as(Double.self) {
                         Text(axisValue.formattedGPA)
-                            .font(.system(size: 10))
-                            .foregroundStyle(Color.soomsilSecondaryText)
+                            .font(.pretendard(12))
+                            .foregroundStyle(.serviceGray500)
                     }
                 }
             }
         }
         .chartXAxis {
-            AxisMarks(values: gpaList.map(\.id)) { value in
-                AxisValueLabel {
-                    if let semesterID = value.as(String.self),
-                       let gpa = gpaList.first(where: { $0.id == semesterID }) {
-                        Text(gpa.shortSemester)
-                            .font(
-                                .system(
-                                    size: 11,
-                                    weight: semesterID == latestGPAID
-                                        ? .semibold
-                                        : .medium
-                                )
-                            )
-                            .foregroundStyle(
-                                semesterID == latestGPAID
-                                    ? Color.soomsilBlue600
-                                    : Color.soomsilSecondaryText
-                            )
+            AxisMarks(values: plotPoints.map(\.position)) { value in
+                AxisGridLine()
+                    .foregroundStyle(.clear)
+                AxisTick()
+                    .foregroundStyle(.clear)
+                AxisValueLabel(
+                    anchor: axisLabelAnchor(for: value.as(Double.self)),
+                    collisionResolution: .disabled
+                ) {
+                    if let position = value.as(Double.self),
+                       let point = plotPoint(at: position) {
+                        Text(axisLabel(for: point.gpa))
+                            .font(.pretendard(12))
+                            .foregroundStyle(.serviceGray500)
                             .minimumScaleFactor(0.5)
-                            .padding(.top, 20)
+                            .padding(.top, 12)
                     }
                 }
             }
         }
-        .padding(.top, 16)
-        .frame(height: 184)
+        // Bubble 37 + highlighted point radius 6 + exact gap 5 = 48pt.
+        // Keep an extra 4pt guard above a maximum 4.50 point, while the
+        // trailing reserve contains a centered final-point bubble.
+        .padding(.top, 52)
+        .padding(.trailing, 24)
+        .frame(height: 218)
+    }
+
+    private func plotPoint(at position: Double) -> PlotPoint? {
+        plotPoints.first { $0.position == position }
+    }
+
+    private func axisLabelAnchor(for position: Double?) -> UnitPoint {
+        guard let position else { return .top }
+        guard plotPoints.count > 1 else { return .top }
+        if position == plotPoints.first?.position {
+            return .topLeading
+        }
+        if position == plotPoints.last?.position {
+            return .topTrailing
+        }
+        return .top
+    }
+
+    private func axisLabel(for gpa: GPAInfo) -> String {
+        guard let index = gpaList.firstIndex(of: gpa) else {
+            return gpa.shortSemester
+        }
+        return "\(index / 2 + 1)-\(index % 2 + 1)"
+    }
+}
+
+private struct GPAValueBubble: View {
+    let value: String
+
+    var body: some View {
+        VStack(spacing: -1) {
+            Text(value)
+                .font(.pretendard(12, weight: .semibold))
+                .foregroundStyle(.serviceBlue500)
+                .padding(.horizontal, 10)
+                .frame(height: 31)
+                .background(.serviceGray200)
+                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+
+            GPAValueBubbleTip()
+                .fill(.serviceGray200)
+                .frame(width: 12, height: 7)
+        }
+    }
+}
+
+private struct GPAValueBubbleTip: Shape {
+    func path(in rect: CGRect) -> Path {
+        Path { path in
+            path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
+            path.closeSubpath()
+        }
     }
 }
 
@@ -165,9 +257,9 @@ private extension Double {
             .init(year: "2023", semester: .second, gpa: 3.50),
             .init(year: "2024", semester: .first, gpa: 4.10),
             .init(year: "2024", semester: .summer, gpa: 4.50),
-            .init(year: "2024", semester: .second, gpa: 3.80)
+            .init(year: "2024", semester: .second, gpa: 4.50)
         ]
     )
     .padding(24)
-    .background(Color.soomsilSurface)
+    .background(.white000)
 }

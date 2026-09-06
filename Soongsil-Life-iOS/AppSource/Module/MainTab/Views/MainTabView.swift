@@ -3,10 +3,15 @@ import SwiftUI
 struct MainTabView: View {
     @State private var viewModel: MainTabViewModel
     @State private var homeViewModel: HomeViewModel
+    @State private var chapelViewModel: ChapelViewModel
+    @State private var timetableViewModel: TimetableViewModel
     @State private var settingViewModel: SettingViewModel
     @State private var isHomeNavigationActive = false
+    @State private var isSettingNavigationActive = false
+    @State private var selectedTimetableBlock: TimetableCourseBlock?
     private let gradeRepository: GradeRepositoryProtocol
     private let graduationAuditRepository: GraduationAuditRepositoryProtocol
+    private let tuitionRepository: TuitionRepositoryProtocol
 
     init(
         viewModel: MainTabViewModel? = nil,
@@ -15,11 +20,20 @@ struct MainTabView: View {
     ) {
         gradeRepository = container.gradeRepository
         graduationAuditRepository = container.graduationAuditRepository
+        tuitionRepository = container.tuitionRepository
         _viewModel = State(
             initialValue: viewModel ?? MainTabViewModel()
         )
         _homeViewModel = State(
             initialValue: HomeViewModel(repository: container.homeRepository)
+        )
+        _chapelViewModel = State(
+            initialValue: ChapelViewModel(repository: container.chapelRepository)
+        )
+        _timetableViewModel = State(
+            initialValue: TimetableViewModel(
+                service: container.timetableService
+            )
         )
         _settingViewModel = State(
             initialValue: SettingViewModel(
@@ -31,16 +45,27 @@ struct MainTabView: View {
 
     var body: some View {
         ZStack {
-            tabContent
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if showsTabBar {
-                        SoomsilTabBar(selectedTab: selectedTabBinding)
-                            .padding(.bottom, 4)
-                    }
+            ZStack(alignment: .bottom) {
+                tabContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                if showsTabBar {
+                    SoomsilTabBar(selectedTab: selectedTabBinding)
+                        .padding(.bottom, 8)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .zIndex(1)
                 }
+            }
+            .background {
+                Rectangle()
+                    .fill(.white000)
+                    .ignoresSafeArea()
+            }
+            .allowsHitTesting(!settingViewModel.output.isLoggingOut)
 
             if settingViewModel.output.showsLogoutConfirmation {
                 LogoutDialogView(
+                    errorMessage: settingViewModel.output.logoutErrorMessage,
                     cancel: {
                         Task {
                             await settingViewModel.transform(input: .logoutCancelled)
@@ -55,10 +80,50 @@ struct MainTabView: View {
                 .transition(.opacity)
                 .zIndex(1)
             }
+
+            if settingViewModel.output.isLoggingOut {
+                SoomsilLoadingOverlay()
+                    .transition(.opacity)
+                    .zIndex(2)
+            }
+
+            if showsHomeLoadingOverlay {
+                SoomsilLoadingOverlay()
+                    .transition(.opacity)
+                    .zIndex(2)
+            }
+
+            if showsTimetableLoadingOverlay {
+                SoomsilLoadingOverlay(showsDimmedBackground: false)
+                    .transition(.opacity)
+                    .zIndex(2)
+            }
+
+            if let selectedTimetableBlock {
+                TimetableCourseDetailPresentation(
+                    block: selectedTimetableBlock,
+                    close: {
+                        self.selectedTimetableBlock = nil
+                    }
+                )
+                .zIndex(3)
+            }
         }
         .animation(
             .easeInOut(duration: 0.18),
             value: settingViewModel.output.showsLogoutConfirmation
+        )
+        .animation(
+            .easeInOut(duration: 0.18),
+            value: settingViewModel.output.isLoggingOut
+        )
+        .animation(
+            .easeInOut(duration: 0.18),
+            value: showsHomeLoadingOverlay
+        )
+        .animation(
+            .easeInOut(duration: 0.18),
+            value: showsTimetableLoadingOverlay
         )
     }
 
@@ -68,22 +133,32 @@ struct MainTabView: View {
         case .home:
             HomeView(
                 viewModel: homeViewModel,
+                chapelViewModel: chapelViewModel,
                 gradeRepository: gradeRepository,
                 graduationAuditRepository: graduationAuditRepository,
+                tuitionRepository: tuitionRepository,
                 onNavigationDepthChanged: {
                     isHomeNavigationActive = $0
                 }
             )
+        case .chapel:
+            ChapelTabView(viewModel: chapelViewModel)
         case .timetable:
             NavigationStack {
-                TimetableView()
-            }
-        case .notification:
-            NavigationStack {
-                NotificationView()
+                TimetableView(
+                    viewModel: timetableViewModel,
+                    onCourseSelected: { block in
+                        selectedTimetableBlock = block
+                    }
+                )
             }
         case .my:
-            SettingView(viewModel: settingViewModel)
+            SettingView(
+                viewModel: settingViewModel,
+                onNavigationDepthChanged: {
+                    isSettingNavigationActive = $0
+                }
+            )
         }
     }
 
@@ -101,7 +176,25 @@ struct MainTabView: View {
     }
 
     private var showsTabBar: Bool {
-        viewModel.output.selectedTab != .home || !isHomeNavigationActive
+        switch viewModel.output.selectedTab {
+        case .home:
+            !isHomeNavigationActive
+        case .my:
+            !isSettingNavigationActive
+        case .chapel, .timetable:
+            true
+        }
+    }
+
+    private var showsHomeLoadingOverlay: Bool {
+        viewModel.output.selectedTab == .home
+            && homeViewModel.output.isLoading
+            && homeViewModel.output.dashboard == nil
+    }
+
+    private var showsTimetableLoadingOverlay: Bool {
+        viewModel.output.selectedTab == .timetable
+            && timetableViewModel.output.showsSelectionLoadingOverlay
     }
 }
 

@@ -2,30 +2,38 @@ import Foundation
 
 final class MockAuthenticationService: AuthenticationServiceProtocol {
     private(set) var isLoggedIn: Bool
-    private let delayNanoseconds: UInt64
+    private let delay: Duration
+    private let logoutSucceeds: Bool
 
     init(
         isLoggedIn: Bool = true,
-        delayNanoseconds: UInt64 = 150_000_000
+        delay: Duration = .milliseconds(150),
+        logoutSucceeds: Bool = true
     ) {
         self.isLoggedIn = isLoggedIn
-        self.delayNanoseconds = delayNanoseconds
+        self.delay = delay
+        self.logoutSucceeds = logoutSucceeds
     }
 
     func login(id: String, password: String) async throws {
-        await delay()
+        try await MockDelay.wait(delay)
+        
         guard !id.isEmpty, !password.isEmpty else {
             throw LMSServiceError.message(L10n.Error.loginFailed)
         }
         isLoggedIn = true
     }
 
-    func logout() async {
-        await delay()
-        isLoggedIn = false
-    }
+    @discardableResult
+    func logout() async -> Bool {
+        do {
+            try await MockDelay.wait(delay)
+        } catch {
+            return false
+        }
+        guard logoutSucceeds else { return false }
 
-    private func delay() async {
-        try? await Task.sleep(nanoseconds: delayNanoseconds)
+        isLoggedIn = false
+        return true
     }
 }

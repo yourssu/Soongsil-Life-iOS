@@ -1,3 +1,5 @@
-protocol GraduationAuditServiceProtocol {
-    func fetchGraduateTable() async throws -> GraduationAudit
+import Foundation
+
+protocol GraduationAuditServiceProtocol: AnyObject, Sendable {
+    func fetchGraduationAudit() async throws -> GraduationAudit
 }

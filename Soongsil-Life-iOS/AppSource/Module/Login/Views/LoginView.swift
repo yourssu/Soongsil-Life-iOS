@@ -1,179 +1,233 @@
 import SwiftUI
 
 struct LoginView: View {
+    private enum FocusedField: Hashable {
+        case studentID
+        case password
+    }
+
     @State var viewModel: LoginViewModel
     @State private var isPasswordSecured = true
+    @State private var showsPasswordHelp = false
+    @FocusState private var focusedField: FocusedField?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            appLogo
-                .padding(.top, 32)
-                .padding(.bottom, 44)
+        ScrollViewReader { proxy in
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    appLogo
+                        .padding(.top, 61)
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text(L10n.Soomsil.loginHeading)
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(Color.soomsilPrimaryText)
-                    .lineSpacing(4)
+                    Text(L10n.Soomsil.loginHeading)
+                        .font(.pretendard(28, weight: .bold))
+                        .foregroundStyle(.black000)
+                        .lineSpacing(8)
+                        .padding(.top, 38)
 
-                Text(L10n.Soomsil.loginDescription)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Color.soomsilSecondaryText)
-            }
-            .padding(.bottom, 78)
+                    Text(L10n.Soomsil.loginDescription)
+                        .font(.pretendard(15, weight: .medium))
+                        .foregroundStyle(.serviceGray500)
+                        .padding(.top, 8)
 
-            VStack(spacing: 12) {
-                inputRow(
-                    title: L10n.Login.studentID,
-                    text: studentIDBinding,
-                    secure: false
-                )
-                inputRow(
-                    title: L10n.Login.password,
-                    text: passwordBinding,
-                    secure: true
-                )
-            }
-            .padding(.bottom, 18)
+                    VStack(spacing: 12) {
+                        inputField(
+                            title: L10n.Login.studentID,
+                            text: studentIDBinding,
+                            secure: false,
+                            field: .studentID
+                        )
 
-            if let errorMessage = viewModel.output.errorMessage {
-                Text(errorMessage)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.red)
-                    .padding(.horizontal, 4)
-                    .padding(.bottom, 18)
-            } else {
-                Spacer().frame(height: 36)
-            }
+                        inputField(
+                            title: L10n.Login.password,
+                            text: passwordBinding,
+                            secure: true,
+                            field: .password
+                        )
+                    }
+                    .padding(.top, 52)
 
-            Button {
-                Task {
-                    await viewModel.transform(input: .loginButtonTapped)
-                }
-            } label: {
-                Group {
-                    if viewModel.output.isLoading {
-                        ProgressView().tint(.white)
-                    } else {
-                        Text(L10n.Login.action)
-                            .font(.system(size: 16, weight: .bold))
+                    Button {
+                        focusedField = nil
+                        showsPasswordHelp = true
+                    } label: {
+                        Text(L10n.Login.forgotPassword)
+                            .font(.pretendard(14, weight: .medium))
+                            .foregroundStyle(.serviceBlue500)
+                    }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.top, 16)
+
+                    if let errorMessage = viewModel.output.errorMessage {
+                        Text(errorMessage)
+                            .font(.pretendard(13, weight: .medium))
+                            .foregroundStyle(.warningRed500)
+                            .padding(.top, 16)
                     }
                 }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 58)
-                .background(Color.soomsilBlue600)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .padding(.horizontal, 24)
+                .padding(.bottom, 96)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            .buttonStyle(.plain)
-            .disabled(!viewModel.output.canLogin)
-            .opacity(viewModel.output.canLogin ? 1 : 0.45)
-
-            Spacer()
+            .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                loginButton
+                    .padding(.horizontal, 14)
+                    .padding(.top, focusedField == nil ? 0 : 12)
+                    .padding(.bottom, focusedField == nil ? 18 : 12)
+                    .background(.white000)
+            }
+            .onChange(of: focusedField) { _, field in
+                guard let field else { return }
+                withAnimation(.easeOut(duration: 0.22)) {
+                    proxy.scrollTo(field, anchor: field == .password ? .center : .top)
+                }
+            }
         }
-        .padding(.horizontal, 28)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color.soomsilBackground)
-        .contentShape(Rectangle())
-        .onTapGesture { hideKeyboard() }
-        .overlay {
-            if viewModel.output.isLoading {
-                SoomsilLoadingOverlay()
-            }
+        .background {
+            Rectangle()
+                .fill(.white000)
+                .ignoresSafeArea()
+        }
+        .toolbar(.hidden, for: .navigationBar)
+        .alert(
+            L10n.Login.passwordHelpTitle,
+            isPresented: $showsPasswordHelp
+        ) {
+            Button(L10n.Common.confirm, role: .cancel) {}
+        } message: {
+            Text(L10n.Login.passwordHelpMessage)
         }
     }
 
     private var studentIDBinding: Binding<String> {
         Binding(
             get: { viewModel.output.studentID },
-            set: { value in
-                Task {
-                    await viewModel.transform(input: .studentIDChanged(value))
-                }
-            }
+            set: viewModel.updateStudentID
         )
     }
 
     private var passwordBinding: Binding<String> {
         Binding(
             get: { viewModel.output.password },
-            set: { value in
-                Task {
-                    await viewModel.transform(input: .passwordChanged(value))
-                }
-            }
+            set: viewModel.updatePassword
         )
     }
 
     private var appLogo: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Color.soomsilBlue600, Color.soomsilBlue500],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            Image(systemName: "building.columns.fill")
-                .font(.system(size: 42, weight: .bold))
-                .foregroundStyle(.white)
+        ZStack(alignment: .topLeading) {
+            Image("soomsilLogo")
+                .resizable()
+                .frame(width: 99, height: 48)
+                .offset(x: -3, y: -3)
         }
-        .frame(width: 96, height: 96)
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .frame(width: 96, height: 42, alignment: .topLeading)
+        .accessibilityHidden(true)
     }
 
-    private func inputRow(
+    private var loginButton: some View {
+        Button {
+            focusedField = nil
+            Task {
+                await viewModel.transform(input: .loginButtonTapped)
+            }
+        } label: {
+            Text(L10n.Login.action)
+                .font(.pretendard(18, weight: .semibold))
+                .foregroundStyle(.white000)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(
+                    viewModel.output.canLogin
+                        ? .serviceBlue600
+                        : .serviceGray300
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(!viewModel.output.canLogin)
+    }
+
+    private func inputField(
         title: String,
         text: Binding<String>,
-        secure: Bool
+        secure: Bool,
+        field: FocusedField
     ) -> some View {
         HStack(spacing: 12) {
             Text(title)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .font(.pretendard(16, weight: .medium))
+                .foregroundStyle(.serviceGray500)
 
-            if secure && isPasswordSecured {
-                SecureField("", text: text)
-                    .textContentType(.password)
-                    .multilineTextAlignment(.trailing)
-            } else {
-                TextField("", text: text)
-                    .textContentType(secure ? .password : .username)
-                    .keyboardType(secure ? .default : .numberPad)
-                    .multilineTextAlignment(.trailing)
+            Group {
+                if secure && isPasswordSecured {
+                    SecureField("", text: text)
+                        .textContentType(.password)
+                } else {
+                    TextField("", text: text)
+                        .textContentType(secure ? .password : .username)
+                        .keyboardType(secure ? .default : .numberPad)
+                }
             }
+            .focused($focusedField, equals: field)
+            .multilineTextAlignment(.trailing)
+            .font(.pretendard(16, weight: .medium))
+            .foregroundStyle(.serviceGray300)
 
             if secure {
                 Button {
                     isPasswordSecured.toggle()
+                    focusedField = .password
                 } label: {
                     Image(systemName: isPasswordSecured ? "eye" : "eye.slash")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Color.soomsilSecondaryText)
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundStyle(.serviceGray300)
                         .frame(width: 24, height: 24)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .font(.system(size: 16, weight: .bold))
-        .foregroundStyle(Color.soomsilPrimaryText)
         .textInputAutocapitalization(.never)
         .autocorrectionDisabled()
-        .padding(.horizontal, 24)
-        .frame(height: 58)
-        .background(Color.soomsilInputSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(.horizontal, 20)
+        .frame(height: 52)
+        .background(.white000)
+        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.soomsilBorder, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .stroke(.gray100, lineWidth: 1)
         }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            focusedField = field
+        }
+        .id(field)
     }
+}
 
-    private func hideKeyboard() {
-        UIApplication.shared.sendAction(
-            #selector(UIResponder.resignFirstResponder),
-            to: nil,
-            from: nil,
-            for: nil
-        )
+struct LoginLoadingView: View {
+    var body: some View {
+        VStack(spacing: 39) {
+            Image("loginLoadingIndicator")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 112, height: 112)
+                .offset(x: 2)
+                .accessibilityHidden(true)
+
+            VStack(spacing: 12) {
+                Text(L10n.Login.loadingTitle)
+                    .font(.pretendard(28, weight: .bold))
+                    .foregroundStyle(.black000)
+
+                Text(L10n.Login.loadingDescription)
+                    .font(.pretendard(15, weight: .medium))
+                    .foregroundStyle(.serviceGray500)
+            }
+        }
+        .offset(y: -62)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.white000)
     }
 }
 
@@ -181,13 +235,21 @@ struct LoginView: View {
     let repository = AuthenticationRepository(
         service: MockAuthenticationService(
             isLoggedIn: false,
-            delayNanoseconds: 0
-        )
+            delay: .zero
+        ),
+        credentialsStore: InMemoryLoginCredentialsStore()
     )
     LoginView(
         viewModel: LoginViewModel(
             repository: repository,
-            appFlow: AppFlowViewModel(repository: repository)
+            appFlow: AppFlowViewModel(
+                repository: repository,
+                consentStore: InMemoryAgreementConsentStore()
+            )
         )
     )
+}
+
+#Preview("Login loading") {
+    LoginLoadingView()
 }

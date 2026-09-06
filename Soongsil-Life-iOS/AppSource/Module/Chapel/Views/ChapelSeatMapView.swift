@@ -53,22 +53,23 @@ struct ZoomableChapelSeatMapView: View {
                         )
                     )
             }
-            .aspectRatio(mapWidth / mapHeight, contentMode: .fit)
+            .frame(height: 300)
             .clipped()
 
-            Label {
-                Text(L10n.Soomsil.selectedSeat)
-            } icon: {
-                Image(systemName: "arrow.up")
-                    .fontWeight(.bold)
-            }
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(Color.soomsilBlue500)
+            Text("자리를 확인해주세요")
+                .font(.pretendard(14, weight: .semibold))
+                .foregroundStyle(.serviceBlue500)
         }
-        .padding(.vertical, 18)
-        .padding(.horizontal, 24)
+        .padding(.top, 20)
+        .padding(.bottom, 19)
+        .padding(.horizontal, 22)
         .frame(maxWidth: .infinity)
-        .soomsilCard(cornerRadius: 12)
+        .background(.white000)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(.gray100, lineWidth: 1)
+        }
         .contentShape(Rectangle())
         .onTapGesture(count: 2, perform: resetTransform)
         .accessibilityElement(children: .contain)
@@ -172,12 +173,12 @@ private struct ChapelSeatMapContentView: View {
 
     var body: some View {
         VStack(spacing: 28) {
-            Text(L10n.Soomsil.stage)
-                .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(.white)
+            Text("STAGE")
+                .font(.pretendard(28, weight: .semibold))
+                .foregroundStyle(.white000)
                 .frame(maxWidth: .infinity)
                 .frame(height: 58)
-                .background(Color.soomsilGray950)
+                .background(.gray700)
 
             VStack(spacing: 38) {
                 ForEach(zoneRows.indices, id: \.self) { rowIndex in
@@ -194,7 +195,7 @@ private struct ChapelSeatMapContentView: View {
         }
         .padding(.horizontal, 26)
         .padding(.vertical, 24)
-        .background(Color.soomsilSurface)
+        .background(.white000)
     }
 }
 
@@ -222,8 +223,8 @@ private struct ChapelSeatZoneView: View {
     var body: some View {
         VStack(spacing: 16) {
             Text(zone.id)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(Color.soomsilSecondaryText)
+                .font(.pretendard(15, weight: .semibold))
+                .foregroundStyle(.gray700)
 
             VStack(spacing: seatGap) {
                 ForEach(zone.rows.indices, id: \.self) { rowIndex in
@@ -266,15 +267,15 @@ private struct ChapelSeatZoneView: View {
         return RoundedRectangle(cornerRadius: 2, style: .continuous)
             .fill(
                 isSelected
-                    ? Color.soomsilBlue500
-                    : Color.soomsilGray200
+                    ? .serviceBlue500
+                    : .serviceGray200
             )
             .frame(width: seatSize, height: seatSize)
             .overlay {
                 if isSelected {
                     RoundedRectangle(cornerRadius: 2, style: .continuous)
                         .stroke(
-                            Color.soomsilBlue500.opacity(0.35),
+                            .serviceBlue500.opacity(0.35),
                             lineWidth: 4
                         )
                 }
@@ -292,11 +293,11 @@ private struct ChapelSeatZoneView: View {
 #Preview("Seat map · compact seat") {
     ZoomableChapelSeatMapView(seat: "B-12")
         .padding(24)
-        .background(Color.soomsilBackground)
+        .background(.white000)
 }
 
 #Preview("Seat map · explicit row and column") {
     ZoomableChapelSeatMapView(seat: "H-1-4")
         .padding(24)
-        .background(Color.soomsilBackground)
+        .background(.white000)
 }

@@ -43,6 +43,16 @@ enum MockLMSFixtures {
         ),
         semesterGrade(
             year: "2024",
+            semester: .summer,
+            attemptedCredits: 3,
+            earnedCredits: 3,
+            gpa: 4.50,
+            gradePointSum: 13.50,
+            semesterRank: "-/-",
+            totalRank: "-/-"
+        ),
+        semesterGrade(
+            year: "2024",
             semester: .second,
             attemptedCredits: 18,
             earnedCredits: 18,
@@ -52,135 +62,27 @@ enum MockLMSFixtures {
             totalRank: "18/228"
         ),
         semesterGrade(
+            year: "2024",
+            semester: .winter,
+            attemptedCredits: 3,
+            earnedCredits: 3,
+            gpa: 4.00,
+            gradePointSum: 12.00,
+            semesterRank: "-/-",
+            totalRank: "-/-"
+        ),
+        semesterGrade(
             year: "2025",
             semester: .first,
             attemptedCredits: 18,
             earnedCredits: 17.5,
             passFailCredits: 0.5,
-            gpa: 4.22,
-            gradePointSum: 73.85,
+            gpa: 4.50,
+            gradePointSum: 78.75,
             semesterRank: "5/110",
             totalRank: "12/220"
         )
     ]
-    
-    static let graduateTable = GraduationAudit(
-        items: [
-            GraduationAuditItem(
-                classification: "졸업필수 요건",
-                requirement: "학부-졸업학점 133",
-                standardValue: "133",
-                calculatedValue: "131.0",
-                difference: "-2.0",
-                result: "부족",
-                usedSubjects: ["(AI소프트)기초AI수", "(AI소프트)이산수학", "(AI소프트)프로그래밍", "(교선)디지털인문학", "(교필)비판적사고와학술", "(교필)컴퓨팅적사고와알", "(일선)AI와데이터리터", "비전채플", "섬김의리더십", "음향의이해와활용"]
-            ),
-            GraduationAuditItem(
-                classification: "졸업필수 요건",
-                requirement: "학부-편입 요이수 지정과목",
-                standardValue: "",
-                calculatedValue: "",
-                difference: "",
-                result: "충족",
-                usedSubjects: []
-            ),
-            GraduationAuditItem(
-                classification: "졸업필수 요건",
-                requirement: "학부-졸업논문/졸업시험 이수",
-                standardValue: "",
-                calculatedValue: "",
-                difference: "",
-                result: "부족",
-                usedSubjects: []
-            ),
-            GraduationAuditItem(
-                classification: "졸업필수 요건",
-                requirement: "학부-졸업확정신고 여부",
-                standardValue: "",
-                calculatedValue: "",
-                difference: "",
-                result: "부족",
-                usedSubjects: []
-            ),
-            GraduationAuditItem(
-                classification: "졸업필수 요건",
-                requirement: "학부-기독교과목 3학점 이상 (23 이후)",
-                standardValue: "3",
-                calculatedValue: "1.0",
-                difference: "-2.0",
-                result: "부족",
-                usedSubjects: ["섬김의리더십"]
-            ),
-
-            GraduationAuditItem(
-                classification: "교양필수",
-                requirement: "학부-교양필수 19",
-                standardValue: "19",
-                calculatedValue: "4.0",
-                difference: "-15.0",
-                result: "부족",
-                usedSubjects: ["(교필)비판적사고와학술", "(교필)컴퓨팅적사고와알"]
-            ),
-
-            GraduationAuditItem(
-                classification: "교양선택",
-                requirement: "Balance (교양선택) 3개 영역 이상 이수",
-                standardValue: "",
-                calculatedValue: "",
-                difference: "",
-                result: "충족",
-                usedSubjects: ["(교선)디지털인문학", "섬김의리더십", "음향의이해와활용"]
-            ),
-            GraduationAuditItem(
-                classification: "교양선택",
-                requirement: "학부-교양선택 9",
-                standardValue: "9",
-                calculatedValue: "7.0",
-                difference: "-2.0",
-                result: "부족",
-                usedSubjects: ["(교선)디지털인문학", "섬김의리더십", "음향의이해와활용"]
-            ),
-
-            GraduationAuditItem(
-                classification: "전공기초",
-                requirement: "학부-전기-AI소프트 12",
-                standardValue: "12",
-                calculatedValue: "6.0",
-                difference: "-6.0",
-                result: "부족",
-                usedSubjects: ["(AI소프트)이산수학", "(AI소프트)프로그래밍"]
-            ),
-
-            GraduationAuditItem(
-                classification: "전공",
-                requirement: "학부-전필-AI소프트 12",
-                standardValue: "12",
-                calculatedValue: "",
-                difference: "-12.0",
-                result: "부족",
-                usedSubjects: []
-            ),
-            GraduationAuditItem(
-                classification: "전공",
-                requirement: "학부-전필+전선-AI소프트 72",
-                standardValue: "72",
-                calculatedValue: "3.0",
-                difference: "-69.0",
-                result: "부족",
-                usedSubjects: ["(AI소프트)기초AI수"]
-            ),
-
-            GraduationAuditItem(
-                classification: "채플",
-                requirement: "학부-채플(신입 6회, 편입2혹은4회)",
-                standardValue: "",
-                calculatedValue: "",
-                difference: "",
-                result: "부족",
-                usedSubjects: ["비전채플"]
-            )
-        ]
-    )
 
     static let courses = [
         CourseGrade(courseCode: "CHAPEL", title: "비전채플", classification: "교양필수", credits: 0.5, grade: "P", gradePoint: "0", professor: "박영수"),
@@ -197,20 +99,115 @@ enum MockLMSFixtures {
     )
 
     static let chapel = ChapelStatus(
-        year: "2025",
-        semester: .first,
-        classGroup: "20250001",
+        year: "2026",
+        semester: .second,
+        classGroup: "20260001",
         timetable: "목요일 10:30",
         seat: "B-12",
         classroom: "한경직기념관 대예배실",
         absenceCount: "1",
         gradeResult: "P",
         attendance: [
-            ChapelAttendance(date: "2025.03.13", classGroup: "20250001", lectureType: "채플", status: .present),
-            ChapelAttendance(date: "2025.03.20", classGroup: "20250001", lectureType: "채플", status: .present),
-            ChapelAttendance(date: "2025.03.27", classGroup: "20250001", lectureType: "채플", status: ChapelAttendanceStatus(serverValue: "미출석")),
-            ChapelAttendance(date: "2025.04.03", classGroup: "20250001", lectureType: "채플", status: .present),
-            ChapelAttendance(date: "2025.04.10", classGroup: "20250001", lectureType: "채플", status: .present)
+            ChapelAttendance(date: "2026.05.08", classGroup: "20260001", lectureType: "채플", status: .present),
+            ChapelAttendance(date: "2026.05.15", classGroup: "20260001", lectureType: "채플", status: .present),
+            ChapelAttendance(date: "2026.05.22", classGroup: "20260001", lectureType: "채플", status: ChapelAttendanceStatus(serverValue: "미출석")),
+            ChapelAttendance(date: "2026.05.29", classGroup: "20260001", lectureType: "채플", status: .present),
+            ChapelAttendance(date: "2026.06.05", classGroup: "20260001", lectureType: "채플", status: .present),
+            ChapelAttendance(date: "2026.06.12", classGroup: "20260001", lectureType: "채플", status: .present),
+            ChapelAttendance(date: "2026.06.19", classGroup: "20260001", lectureType: "채플", status: .present),
+            ChapelAttendance(date: "2026.10.02", classGroup: "20260001", lectureType: "채플", status: .unknown(""))
+        ]
+    )
+
+    static let tuitionRecords = [
+        TuitionRecord(year: "2022학년도", semester: .first, grade: "1", registrationType: "학기등록", registrationDate: "2022.02.09", amount: "1,000,000", reduction: "0,000", paymentAmount: "1,000,000"),
+        TuitionRecord(year: "2022학년도", semester: .second, grade: "1", registrationType: "학기등록", registrationDate: "2022.08.24", amount: "1,000,000", reduction: "0", paymentAmount: "1,000,000"),
+        TuitionRecord(year: "2023학년도", semester: .first, grade: "2", registrationType: "학기등록", registrationDate: "2023.02.20", amount: "2,750,000", reduction: "1,750,000", paymentAmount: "1,000,000"),
+        TuitionRecord(year: "2023학년도", semester: .second, grade: "2", registrationType: "학기등록", registrationDate: "2023.08.23", amount: "1,000,000", reduction: "0,000", paymentAmount: "1,000,000"),
+        TuitionRecord(year: "2024학년도", semester: .first, grade: "3", registrationType: "학기등록", registrationDate: "2024.02.23", amount: "1,000,000", reduction: "0", paymentAmount: "1,000,000"),
+        TuitionRecord(year: "2024학년도", semester: .second, grade: "3", registrationType: "학기등록", registrationDate: "2024.08.26", amount: "1,000,000", reduction: "0", paymentAmount: "1,000,000"),
+        TuitionRecord(year: "2026학년도", semester: .summer, grade: "4", registrationType: "학기등록", registrationDate: "2026.02.26", amount: "1,000,000", reduction: "0", paymentAmount: "1,000,000")
+    ]
+
+    static let scholarshipRecords = [
+        ScholarshipRecord(year: "2026", semester: .first, scholarshipName: "한국장학재단(국가장학금II유형)", paymentMethod: "", processStatus: "선발탈락", note: "", dropReason: "소득분위 초과", processDate: "2026.02.04", selectedAmount: "0", actualAmount: "0", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: ""),
+        ScholarshipRecord(year: "2024", semester: .second, scholarshipName: "한국장학재단(국가장학금II유형)", paymentMethod: "", processStatus: "선발탈락", note: "", dropReason: "소득구간 초과", processDate: "2024.07.30", selectedAmount: "0", actualAmount: "0", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: ""),
+        ScholarshipRecord(year: "2024", semester: .first, scholarshipName: "한국장학재단(국가장학금II유형)", paymentMethod: "", processStatus: "선발탈락", note: "", dropReason: "소득구간 초과", processDate: "2024.01.29", selectedAmount: "0", actualAmount: "0", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: ""),
+        ScholarshipRecord(year: "2023", semester: .second, scholarshipName: "한국장학재단(국가장학금II유형)", paymentMethod: "", processStatus: "지급완료", note: "", dropReason: "", processDate: "2023.09.01", selectedAmount: "0,000,000", actualAmount: "0,000,000", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: ""),
+        ScholarshipRecord(year: "2023", semester: .second, scholarshipName: "한국장학재단(국가장학금II유형) 우대지원", paymentMethod: "", processStatus: "선발탈락", note: "", dropReason: "소득구간 초과", processDate: "2023.08.08", selectedAmount: "0", actualAmount: "0", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: ""),
+        ScholarshipRecord(year: "2023", semester: .first, scholarshipName: "한국장학재단(국가장학금II유형)", paymentMethod: "", processStatus: "지급완료", note: "", dropReason: "", processDate: "2023.03.01", selectedAmount: "0,000,000", actualAmount: "0,000,000", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: ""),
+        ScholarshipRecord(year: "2022", semester: .second, scholarshipName: "학과(부)우수장학금", paymentMethod: "", processStatus: "지급완료", note: "[융특]학과우수장학금", dropReason: "", processDate: "2023.02.14", selectedAmount: "100,000", actualAmount: "100,000", redeemedAmount: "0", replacedAmount: "0", replacedScholarshipName: "", workDepartment: "")
+    ]
+
+    static let graduationAudit = GraduationAudit(
+        items: [
+            GraduationAuditItem(
+                classification: .graduationRequired,
+                requirement: "총 취득학점",
+                standardValue: "133",
+                calculatedValue: "136",
+                difference: "+3",
+                status: .satisfied,
+                usedSubjects: []
+            ),
+            GraduationAuditItem(
+                classification: .liberalArtsRequired,
+                requirement: "교양필수",
+                standardValue: "14",
+                calculatedValue: "14",
+                difference: "0",
+                status: .satisfied,
+                usedSubjects: [
+                    "컴퓨팅적사고",
+                    "Academic and Professional English 1",
+                    "한반도평화와통일"
+                ]
+            ),
+            GraduationAuditItem(
+                classification: .liberalArtsElective,
+                requirement: "교양선택",
+                standardValue: "20",
+                calculatedValue: "22",
+                difference: "+2",
+                status: .satisfied,
+                usedSubjects: ["현대사회와윤리", "과학기술과사회"]
+            ),
+            GraduationAuditItem(
+                classification: .majorBasic,
+                requirement: "전공기초",
+                standardValue: "12",
+                calculatedValue: "12",
+                difference: "0",
+                status: .satisfied,
+                usedSubjects: ["프로그래밍기초및실습", "디지털미디어원리"]
+            ),
+            GraduationAuditItem(
+                classification: .major,
+                requirement: "전공학점",
+                standardValue: "60",
+                calculatedValue: "57",
+                difference: "-3",
+                status: .insufficient,
+                usedSubjects: ["데이터베이스", "알고리즘", "소프트웨어공학"]
+            ),
+            GraduationAuditItem(
+                classification: .chapel,
+                requirement: "채플",
+                standardValue: "6",
+                calculatedValue: "6",
+                difference: "0",
+                status: .satisfied,
+                usedSubjects: ["비전채플"]
+            ),
+            GraduationAuditItem(
+                classification: .other("복수전공"),
+                requirement: "복수전공 이수학점",
+                standardValue: "36",
+                calculatedValue: "36",
+                difference: "0",
+                status: .satisfied,
+                usedSubjects: ["모바일프로그래밍"]
+            )
         ]
     )
 
@@ -218,7 +215,7 @@ enum MockLMSFixtures {
         profile: profile,
         semesters: semesters,
         currentCourses: courses,
-        chapel: chapel,
+        chapelEnrollmentState: .enrolled(chapel),
         chapelErrorMessage: nil
     )
 

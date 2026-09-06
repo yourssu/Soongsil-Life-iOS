@@ -1,18 +1,14 @@
 import Foundation
 
 final class MockStudentService: StudentServiceProtocol {
-    private let delayNanoseconds: UInt64
+    private let delay: Duration
 
-    init(delayNanoseconds: UInt64 = 150_000_000) {
-        self.delayNanoseconds = delayNanoseconds
+    init(delay: Duration = .milliseconds(150)) {
+        self.delay = delay
     }
 
     func fetchProfile() async throws -> StudentProfile {
-        await delay()
+        try await MockDelay.wait(delay)
         return MockLMSFixtures.profile
-    }
-
-    private func delay() async {
-        try? await Task.sleep(nanoseconds: delayNanoseconds)
     }
 }
