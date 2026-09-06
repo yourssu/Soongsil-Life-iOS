@@ -7,6 +7,8 @@ private struct SoomsilDetailNavigationModifier: ViewModifier {
         content
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarRole(.editor)
+            .tint(.black000)
             .toolbar(.visible, for: .navigationBar)
     }
 }

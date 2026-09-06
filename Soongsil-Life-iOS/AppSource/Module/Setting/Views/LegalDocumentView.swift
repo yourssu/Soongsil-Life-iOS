@@ -9,7 +9,7 @@ struct LegalDocumentView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(document.effectiveDate)
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.pointColor600)
+                        .foregroundStyle(.serviceBlue600)
 
                     Text(document.introduction)
                         .font(.system(size: 15))
@@ -38,6 +38,8 @@ struct LegalDocumentView: View {
         .background(.white000)
         .navigationTitle(document.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarRole(.editor)
+        .tint(.black000)
         .toolbar(.visible, for: .navigationBar)
     }
 }

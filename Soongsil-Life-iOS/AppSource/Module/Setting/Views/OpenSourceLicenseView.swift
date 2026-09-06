@@ -32,7 +32,7 @@ struct OpenSourceLicenseView: View {
 
                             Image(systemName: "arrow.up.right.square")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(.pointColor600)
+                                .foregroundStyle(.serviceBlue600)
                         }
                         .padding(16)
                         .soomsilCard(cornerRadius: 10)
@@ -61,6 +61,8 @@ struct OpenSourceLicenseView: View {
         .background(.white000)
         .navigationTitle(L10n.Settings.openSource)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarRole(.editor)
+        .tint(.black000)
         .toolbar(.visible, for: .navigationBar)
     }
 }
