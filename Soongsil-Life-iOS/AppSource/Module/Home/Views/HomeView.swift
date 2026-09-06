@@ -11,7 +11,6 @@ struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var chapelViewModel: ChapelViewModel
     @State private var navigationPath: [Destination] = []
-    @State private var showsCurrentGrades = false
     private let gradeRepository: GradeRepositoryProtocol
     private let graduationAuditRepository: GraduationAuditRepositoryProtocol
     private let tuitionRepository: TuitionRepositoryProtocol
@@ -79,23 +78,6 @@ struct HomeView: View {
         .onChange(of: navigationPath) { _, path in
             onNavigationDepthChanged(!path.isEmpty)
         }
-        .sheet(isPresented: $showsCurrentGrades) {
-            NavigationStack {
-                CurrentSemesterGradesView(
-                    semester: viewModel.output.dashboard?.latestSemester,
-                    courses: viewModel.output.dashboard?.currentCourses ?? [],
-                    isLoading: viewModel.output.isLoadingCurrentCourses
-                )
-                .presentationCornerRadius(20)
-                .presentationDragIndicator(.visible)
-                .presentationDetents([.fraction(0.67), .large])
-            }
-        }
-        .overlay {
-            if viewModel.output.isLoading && viewModel.output.dashboard == nil {
-                SoomsilLoadingOverlay()
-            }
-        }
     }
 
     private var header: some View {
@@ -118,9 +100,7 @@ struct HomeView: View {
                     .padding(.bottom, 20)
             }
 
-            Button {
-                showsCurrentGrades = true
-            } label: {
+            NavigationLink(value: Destination.semesterGrades) {
                 GradeOverviewCard(
                     cumulativeGPA: dashboard.cumulativeGPA,
                     earnedCredits: dashboard.cumulativeEarnedCredits,
