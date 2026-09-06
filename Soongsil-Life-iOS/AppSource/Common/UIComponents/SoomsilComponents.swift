@@ -347,6 +347,7 @@ struct GPATrendCard: View {
 
     private func axisLabelAnchor(for position: Double?) -> UnitPoint {
         guard let position else { return .top }
+        guard displayedSemesters.count > 1 else { return .top }
         if position == displayedSemesters.first?.plotPosition {
             return .topLeading
         }

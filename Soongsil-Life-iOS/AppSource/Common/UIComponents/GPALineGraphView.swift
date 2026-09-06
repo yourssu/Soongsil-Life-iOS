@@ -167,6 +167,7 @@ struct GPALineGraphView: View {
     }
 
     private func annotationAlignment(for point: PlotPoint) -> Alignment {
+        guard plotPoints.count > 1 else { return .center }
         if point.position == plotPoints.first?.position {
             return .leading
         }
@@ -178,6 +179,7 @@ struct GPALineGraphView: View {
 
     private func axisLabelAnchor(for position: Double?) -> UnitPoint {
         guard let position else { return .top }
+        guard plotPoints.count > 1 else { return .top }
         if position == plotPoints.first?.position {
             return .topLeading
         }
