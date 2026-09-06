@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     private enum Destination: Hashable {
         case semesterGrades
+        case chapel
         case graduationAudit
         case tuition
     }
@@ -11,8 +12,6 @@ struct HomeView: View {
     @State private var chapelViewModel: ChapelViewModel
     @State private var navigationPath: [Destination] = []
     @State private var showsCurrentGrades = false
-    @State private var showsChapel = false
-    @State private var selectedChapel: ChapelStatus?
     private let gradeRepository: GradeRepositoryProtocol
     private let graduationAuditRepository: GraduationAuditRepositoryProtocol
     private let tuitionRepository: TuitionRepositoryProtocol
@@ -36,45 +35,35 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 16) {
-                    header
+            VStack(spacing: 0) {
+                header
 
-                    if let dashboard = viewModel.output.dashboard {
-                        if let errorMessage = viewModel.output.errorMessage {
-                            refreshErrorCard(errorMessage)
+                Rectangle()
+                    .fill(.serviceGray200)
+                    .frame(height: 1)
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        if let dashboard = viewModel.output.dashboard {
+                            academicSection(dashboard)
+                        } else if let errorMessage = viewModel.output.errorMessage {
+                            errorCard(errorMessage)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 32)
                         }
 
-                        StudentInfoCard(profile: dashboard.profile)
+                        Rectangle()
+                            .fill(.gray050)
+                            .frame(height: 16)
 
-                        Button {
-                            showsCurrentGrades = true
-                        } label: {
-                            GradeOverviewCard(
-                                cumulativeGPA: dashboard.cumulativeGPA
-                            )
-                        }
-                        .buttonStyle(.plain)
-
-                        NavigationLink(value: Destination.semesterGrades) {
-                            GPATrendCard(semesters: sortedSemesters(dashboard.semesters))
-                        }
-                        .buttonStyle(.plain)
-
-                        chapelSection
-                    } else if let errorMessage = viewModel.output.errorMessage {
-                        errorCard(errorMessage)
+                        lowerSection
                     }
-
-                    shortcutSection
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 24)
+                .refreshable {
+                    await loadContent(force: true)
+                }
             }
             .background(.white000)
-            .refreshable {
-                await loadContent(force: true)
-            }
             .navigationDestination(for: Destination.self) { destination in
                 destinationView(destination)
             }
@@ -83,6 +72,7 @@ struct HomeView: View {
                 for: .navigationBar
             )
         }
+        .tint(.black000)
         .task {
             await loadContent(force: false)
         }
@@ -93,23 +83,12 @@ struct HomeView: View {
             NavigationStack {
                 CurrentSemesterGradesView(
                     semester: viewModel.output.dashboard?.latestSemester,
-                    courses: viewModel.output.dashboard?.currentCourses ?? []
+                    courses: viewModel.output.dashboard?.currentCourses ?? [],
+                    isLoading: viewModel.output.isLoadingCurrentCourses
                 )
                 .presentationCornerRadius(20)
                 .presentationDragIndicator(.visible)
                 .presentationDetents([.fraction(0.67), .large])
-            }
-        }
-        .sheet(
-            isPresented: $showsChapel,
-            onDismiss: { selectedChapel = nil }
-        ) {
-            if let chapel = selectedChapel {
-                NavigationStack {
-                    ChapelDetailView(chapel: chapel)
-                }
-                .presentationCornerRadius(20)
-                .presentationDragIndicator(.visible)
             }
         }
         .overlay {
@@ -120,24 +99,108 @@ struct HomeView: View {
     }
 
     private var header: some View {
-        Text(
-            viewModel.output.dashboard.map {
-                L10n.Soomsil.greeting($0.profile.name)
-            } ?? L10n.Common.home
-        )
-            .font(.system(size: 20, weight: .bold))
-            .foregroundStyle(.black000)
-            .lineLimit(1)
-        .padding(.top, 10)
+        HStack {
+            Image("soomsilLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 49, height: 24)
+
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .frame(height: 64)
+    }
+
+    private func academicSection(_ dashboard: Dashboard) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let errorMessage = viewModel.output.errorMessage {
+                refreshErrorCard(errorMessage)
+                    .padding(.bottom, 20)
+            }
+
+            Button {
+                showsCurrentGrades = true
+            } label: {
+                GradeOverviewCard(
+                    cumulativeGPA: dashboard.cumulativeGPA,
+                    earnedCredits: dashboard.cumulativeEarnedCredits,
+                    semesterRank: dashboard.latestSemester?.semesterRank ?? "-",
+                    totalRank: dashboard.latestSemester?.totalRank ?? "-"
+                )
+            }
+            .buttonStyle(.plain)
+
+            GPATrendCard(semesters: sortedSemesters(dashboard.semesters))
+                .padding(.top, 37)
+
+            NavigationLink(value: Destination.semesterGrades) {
+                HStack(spacing: 7) {
+                    Text("학기별 성적보기")
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .font(.pretendard(14, weight: .semibold))
+                .foregroundStyle(.black000)
+                .frame(maxWidth: .infinity)
+                .frame(height: 24)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 22)
+            .padding(.bottom, 18)
+        }
+        .padding(.top, 26)
+        .padding(.horizontal, 24)
+    }
+
+    private var lowerSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            chapelHeader
+
+            chapelSection
+                .padding(.top, 17)
+
+            shortcutSection
+                .padding(.top, 41)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 34)
+        .padding(.bottom, 116)
+    }
+
+    private var chapelHeader: some View {
+        HStack {
+            Text(L10n.Soomsil.chapelAttendance)
+                .font(.pretendard(18, weight: .semibold))
+                .foregroundStyle(.black000)
+
+            Spacer()
+
+            if case .loaded = chapelViewModel.output.loadState {
+                NavigationLink(value: Destination.chapel) {
+                    HStack(spacing: 6) {
+                        Text(L10n.Soomsil.details)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .font(.pretendard(13))
+                    .foregroundStyle(.serviceGray500)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 4)
+        .frame(height: 22)
     }
 
     private var shortcutSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 16) {
             Text(L10n.Home.shortcuts)
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(.gray600)
+                .font(.pretendard(18, weight: .semibold))
+                .foregroundStyle(.black000)
+                .padding(.horizontal, 4)
 
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
                 NavigationLink(value: Destination.graduationAudit) {
                     HomeShortcutCard(
                         title: L10n.Home.graduationAudit,
@@ -155,7 +218,6 @@ struct HomeView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.top, 4)
     }
 
     @ViewBuilder
@@ -167,9 +229,15 @@ struct HomeView: View {
                     viewModel: SemesterViewModel(
                         repository: gradeRepository,
                         semesters: dashboard.semesters,
-                        initialCourses: dashboard.currentCourses
+                        initialCourses: viewModel.output.hasLoadedCurrentCourses
+                            ? dashboard.currentCourses
+                            : nil
                     )
                 )
+            }
+        case .chapel:
+            if case let .loaded(chapel) = chapelViewModel.output.loadState {
+                ChapelDetailView(chapel: chapel)
             }
         case .graduationAudit:
             GraduationAuditView(
@@ -204,7 +272,7 @@ struct HomeView: View {
                 }
             }
             .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(.pointColor600)
+            .foregroundStyle(.serviceBlue600)
         }
         .frame(maxWidth: .infinity)
         .padding(28)
@@ -235,7 +303,7 @@ struct HomeView: View {
                 }
             }
             .font(.system(size: 12, weight: .bold))
-            .foregroundStyle(.pointColor600)
+            .foregroundStyle(.serviceBlue600)
         }
         .padding(16)
         .soomsilCard(cornerRadius: 14)
@@ -248,18 +316,7 @@ struct HomeView: View {
             chapelLoadingCard
 
         case let .loaded(chapel):
-            Button {
-                selectedChapel = chapel
-                showsChapel = true
-            } label: {
-                ChapelSeatCard(chapel: chapel)
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                selectedChapel = chapel
-                showsChapel = true
-            } label: {
+            NavigationLink(value: Destination.chapel) {
                 ChapelAttendanceCard(chapel: chapel, style: .detailed)
             }
             .buttonStyle(.plain)
@@ -278,17 +335,22 @@ struct HomeView: View {
     private var chapelLoadingCard: some View {
         HStack(spacing: 14) {
             ProgressView()
-                .tint(.pointColor600)
+                .tint(.serviceBlue500)
 
             Text(L10n.Chapel.loading)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.gray600)
+                .font(.pretendard(14, weight: .medium))
+                .foregroundStyle(.serviceGray500)
 
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .soomsilCard(cornerRadius: 16)
+        .padding(20)
+        .background(.white000)
+        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .stroke(.serviceGray300, lineWidth: 1)
+        }
     }
 
     private func chapelEnrollmentCard(isCompleted: Bool) -> some View {
@@ -297,8 +359,8 @@ struct HomeView: View {
                 .font(.system(size: 24, weight: .semibold))
                 .foregroundStyle(
                     isCompleted
-                        ? .logoIndigo
-                        : .gray600
+                        ? .serviceBlue500
+                        : .serviceGray500
                 )
 
             VStack(alignment: .leading, spacing: 4) {
@@ -307,7 +369,7 @@ struct HomeView: View {
                         ? L10n.Soomsil.noChapelTitle
                         : L10n.Soomsil.notTakingChapelTitle
                 )
-                .font(.system(size: 15, weight: .bold))
+                .font(.pretendard(15, weight: .semibold))
                 .foregroundStyle(.black000)
 
                 Text(
@@ -315,15 +377,20 @@ struct HomeView: View {
                         ? L10n.Soomsil.noChapel
                         : L10n.Soomsil.notTakingChapel
                 )
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.gray600)
+                .font(.pretendard(12, weight: .medium))
+                .foregroundStyle(.serviceGray500)
             }
 
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .soomsilCard(cornerRadius: 16)
+        .padding(20)
+        .background(.white000)
+        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .stroke(.serviceGray300, lineWidth: 1)
+        }
     }
 
     private func chapelErrorCard(_ message: String) -> some View {
@@ -332,12 +399,12 @@ struct HomeView: View {
                 L10n.Chapel.loadFailed,
                 systemImage: "wifi.exclamationmark"
             )
-            .font(.system(size: 14, weight: .bold))
+            .font(.pretendard(14, weight: .semibold))
             .foregroundStyle(.black000)
 
             Text(message)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.gray600)
+                .font(.pretendard(12, weight: .medium))
+                .foregroundStyle(.serviceGray500)
                 .multilineTextAlignment(.center)
 
             Button(L10n.Common.retry) {
@@ -345,12 +412,17 @@ struct HomeView: View {
                     await chapelViewModel.transform(input: .load(force: true))
                 }
             }
-            .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(.pointColor600)
+            .font(.pretendard(13, weight: .semibold))
+            .foregroundStyle(.serviceBlue500)
         }
         .frame(maxWidth: .infinity)
         .padding(20)
-        .soomsilCard(cornerRadius: 16)
+        .background(.white000)
+        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .stroke(.serviceGray300, lineWidth: 1)
+        }
     }
 
     private func sortedSemesters(_ semesters: [SemesterGrade]) -> [SemesterGrade] {
@@ -363,9 +435,11 @@ struct HomeView: View {
 
     @MainActor
     private func loadContent(force: Bool) async {
-        async let dashboardLoad: Void = loadDashboard(force: force)
-        async let chapelLoad: Void = loadChapel(force: force)
-        _ = await (dashboardLoad, chapelLoad)
+        // 홈 핵심 요약을 먼저 노출하고 채플은 그 뒤에 준비합니다. 공유 LMS SDK에
+        // 요청을 겹치지 않으면서도 화면은 요약 응답 직후 사용할 수 있습니다.
+        await loadDashboard(force: force)
+        guard !Task.isCancelled else { return }
+        await loadChapel(force: force)
     }
 
     @MainActor

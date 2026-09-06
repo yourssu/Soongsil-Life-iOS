@@ -44,13 +44,15 @@ struct MainTabView: View {
 
     var body: some View {
         ZStack {
-            VStack(spacing: 0) {
+            ZStack(alignment: .bottom) {
                 tabContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 if showsTabBar {
                     SoomsilTabBar(selectedTab: selectedTabBinding)
-                        .padding(.bottom, 4)
+                        .padding(.bottom, 8)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .zIndex(1)
                 }
             }
             .background {
