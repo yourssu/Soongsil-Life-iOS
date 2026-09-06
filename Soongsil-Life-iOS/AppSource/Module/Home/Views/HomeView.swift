@@ -39,7 +39,7 @@ struct HomeView: View {
                 header
 
                 Rectangle()
-                    .fill(.serviceGray200)
+                    .fill(.gray100)
                     .frame(height: 1)
 
                 ScrollView(showsIndicators: false) {
@@ -108,7 +108,7 @@ struct HomeView: View {
             Spacer()
         }
         .padding(.horizontal, 24)
-        .frame(height: 64)
+        .frame(height: 56)
     }
 
     private func academicSection(_ dashboard: Dashboard) -> some View {
@@ -349,7 +349,7 @@ struct HomeView: View {
         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .stroke(.serviceGray300, lineWidth: 1)
+                .stroke(.gray100, lineWidth: 1)
         }
     }
 
@@ -389,7 +389,7 @@ struct HomeView: View {
         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .stroke(.serviceGray300, lineWidth: 1)
+                .stroke(.gray100, lineWidth: 1)
         }
     }
 
@@ -421,7 +421,7 @@ struct HomeView: View {
         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .stroke(.serviceGray300, lineWidth: 1)
+                .stroke(.gray100, lineWidth: 1)
         }
     }
 

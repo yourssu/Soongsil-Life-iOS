@@ -21,7 +21,7 @@ struct SettingView: View {
                     .foregroundStyle(.black000)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
-                    .frame(height: 48)
+                    .frame(height: 56)
 
                 Rectangle()
                     .fill(.gray100)
