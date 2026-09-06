@@ -13,8 +13,13 @@ final class AuthenticationService: AuthenticationServiceProtocol {
         let operation = try await beginOperation()
 
         do {
-            try await LMSCallbackBridge.call(timeout: .seconds(30)) { completion in
-                guard operation.beginSDKRequest() else { return }
+            let _: Void = try await LMSCallbackBridge.call(
+                timeout: .seconds(30)
+            ) { completion in
+                guard operation.beginSDKRequest() else {
+                    completion(.failure(CancellationError()))
+                    return
+                }
 
                 api.loginLMS(id: id, password: password) { result in
                     operation.finishSDKRequest()
@@ -43,8 +48,13 @@ final class AuthenticationService: AuthenticationServiceProtocol {
             let operation = try await beginOperation()
 
             do {
-                try await LMSCallbackBridge.call(timeout: .seconds(5)) { completion in
-                    guard operation.beginSDKRequest() else { return }
+                let _: Void = try await LMSCallbackBridge.call(
+                    timeout: .seconds(5)
+                ) { completion in
+                    guard operation.beginSDKRequest() else {
+                        completion(.failure(CancellationError()))
+                        return
+                    }
 
                     api.logout {
                         operation.finishSDKRequest()
