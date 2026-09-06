@@ -805,11 +805,20 @@ struct CourseGradeRow: View {
 }
 
 struct SoomsilLoadingOverlay: View {
+    let showsDimmedBackground: Bool
+
+    init(showsDimmedBackground: Bool = true) {
+        self.showsDimmedBackground = showsDimmedBackground
+    }
+
     var body: some View {
         ZStack {
             Rectangle()
-                .fill(.realBlack.opacity(0.5))
+                .fill(
+                    .realBlack.opacity(showsDimmedBackground ? 0.5 : 0)
+                )
                 .ignoresSafeArea()
+                .contentShape(Rectangle())
 
             ProgressView()
                 .controlSize(.large)

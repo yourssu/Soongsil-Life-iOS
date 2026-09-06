@@ -20,6 +20,7 @@ final class TimetableViewModel: BaseViewModel {
         var pendingPeriod: TimetablePeriod?
         var availablePeriods: [TimetablePeriod] = []
         var isLoading = false
+        var showsSelectionLoadingOverlay = false
         var hasLoaded = false
         var errorMessage: String?
 
@@ -28,9 +29,20 @@ final class TimetableViewModel: BaseViewModel {
             return !schedule.isEmpty
         }
 
+        private var isChangingPeriod: Bool {
+            guard isLoading,
+                  let pendingPeriod,
+                  let selectedPeriod
+            else { return false }
+            return pendingPeriod != selectedPeriod
+        }
+
         /// 조회는 성공했지만 화면에 배치할 시간이 정해진 수업이 없는 상태입니다.
         var showsEmptyState: Bool {
-            hasLoaded && !isLoading && !showsGrid && errorMessage == nil
+            hasLoaded
+                && (!isLoading || isChangingPeriod)
+                && !showsGrid
+                && errorMessage == nil
         }
 
         var showsErrorState: Bool {
@@ -38,7 +50,7 @@ final class TimetableViewModel: BaseViewModel {
         }
 
         var showsLoading: Bool {
-            isLoading && !showsGrid
+            isLoading && !isChangingPeriod && !showsGrid
         }
     }
 
@@ -52,6 +64,7 @@ final class TimetableViewModel: BaseViewModel {
     private var allowsBackgroundPrefetch = true
     private var pendingSelection: TimetablePeriod?
     private var isProcessingSelection = false
+    private var selectionLoadingTask: Task<Void, Never>?
 
     init(service: TimetableServiceProtocol) {
         self.service = service
@@ -62,7 +75,9 @@ final class TimetableViewModel: BaseViewModel {
         switch input {
         case let .load(force):
             allowsBackgroundPrefetch = true
-            guard !output.isLoading else { return output }
+            guard !output.isLoading,
+                  !isProcessingSelection
+            else { return output }
             guard output.schedule == nil || force else {
                 startBackgroundPrefetchIfNeeded()
                 return output
@@ -80,8 +95,26 @@ final class TimetableViewModel: BaseViewModel {
             else { return output }
 
             output.errorMessage = nil
+
+            if (!output.isLoading || isProcessingSelection),
+               applyCachedResult(for: period) {
+                pendingSelection = nil
+                output.pendingPeriod = nil
+                hideSelectionLoadingOverlay()
+                if isProcessingSelection {
+                    output.isLoading = false
+                } else {
+                    startBackgroundPrefetchIfNeeded()
+                }
+                return output
+            }
+
             pendingSelection = period
             output.pendingPeriod = period
+            if isProcessingSelection {
+                output.isLoading = true
+                scheduleSelectionLoadingOverlayIfNeeded()
+            }
             await processPendingSelectionIfNeeded()
 
         case .errorDismissed:
@@ -224,7 +257,9 @@ final class TimetableViewModel: BaseViewModel {
 
         isProcessingSelection = true
         output.isLoading = true
+        scheduleSelectionLoadingOverlayIfNeeded()
         defer {
+            hideSelectionLoadingOverlay()
             isProcessingSelection = false
             output.isLoading = false
             if pendingSelection == nil {
@@ -265,6 +300,35 @@ final class TimetableViewModel: BaseViewModel {
                 output.hasLoaded = true
             }
         }
+    }
+
+    private func scheduleSelectionLoadingOverlayIfNeeded() {
+        guard selectionLoadingTask == nil,
+              !output.showsSelectionLoadingOverlay,
+              output.hasLoaded
+        else { return }
+
+        selectionLoadingTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(for: .milliseconds(180))
+            } catch {
+                return
+            }
+
+            guard let self,
+                  !Task.isCancelled,
+                  output.isLoading,
+                  output.pendingPeriod != nil
+            else { return }
+
+            output.showsSelectionLoadingOverlay = true
+        }
+    }
+
+    private func hideSelectionLoadingOverlay() {
+        selectionLoadingTask?.cancel()
+        selectionLoadingTask = nil
+        output.showsSelectionLoadingOverlay = false
     }
 
     @discardableResult

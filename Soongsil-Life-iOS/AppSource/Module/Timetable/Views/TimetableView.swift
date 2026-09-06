@@ -2,10 +2,14 @@ import SwiftUI
 
 struct TimetableView: View {
     @State private var viewModel: TimetableViewModel
-    @State private var selectedBlock: TimetableCourseBlock?
+    private let onCourseSelected: (TimetableCourseBlock) -> Void
 
-    init(viewModel: TimetableViewModel) {
+    init(
+        viewModel: TimetableViewModel,
+        onCourseSelected: @escaping (TimetableCourseBlock) -> Void = { _ in }
+    ) {
         _viewModel = State(initialValue: viewModel)
+        self.onCourseSelected = onCourseSelected
     }
 
     var body: some View {
@@ -42,12 +46,6 @@ struct TimetableView: View {
         }
         .onDisappear {
             viewModel.stopBackgroundPrefetchAfterCurrentRequest()
-        }
-        .fullScreenCover(item: $selectedBlock) { block in
-            TimetableCourseDetailPresentation(block: block) {
-                selectedBlock = nil
-            }
-            .presentationBackground(.clear)
         }
         .alert(
             L10n.Timetable.loadFailed,
@@ -138,7 +136,7 @@ struct TimetableView: View {
     private var content: some View {
         if let schedule = viewModel.output.schedule, viewModel.output.showsGrid {
             TimetableGridView(schedule: schedule) { block in
-                selectedBlock = block
+                onCourseSelected(block)
             }
         } else if viewModel.output.showsLoading {
             TimetableLoadingView()
