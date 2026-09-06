@@ -11,70 +11,68 @@ struct ChapelTabView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                header
-
+            Group {
                 switch viewModel.output.loadState {
                 case let .loaded(chapel):
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 12) {
-                            NavigationLink {
-                                ChapelDetailView(chapel: chapel)
-                            } label: {
-                                ChapelSeatCard(chapel: chapel)
-                            }
-                            .buttonStyle(.plain)
-
-                            ChapelAttendanceCard(chapel: chapel, style: .detailed)
-                        }
-                        .padding(.horizontal, 29)
-                        .padding(.vertical, 8)
-                    }
+                    loadedContent(chapel)
 
                 case .idle, .loading:
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack(spacing: 0) {
+                        header
+
+                        ProgressView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
 
                 case let .failed(errorMessage):
-                    ContentUnavailableView {
-                        Label(
-                            L10n.Chapel.loadFailed,
-                            systemImage: "wifi.exclamationmark"
-                        )
-                    } description: {
-                        Text(errorMessage)
-                    } actions: {
-                        Button(L10n.Common.retry) {
-                            Task {
-                                await viewModel.transform(input: .load(force: true))
+                    VStack(spacing: 0) {
+                        header
+
+                        ContentUnavailableView {
+                            Label(
+                                L10n.Chapel.loadFailed,
+                                systemImage: "wifi.exclamationmark"
+                            )
+                        } description: {
+                            Text(errorMessage)
+                        } actions: {
+                            Button(L10n.Common.retry) {
+                                Task {
+                                    await viewModel.transform(input: .load(force: true))
+                                }
                             }
+                            .buttonStyle(.borderedProminent)
                         }
-                        .buttonStyle(.borderedProminent)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 case .completed:
-                    ContentUnavailableView(
-                        L10n.Soomsil.noChapelTitle,
-                        systemImage: "checkmark.circle.fill",
-                        description: Text(L10n.Soomsil.noChapel)
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack(spacing: 0) {
+                        header
+
+                        ContentUnavailableView(
+                            L10n.Soomsil.noChapelTitle,
+                            systemImage: "checkmark.circle.fill",
+                            description: Text(L10n.Soomsil.noChapel)
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
 
                 case .notEnrolled:
-                    ContentUnavailableView(
-                        L10n.Soomsil.notTakingChapelTitle,
-                        systemImage: "sofa.fill",
-                        description: Text(L10n.Soomsil.notTakingChapel)
-                    )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    VStack(spacing: 0) {
+                        header
+
+                        ContentUnavailableView(
+                            L10n.Soomsil.notTakingChapelTitle,
+                            systemImage: "sofa.fill",
+                            description: Text(L10n.Soomsil.notTakingChapel)
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                 }
             }
             .background(.white000)
             .toolbar(.hidden, for: .navigationBar)
-            .task {
-                await viewModel.transform(input: .load())
-            }
             .alert(L10n.Chapel.title, isPresented: $showsInfo) {
                 Button(L10n.Common.confirm, role: .cancel) {}
             } message: {
@@ -82,6 +80,30 @@ struct ChapelTabView: View {
             }
         }
         .tint(.black000)
+        .task {
+            await viewModel.transform(input: .load(force: true))
+        }
+    }
+
+    private func loadedContent(_ chapel: ChapelStatus) -> some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+                header
+
+                VStack(spacing: 12) {
+                    NavigationLink {
+                        ChapelDetailView(chapel: chapel)
+                    } label: {
+                        ChapelSeatCard(chapel: chapel)
+                    }
+                    .buttonStyle(.plain)
+
+                    ChapelAttendanceCard(chapel: chapel, style: .detailed)
+                }
+                .padding(.horizontal, 29)
+                .padding(.vertical, 8)
+            }
+        }
     }
 
     private var header: some View {
@@ -108,6 +130,8 @@ struct ChapelTabView: View {
 }
 
 struct ChapelDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+
     let chapel: ChapelStatus
 
     @State private var showsAbsenceInfo = false
@@ -116,24 +140,56 @@ struct ChapelDetailView: View {
     private let allowedAbsenceCount = ChapelAttendancePolicy.allowedAbsenceCount
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 0) {
-                seatSummary
+        ZStack(alignment: .topLeading) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    Color.clear
+                        .frame(height: 56)
 
-                ZoomableChapelSeatMapView(seat: chapel.seat)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 38)
+                    VStack(spacing: 0) {
+                        seatSummary
+
+                        ZoomableChapelSeatMapView(seat: chapel.seat)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 38)
+                    }
+                    .padding(.top, 29)
+                }
+                .padding(.bottom, 40)
             }
-            .padding(.top, 29)
-            .padding(.bottom, 40)
+
+            fixedBackButton
+                .padding(.leading, 8)
+                .padding(.top, 6)
+                .zIndex(1)
         }
         .background(.white000)
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
         .toolbarRole(.editor)
+        .soomsilInteractivePopGesture()
         .tint(.black000)
-        .toolbarBackground(.white000, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
+    }
+
+    private var fixedBackButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(.black000)
+                .frame(width: 44, height: 44)
+                .background(.white000, in: Circle())
+                .shadow(
+                    color: .black000.opacity(0.06),
+                    radius: 16,
+                    x: 0,
+                    y: 8
+                )
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("뒤로")
+        .frame(width: 44, height: 44)
     }
 
     private var seatSummary: some View {
@@ -183,7 +239,9 @@ struct ChapelDetailView: View {
 
                 if showsInformationIcon {
                     Button {
-                        showsAbsenceInfo.toggle()
+                        withAnimation(.easeOut(duration: 0.15)) {
+                            showsAbsenceInfo.toggle()
+                        }
                     } label: {
                         Image(systemName: "info.circle")
                             .font(.system(size: 15, weight: .regular))
@@ -193,19 +251,20 @@ struct ChapelDetailView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("결석 처리 기준 안내")
-                    .popover(
-                        isPresented: $showsAbsenceInfo,
-                        attachmentAnchor: .rect(.bounds),
-                        arrowEdge: .top
-                    ) {
-                        Text("지각 2회 시 결석 1회 처리")
-                            .font(.pretendard(13, weight: .medium))
-                            .foregroundStyle(.serviceBlue500)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .fixedSize()
-                            .presentationBackground(.serviceGray200)
-                            .presentationCompactAdaptation(.popover)
+                    .overlay(alignment: .topLeading) {
+                        if showsAbsenceInfo {
+                            ChapelAbsenceTooltip()
+                                .offset(x: -12, y: 28)
+                                .transition(
+                                    .opacity.combined(
+                                        with: .scale(
+                                            scale: 0.96,
+                                            anchor: .topLeading
+                                        )
+                                    )
+                                )
+                                .allowsHitTesting(false)
+                        }
                     }
                 }
             }
@@ -219,6 +278,7 @@ struct ChapelDetailView: View {
                 .font(.pretendard(12))
                 .foregroundStyle(.serviceGray500)
         }
+        .zIndex(showsInformationIcon && showsAbsenceInfo ? 1 : 0)
     }
 
     private func valueRow(title: String, value: String) -> some View {
@@ -287,6 +347,58 @@ struct ChapelDetailView: View {
         formatter.locale = Locale(identifier: "ko_KR")
         formatter.dateFormat = "MM / dd (EEE)"
         return formatter.string(from: date)
+    }
+}
+
+private struct ChapelAbsenceTooltip: View {
+    var body: some View {
+        ZStack(alignment: .top) {
+            ChapelAbsenceTooltipShape()
+                .fill(.serviceGray200)
+
+            Text("지각 2회 시 결석 1회 처리")
+                .font(.pretendard(13, weight: .medium))
+                .foregroundStyle(.serviceBlue500)
+                .lineLimit(1)
+                .frame(width: 152, height: 29)
+                .offset(y: 5)
+        }
+        .frame(width: 152, height: 34)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct ChapelAbsenceTooltipShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let arrowHeight: CGFloat = 5
+        let arrowCenterX: CGFloat = 24
+        let arrowHalfWidth: CGFloat = 4
+        let cornerRadius: CGFloat = 6
+
+        var path = Path(
+            roundedRect: CGRect(
+                x: rect.minX,
+                y: rect.minY + arrowHeight,
+                width: rect.width,
+                height: rect.height - arrowHeight
+            ),
+            cornerRadius: cornerRadius
+        )
+        path.move(to: CGPoint(x: arrowCenterX, y: rect.minY))
+        path.addLine(
+            to: CGPoint(
+                x: arrowCenterX + arrowHalfWidth,
+                y: rect.minY + arrowHeight
+            )
+        )
+        path.addLine(
+            to: CGPoint(
+                x: arrowCenterX - arrowHalfWidth,
+                y: rect.minY + arrowHeight
+            )
+        )
+        path.closeSubpath()
+        return path
     }
 }
 
