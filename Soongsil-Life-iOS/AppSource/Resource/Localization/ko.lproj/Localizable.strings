@@ -10,8 +10,28 @@
 "login.student_id" = "학번";
 "login.password" = "비밀번호";
 "login.action" = "로그인";
+"login.forgot_password" = "비밀번호를 잊으셨나요?";
+"login.password_help_title" = "비밀번호 안내";
+"login.password_help_message" = "기존 숭실대학교 유세인트 홈페이지와 동일한 비밀번호를 사용합니다. 비밀번호 변경은 유세인트 홈페이지에서 진행해 주세요.";
+"login.loading_title" = "로그인 중이에요";
+"login.loading_description" = "잠시만 기다려주세요";
 "login.unofficial_notice" = "숭실대학교가 직접 제공하는 공식 앱이 아닙니다.";
 "login.credential_notice" = "로그인 정보는 인증과 자동 로그인을 위해 이 기기의 Keychain에 저장되며, 로그아웃하면 삭제됩니다.";
+
+"agreement.heading" = "유세인트와 함께\n시작해볼까요?";
+"agreement.description" = "학사 정보를 안전하게 보려면 동의가 필요해요";
+"agreement.accept_all" = "전체 약관에 동의합니다";
+"agreement.required" = "필수";
+"agreement.terms" = "서비스 이용약관";
+"agreement.privacy" = "개인정보 처리방침";
+"agreement.marketing" = "마케팅 정보 수신 동의";
+"agreement.next" = "다음";
+"agreement.close" = "닫기";
+"agreement.selected" = "선택됨";
+"agreement.not_selected" = "선택되지 않음";
+"agreement.complete_title" = "이제 시작해볼까요?";
+"agreement.complete_description" = "장학금, 수강신청, 성적 정보를 한 곳에서";
+"agreement.start" = "유세인트 시작하기";
 
 "session.restoring_title" = "자동 로그인 중이에요";
 "session.restoring_description" = "저장된 로그인 정보를 확인하고 있어요.";

@@ -50,20 +50,26 @@ final class LoginViewModel: BaseViewModel {
             guard output.canLogin else { return output }
             output.isLoading = true
             output.errorMessage = nil
+            await appFlow.transform(input: .didStartLogin)
+
             do {
                 try await repository.login(
                     id: output.studentID.trimmingCharacters(in: .whitespaces),
                     password: output.password
                 )
+                output.studentID = ""
                 output.password = ""
+                output.isLoading = false
                 await appFlow.transform(input: .didLogin)
             } catch is CancellationError {
                 output.isLoading = false
+                await appFlow.transform(input: .didFailLogin)
                 return output
             } catch {
                 output.errorMessage = error.localizedDescription
+                output.isLoading = false
+                await appFlow.transform(input: .didFailLogin)
             }
-            output.isLoading = false
 
         case .errorDismissed:
             output.errorMessage = nil

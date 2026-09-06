@@ -1,8 +1,35 @@
 import Foundation
 
-enum LegalDocumentKind: Hashable {
+enum LegalDocumentKind: Hashable, Identifiable {
     case terms
     case privacy
+
+    var id: String {
+        switch self {
+        case .terms:
+            "terms"
+        case .privacy:
+            "privacy"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .terms:
+            L10n.Settings.terms
+        case .privacy:
+            L10n.Settings.privacy
+        }
+    }
+
+    var url: URL {
+        switch self {
+        case .terms:
+            AppConfig.termsURL
+        case .privacy:
+            AppConfig.privacyURL
+        }
+    }
 
     var document: LegalDocument {
         switch self {

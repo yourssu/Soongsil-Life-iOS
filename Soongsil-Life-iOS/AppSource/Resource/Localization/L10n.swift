@@ -16,8 +16,30 @@ enum L10n {
         static let studentID = text("login.student_id")
         static let password = text("login.password")
         static let action = text("login.action")
+        static let forgotPassword = text("login.forgot_password")
+        static let passwordHelpTitle = text("login.password_help_title")
+        static let passwordHelpMessage = text("login.password_help_message")
+        static let loadingTitle = text("login.loading_title")
+        static let loadingDescription = text("login.loading_description")
         static let unofficialNotice = text("login.unofficial_notice")
         static let credentialNotice = text("login.credential_notice")
+    }
+
+    enum Agreement {
+        static let heading = text("agreement.heading")
+        static let description = text("agreement.description")
+        static let acceptAll = text("agreement.accept_all")
+        static let required = text("agreement.required")
+        static let terms = text("agreement.terms")
+        static let privacy = text("agreement.privacy")
+        static let marketing = text("agreement.marketing")
+        static let next = text("agreement.next")
+        static let close = text("agreement.close")
+        static let selected = text("agreement.selected")
+        static let notSelected = text("agreement.not_selected")
+        static let completeTitle = text("agreement.complete_title")
+        static let completeDescription = text("agreement.complete_description")
+        static let start = text("agreement.start")
     }
 
     enum Session {
