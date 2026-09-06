@@ -239,7 +239,9 @@ struct ChapelDetailView: View {
 
                 if showsInformationIcon {
                     Button {
-                        showsAbsenceInfo.toggle()
+                        withAnimation(.easeOut(duration: 0.15)) {
+                            showsAbsenceInfo.toggle()
+                        }
                     } label: {
                         Image(systemName: "info.circle")
                             .font(.system(size: 15, weight: .regular))
@@ -249,19 +251,20 @@ struct ChapelDetailView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("결석 처리 기준 안내")
-                    .popover(
-                        isPresented: $showsAbsenceInfo,
-                        attachmentAnchor: .rect(.bounds),
-                        arrowEdge: .top
-                    ) {
-                        Text("지각 2회 시 결석 1회 처리")
-                            .font(.pretendard(13, weight: .medium))
-                            .foregroundStyle(.serviceBlue500)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .fixedSize()
-                            .presentationBackground(.serviceGray200)
-                            .presentationCompactAdaptation(.popover)
+                    .overlay(alignment: .topLeading) {
+                        if showsAbsenceInfo {
+                            ChapelAbsenceTooltip()
+                                .offset(x: -12, y: 28)
+                                .transition(
+                                    .opacity.combined(
+                                        with: .scale(
+                                            scale: 0.96,
+                                            anchor: .topLeading
+                                        )
+                                    )
+                                )
+                                .allowsHitTesting(false)
+                        }
                     }
                 }
             }
@@ -275,6 +278,7 @@ struct ChapelDetailView: View {
                 .font(.pretendard(12))
                 .foregroundStyle(.serviceGray500)
         }
+        .zIndex(showsInformationIcon && showsAbsenceInfo ? 1 : 0)
     }
 
     private func valueRow(title: String, value: String) -> some View {
@@ -343,6 +347,58 @@ struct ChapelDetailView: View {
         formatter.locale = Locale(identifier: "ko_KR")
         formatter.dateFormat = "MM / dd (EEE)"
         return formatter.string(from: date)
+    }
+}
+
+private struct ChapelAbsenceTooltip: View {
+    var body: some View {
+        ZStack(alignment: .top) {
+            ChapelAbsenceTooltipShape()
+                .fill(.serviceGray200)
+
+            Text("지각 2회 시 결석 1회 처리")
+                .font(.pretendard(13, weight: .medium))
+                .foregroundStyle(.serviceBlue500)
+                .lineLimit(1)
+                .frame(width: 152, height: 29)
+                .offset(y: 5)
+        }
+        .frame(width: 152, height: 34)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct ChapelAbsenceTooltipShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let arrowHeight: CGFloat = 5
+        let arrowCenterX: CGFloat = 24
+        let arrowHalfWidth: CGFloat = 4
+        let cornerRadius: CGFloat = 6
+
+        var path = Path(
+            roundedRect: CGRect(
+                x: rect.minX,
+                y: rect.minY + arrowHeight,
+                width: rect.width,
+                height: rect.height - arrowHeight
+            ),
+            cornerRadius: cornerRadius
+        )
+        path.move(to: CGPoint(x: arrowCenterX, y: rect.minY))
+        path.addLine(
+            to: CGPoint(
+                x: arrowCenterX + arrowHalfWidth,
+                y: rect.minY + arrowHeight
+            )
+        )
+        path.addLine(
+            to: CGPoint(
+                x: arrowCenterX - arrowHalfWidth,
+                y: rect.minY + arrowHeight
+            )
+        )
+        path.closeSubpath()
+        return path
     }
 }
 
