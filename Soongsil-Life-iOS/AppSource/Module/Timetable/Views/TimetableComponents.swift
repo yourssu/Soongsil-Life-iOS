@@ -299,20 +299,40 @@ struct TimetableCourseDetailSheet: View {
 }
 
 struct TimetableCourseDetailPresentation: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isVisible = false
+    @State private var isDismissing = false
+    @State private var dragOffset: CGFloat = 0
+
     let block: TimetableCourseBlock
     let close: () -> Void
 
     var body: some View {
         GeometryReader { geometry in
+            let hiddenOffset = geometry.size.height
+                + geometry.safeAreaInsets.bottom
+            let dimProgress = max(
+                0,
+                1 - dragOffset / max(274 + geometry.safeAreaInsets.bottom, 1)
+            )
+
             ZStack(alignment: .bottom) {
                 Rectangle()
-                    .fill(.realBlack.opacity(0.5))
+                    .fill(.realBlack)
+                    .opacity(isVisible ? 0.5 * dimProgress : 0)
                     .ignoresSafeArea()
                     .contentShape(Rectangle())
-                    .onTapGesture(perform: close)
+                    .onTapGesture(perform: requestClose)
+                    .animation(
+                        reduceMotion ? nil : .easeInOut(duration: 0.2),
+                        value: isVisible
+                    )
 
                 VStack(spacing: 0) {
-                    TimetableCourseDetailSheet(block: block, close: close)
+                    TimetableCourseDetailSheet(
+                        block: block,
+                        close: requestClose
+                    )
                         .frame(height: 274)
 
                     Rectangle()
@@ -333,15 +353,90 @@ struct TimetableCourseDetailPresentation: View {
                     )
                 )
                 .overlay(alignment: .top) {
-                    Capsule()
-                        .fill(.gray300)
-                        .frame(width: 36, height: 5)
-                        .padding(.top, 8)
+                    ZStack(alignment: .top) {
+                        Color.clear
+
+                        Capsule()
+                            .fill(.gray300)
+                            .frame(width: 36, height: 5)
+                            .padding(.top, 8)
+                    }
+                    .frame(width: 80, height: 36)
+                    .contentShape(Rectangle())
+                    .gesture(sheetDragGesture)
                 }
+                .offset(
+                    y: isVisible
+                        ? dragOffset
+                        : hiddenOffset
+                )
+                .animation(
+                    reduceMotion
+                        ? nil
+                        : .snappy(duration: 0.32, extraBounce: 0),
+                    value: isVisible
+                )
             }
             .ignoresSafeArea()
         }
         .background(.clear)
+        .onAppear {
+            guard !reduceMotion else {
+                isVisible = true
+                return
+            }
+
+            Task { @MainActor in
+                await Task.yield()
+                isVisible = true
+            }
+        }
+    }
+
+    private var sheetDragGesture: some Gesture {
+        DragGesture(minimumDistance: 3, coordinateSpace: .global)
+            .onChanged { value in
+                guard isVisible, !isDismissing else { return }
+                dragOffset = max(value.translation.height, 0)
+            }
+            .onEnded { value in
+                guard !isDismissing else { return }
+
+                let projectedOffset = max(
+                    value.predictedEndTranslation.height,
+                    0
+                )
+                let shouldDismiss = dragOffset >= 96
+                    || projectedOffset >= 180
+
+                if shouldDismiss {
+                    requestClose()
+                } else if reduceMotion {
+                    dragOffset = 0
+                } else {
+                    withAnimation(
+                        .snappy(duration: 0.28, extraBounce: 0)
+                    ) {
+                        dragOffset = 0
+                    }
+                }
+            }
+    }
+
+    private func requestClose() {
+        guard !isDismissing else { return }
+        isDismissing = true
+
+        guard !reduceMotion else {
+            close()
+            return
+        }
+
+        isVisible = false
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(320))
+            close()
+        }
     }
 }
 

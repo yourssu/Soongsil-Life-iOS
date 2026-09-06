@@ -8,6 +8,7 @@ struct MainTabView: View {
     @State private var settingViewModel: SettingViewModel
     @State private var isHomeNavigationActive = false
     @State private var isSettingNavigationActive = false
+    @State private var selectedTimetableBlock: TimetableCourseBlock?
     private let gradeRepository: GradeRepositoryProtocol
     private let graduationAuditRepository: GraduationAuditRepositoryProtocol
     private let tuitionRepository: TuitionRepositoryProtocol
@@ -91,6 +92,22 @@ struct MainTabView: View {
                     .transition(.opacity)
                     .zIndex(2)
             }
+
+            if showsTimetableLoadingOverlay {
+                SoomsilLoadingOverlay(showsDimmedBackground: false)
+                    .transition(.opacity)
+                    .zIndex(2)
+            }
+
+            if let selectedTimetableBlock {
+                TimetableCourseDetailPresentation(
+                    block: selectedTimetableBlock,
+                    close: {
+                        self.selectedTimetableBlock = nil
+                    }
+                )
+                .zIndex(3)
+            }
         }
         .animation(
             .easeInOut(duration: 0.18),
@@ -103,6 +120,10 @@ struct MainTabView: View {
         .animation(
             .easeInOut(duration: 0.18),
             value: showsHomeLoadingOverlay
+        )
+        .animation(
+            .easeInOut(duration: 0.18),
+            value: showsTimetableLoadingOverlay
         )
     }
 
@@ -124,7 +145,12 @@ struct MainTabView: View {
             ChapelTabView(viewModel: chapelViewModel)
         case .timetable:
             NavigationStack {
-                TimetableView(viewModel: timetableViewModel)
+                TimetableView(
+                    viewModel: timetableViewModel,
+                    onCourseSelected: { block in
+                        selectedTimetableBlock = block
+                    }
+                )
             }
         case .my:
             SettingView(
@@ -164,6 +190,11 @@ struct MainTabView: View {
         viewModel.output.selectedTab == .home
             && homeViewModel.output.isLoading
             && homeViewModel.output.dashboard == nil
+    }
+
+    private var showsTimetableLoadingOverlay: Bool {
+        viewModel.output.selectedTab == .timetable
+            && timetableViewModel.output.showsSelectionLoadingOverlay
     }
 }
 
