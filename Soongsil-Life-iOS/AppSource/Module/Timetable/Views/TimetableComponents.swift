@@ -4,10 +4,12 @@ struct TimetableGridView: View {
     let schedule: TimetableSchedule
     let select: (TimetableCourseBlock) -> Void
 
-    private let timeColumnWidth: CGFloat = 42
-    private let columnSpacing: CGFloat = 3
-    private let hourHeight: CGFloat = 38
-    private let headerHeight: CGFloat = 30
+    private let timeColumnWidth: CGFloat = 30
+    private let columnSpacing: CGFloat = 2
+    private let hourHeight: CGFloat = 43
+    private let headerHeight: CGFloat = 35
+    private let minimumMinute = 0
+    private let maximumMinute = 24 * 60
 
     var body: some View {
         VStack(spacing: 0) {
@@ -21,9 +23,12 @@ struct TimetableGridView: View {
             }
             .frame(height: timelineHeight)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 14)
-        .soomsilCard(cornerRadius: 16)
+        .background(.white000)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(.serviceGray200, lineWidth: 1)
+        }
     }
 
     private func weekdayHeader(width: CGFloat) -> some View {
@@ -39,8 +44,8 @@ struct TimetableGridView: View {
 
             ForEach(weekdays, id: \.self) { weekday in
                 Text(weekday.shortName)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.gray600)
+                    .font(.pretendard(10, weight: .medium))
+                    .foregroundStyle(.serviceGray500)
                     .frame(width: dayWidth)
             }
         }
@@ -56,14 +61,15 @@ struct TimetableGridView: View {
         return ZStack(alignment: .topLeading) {
             ForEach(hourMarks, id: \.self) { minutes in
                 Text(hourText(minutes))
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.gray600)
-                    .frame(width: timeColumnWidth, alignment: .leading)
+                    .font(.pretendard(10, weight: .medium))
+                    .foregroundStyle(.serviceGray500)
+                    .frame(width: timeColumnWidth, alignment: .center)
                     .offset(y: yOffset(for: minutes) - 5)
             }
 
             ForEach(schedule.blocks) { block in
-                if let weekdayIndex = weekdays.firstIndex(of: block.weekday) {
+                if isRenderable(block),
+                   let weekdayIndex = weekdays.firstIndex(of: block.weekday) {
                     courseButton(
                         block,
                         width: dayWidth,
@@ -92,25 +98,26 @@ struct TimetableGridView: View {
         } label: {
             VStack(alignment: .leading, spacing: 2) {
                 Text(block.subject)
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.pretendard(9, weight: .semibold))
                     .lineLimit(2)
 
                 if !block.classroom.isEmpty {
                     Text(block.classroom)
-                        .font(.system(size: 8, weight: .medium))
+                        .font(.pretendard(8, weight: .medium))
                         .lineLimit(2)
                 }
             }
             .minimumScaleFactor(0.75)
             .foregroundStyle(style.foreground)
-            .padding(5)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 5)
             .frame(
                 width: width,
                 height: height,
                 alignment: .topLeading
             )
             .background(style.background)
-            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -122,15 +129,31 @@ struct TimetableGridView: View {
     }
 
     private var timelineHeight: CGFloat {
-        CGFloat(schedule.endMinutes - schedule.startMinutes) / 60 * hourHeight
+        CGFloat(displayEndMinutes - displayStartMinutes) / 60 * hourHeight
     }
 
     private var hourMarks: [Int] {
         Array(stride(
-            from: schedule.startMinutes,
-            to: schedule.endMinutes,
+            from: displayStartMinutes,
+            to: displayEndMinutes,
             by: 60
         ))
+    }
+
+    private var displayStartMinutes: Int {
+        let firstCourse = schedule.blocks.map(\.startMinutes).min() ?? 9 * 60
+        let boundedFirstCourse = min(max(firstCourse, minimumMinute), maximumMinute)
+        return min(9 * 60, boundedFirstCourse / 60 * 60)
+    }
+
+    private var displayEndMinutes: Int {
+        let lastCourse = schedule.blocks.map(\.endMinutes).max() ?? 22 * 60
+        let boundedLastCourse = min(max(lastCourse, minimumMinute), maximumMinute)
+        let roundedLastCourse = min(
+            ((boundedLastCourse + 59) / 60) * 60,
+            maximumMinute
+        )
+        return max(22 * 60, roundedLastCourse)
     }
 
     private func dayColumnWidth(
@@ -147,18 +170,27 @@ struct TimetableGridView: View {
     }
 
     private func yOffset(for minutes: Int) -> CGFloat {
-        CGFloat(minutes - schedule.startMinutes) / 60 * hourHeight
+        let boundedMinutes = min(max(minutes, displayStartMinutes), displayEndMinutes)
+        return CGFloat(boundedMinutes - displayStartMinutes) / 60 * hourHeight
     }
 
     private func blockHeight(_ block: TimetableCourseBlock) -> CGFloat {
-        max(
-            CGFloat(block.endMinutes - block.startMinutes) / 60 * hourHeight - 2,
+        let boundedStart = min(max(block.startMinutes, minimumMinute), maximumMinute)
+        let boundedEnd = min(max(block.endMinutes, boundedStart), maximumMinute)
+        return max(
+            CGFloat(boundedEnd - boundedStart) / 60 * hourHeight - 2,
             30
         )
     }
 
+    private func isRenderable(_ block: TimetableCourseBlock) -> Bool {
+        (minimumMinute..<maximumMinute).contains(block.startMinutes)
+            && (1...maximumMinute).contains(block.endMinutes)
+            && block.endMinutes > block.startMinutes
+    }
+
     private func hourText(_ minutes: Int) -> String {
-        "\(minutes / 60):00"
+        "\(minutes / 60)"
     }
 
     private func courseStyle(for subject: String) -> CourseStyle {
@@ -178,20 +210,20 @@ private struct CourseStyle {
 
     static let palette: [CourseStyle] = [
         CourseStyle(
-            background: .pointColor100,
-            foreground: .pointColor600
-        ),
-        CourseStyle(
-            background: .pointColor050,
+            background: .serviceBlue500.opacity(0.12),
             foreground: .logoIndigo
         ),
         CourseStyle(
-            background: Color(red: 0.94, green: 0.88, blue: 1),
-            foreground: Color(red: 0.50, green: 0.16, blue: 0.78)
+            background: .serviceBlue500.opacity(0.10),
+            foreground: .logoViolet
         ),
         CourseStyle(
-            background: .pointColor100,
-            foreground: .logoViolet
+            background: .gray100,
+            foreground: .serviceGray500
+        ),
+        CourseStyle(
+            background: .logoYellow.opacity(0.22),
+            foreground: .gray700
         ),
         CourseStyle(
             background: .warningRed050,
@@ -205,36 +237,89 @@ struct TimetableCourseDetailSheet: View {
     let close: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text(block.subject)
-                    .font(.system(size: 22, weight: .bold))
-                Spacer()
-                Button(L10n.Timetable.close, action: close)
+        VStack(alignment: .leading, spacing: 0) {
+            Text(block.subject)
+                .font(.pretendard(18, weight: .semibold))
+                .foregroundStyle(.black000)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(professorTitle)
+                .font(.pretendard(13))
+                .foregroundStyle(.serviceGray500)
+                .padding(.top, 8)
+
+            VStack(spacing: 0) {
+                detail("요일", block.weekday.fullName)
+                detail(L10n.Timetable.time, block.time)
+                detail(L10n.Timetable.classroom, block.classroom)
             }
-            detail(L10n.Timetable.time, block.time)
-            detail(L10n.Timetable.professor, block.professor)
-            detail(L10n.Timetable.classroom, block.classroom)
+            .padding(.top, 10)
+
             Spacer()
+
+            Button(action: close) {
+                Text(L10n.Timetable.close)
+                    .font(.pretendard(14, weight: .semibold))
+                    .foregroundStyle(.black000)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 40)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
-        .padding(24)
+        .padding(.horizontal, 20)
+        .padding(.top, 40)
+        .padding(.bottom, 4)
     }
 
     private func detail(_ title: String, _ value: String) -> some View {
-        HStack(alignment: .top) {
+        HStack(alignment: .center, spacing: 12) {
             Text(title)
-                .foregroundStyle(.gray600)
-                .frame(width: 72, alignment: .leading)
+                .font(.pretendard(13))
+                .foregroundStyle(.serviceGray500)
+
+            Spacer(minLength: 16)
+
             Text(value.isEmpty ? "-" : value)
+                .font(.pretendard(14, weight: .medium))
                 .foregroundStyle(.black000)
+                .multilineTextAlignment(.trailing)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
         }
+        .frame(height: 44)
+    }
+
+    private var professorTitle: String {
+        guard !block.professor.isEmpty else { return "-" }
+        return block.professor.hasSuffix("교수")
+            ? block.professor
+            : "\(block.professor) 교수"
     }
 }
 
 struct TimetableLoadingView: View {
     var body: some View {
         ProgressView(L10n.Timetable.loading)
+            .tint(.serviceBlue600)
+            .foregroundStyle(.serviceGray500)
             .frame(maxWidth: .infinity, minHeight: 240)
+    }
+}
+
+private extension TimetableWeekday {
+    var fullName: String {
+        switch self {
+        case .monday: "월요일"
+        case .tuesday: "화요일"
+        case .wednesday: "수요일"
+        case .thursday: "목요일"
+        case .friday: "금요일"
+        case .saturday: "토요일"
+        case .sunday: "일요일"
+        }
     }
 }
 

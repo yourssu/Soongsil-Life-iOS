@@ -42,6 +42,8 @@ final class TimetableViewModel: BaseViewModel {
     private let loadFlight = AsyncSingleFlight()
     private var cachedSchedules: [TimetablePeriod: TimetableSchedule] = [:]
     private var emptyPeriods = Set<TimetablePeriod>()
+    private var prefetchTask: Task<Void, Never>?
+    private var shouldStopPrefetch = false
 
     init(service: TimetableServiceProtocol) {
         self.service = service
@@ -51,8 +53,13 @@ final class TimetableViewModel: BaseViewModel {
     func transform(input: Input) async -> Output {
         switch input {
         case let .load(force):
-            guard output.schedule == nil || force else { return output }
+            guard output.schedule == nil || force else {
+                startBackgroundPrefetchIfNeeded()
+                return output
+            }
+            await stopBackgroundPrefetch()
             await load(period: output.selectedPeriod)
+            startBackgroundPrefetchIfNeeded()
 
         case let .selectPeriod(period):
             guard !output.isLoading,
@@ -65,6 +72,7 @@ final class TimetableViewModel: BaseViewModel {
                 output.schedule = cachedSchedule
                 output.selectedPeriod = period
                 output.hasLoaded = true
+                startBackgroundPrefetchIfNeeded()
                 return output
             }
 
@@ -72,10 +80,28 @@ final class TimetableViewModel: BaseViewModel {
                 output.schedule = nil
                 output.selectedPeriod = period
                 output.hasLoaded = true
+                startBackgroundPrefetchIfNeeded()
+                return output
+            }
+
+            await stopBackgroundPrefetch()
+            if let prefetchedSchedule = cachedSchedules[period] {
+                output.schedule = prefetchedSchedule
+                output.selectedPeriod = period
+                output.hasLoaded = true
+                startBackgroundPrefetchIfNeeded()
+                return output
+            }
+            if emptyPeriods.contains(period) {
+                output.schedule = nil
+                output.selectedPeriod = period
+                output.hasLoaded = true
+                startBackgroundPrefetchIfNeeded()
                 return output
             }
 
             await load(period: period)
+            startBackgroundPrefetchIfNeeded()
 
         case .errorDismissed:
             output.errorMessage = nil
@@ -132,7 +158,9 @@ final class TimetableViewModel: BaseViewModel {
     ) async -> TimetablePeriod? {
         if output.availablePeriods.isEmpty {
             do {
-                output.availablePeriods = try await service.fetchAvailablePeriods()
+                output.availablePeriods = Self.sortedUniquePeriods(
+                    try await service.fetchAvailablePeriods()
+                )
             } catch is CancellationError {
                 return selectedPeriod
             } catch {
@@ -141,5 +169,74 @@ final class TimetableViewModel: BaseViewModel {
         }
 
         return selectedPeriod ?? output.availablePeriods.first
+    }
+
+    func stopBackgroundPrefetchAfterCurrentRequest() {
+        shouldStopPrefetch = true
+    }
+
+    private func startBackgroundPrefetchIfNeeded() {
+        if prefetchTask != nil {
+            shouldStopPrefetch = false
+            return
+        }
+
+        let remainingPeriods = output.availablePeriods.filter { period in
+            period != output.selectedPeriod
+                && cachedSchedules[period] == nil
+                && !emptyPeriods.contains(period)
+        }
+        guard !remainingPeriods.isEmpty else { return }
+
+        shouldStopPrefetch = false
+        prefetchTask = Task { @MainActor [weak self] in
+            await self?.prefetchSequentially(remainingPeriods)
+        }
+    }
+
+    private func stopBackgroundPrefetch() async {
+        guard let prefetchTask else { return }
+        shouldStopPrefetch = true
+        await prefetchTask.value
+        self.prefetchTask = nil
+    }
+
+    private func prefetchSequentially(_ periods: [TimetablePeriod]) async {
+        defer {
+            prefetchTask = nil
+            shouldStopPrefetch = false
+        }
+
+        for period in periods {
+            guard !shouldStopPrefetch else { return }
+
+            do {
+                let schedule = try await service.fetchTimetable(for: period)
+                if let schedule {
+                    cachedSchedules[period] = schedule
+                    emptyPeriods.remove(period)
+                } else {
+                    cachedSchedules[period] = nil
+                    emptyPeriods.insert(period)
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                // 백그라운드 실패를 사용자에게 노출하거나 연속 재시도하지 않습니다.
+                return
+            }
+        }
+    }
+
+    private static func sortedUniquePeriods(
+        _ periods: [TimetablePeriod]
+    ) -> [TimetablePeriod] {
+        let sorted = periods.sorted { lhs, rhs in
+            let lhsKey = (Int(lhs.year) ?? 0, lhs.semester.sortOrder)
+            let rhsKey = (Int(rhs.year) ?? 0, rhs.semester.sortOrder)
+            return lhsKey > rhsKey
+        }
+        var seen = Set<TimetablePeriod>()
+        return sorted.filter { seen.insert($0).inserted }
     }
 }

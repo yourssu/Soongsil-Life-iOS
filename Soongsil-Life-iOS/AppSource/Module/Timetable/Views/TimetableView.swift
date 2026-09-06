@@ -14,13 +14,22 @@ struct TimetableView: View {
                 .fill(.white000)
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 0) {
                     header
+
+                    Rectangle()
+                        .fill(.serviceGray200)
+                        .frame(height: 1)
+
                     periodFilter
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 17)
+                        .padding(.bottom, 28)
+
                     content
+                        .padding(.horizontal, 16)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
                 .padding(.bottom, 24)
             }
             .refreshable {
@@ -31,13 +40,17 @@ struct TimetableView: View {
         .task {
             await viewModel.transform(input: .load())
         }
+        .onDisappear {
+            viewModel.stopBackgroundPrefetchAfterCurrentRequest()
+        }
         .sheet(item: $selectedBlock) { block in
             TimetableCourseDetailSheet(block: block) {
                 selectedBlock = nil
             }
-            .presentationDetents([.height(320)])
+            .presentationDetents([.height(274)])
             .presentationCornerRadius(20)
             .presentationDragIndicator(.visible)
+            .presentationBackground(.white000)
         }
         .alert(
             L10n.Timetable.loadFailed,
@@ -66,10 +79,12 @@ struct TimetableView: View {
 
     private var header: some View {
         Text(L10n.Timetable.title)
-            .font(.system(size: 24, weight: .bold))
+            .font(.pretendard(20, weight: .bold))
             .foregroundStyle(.black000)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 10)
+            .padding(.horizontal, 20)
+            .padding(.top, 9)
+            .padding(.bottom, 17)
     }
 
     @ViewBuilder
@@ -116,18 +131,11 @@ struct TimetableView: View {
             Text(title)
 
             Image(systemName: "chevron.down")
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(size: 12, weight: .semibold))
         }
-        .font(.system(size: 15, weight: .bold))
+        .font(.pretendard(18, weight: .semibold))
         .foregroundStyle(.black000)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-        .background(.gray050)
-        .clipShape(Capsule())
-        .overlay {
-            Capsule()
-                .stroke(.gray100, lineWidth: 1)
-        }
+        .contentShape(Rectangle())
     }
 
     @ViewBuilder
