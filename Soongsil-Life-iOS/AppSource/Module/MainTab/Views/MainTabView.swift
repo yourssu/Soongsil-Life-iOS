@@ -7,6 +7,7 @@ struct MainTabView: View {
     @State private var timetableViewModel: TimetableViewModel
     @State private var settingViewModel: SettingViewModel
     @State private var isHomeNavigationActive = false
+    @State private var isSettingNavigationActive = false
     private let gradeRepository: GradeRepositoryProtocol
     private let graduationAuditRepository: GraduationAuditRepositoryProtocol
     private let tuitionRepository: TuitionRepositoryProtocol
@@ -114,7 +115,12 @@ struct MainTabView: View {
                 TimetableView(viewModel: timetableViewModel)
             }
         case .my:
-            SettingView(viewModel: settingViewModel)
+            SettingView(
+                viewModel: settingViewModel,
+                onNavigationDepthChanged: {
+                    isSettingNavigationActive = $0
+                }
+            )
         }
     }
 
@@ -132,7 +138,14 @@ struct MainTabView: View {
     }
 
     private var showsTabBar: Bool {
-        viewModel.output.selectedTab != .home || !isHomeNavigationActive
+        switch viewModel.output.selectedTab {
+        case .home:
+            !isHomeNavigationActive
+        case .my:
+            !isSettingNavigationActive
+        case .chapel, .timetable:
+            true
+        }
     }
 }
 

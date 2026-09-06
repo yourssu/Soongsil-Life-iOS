@@ -163,6 +163,10 @@
 "settings.open_source.load_failed" = "라이선스 전문을 불러오지 못했습니다.";
 "settings.app_info_section" = "앱 정보";
 "settings.version" = "버전";
+"settings.notifications" = "알림";
+"settings.notification_settings" = "알림 설정";
+"settings.grade_notifications" = "성적 알림 받기";
+"settings.chapel_notifications" = "채플 알림 받기";
 "settings.logout" = "로그아웃";
 "settings.logout_confirmation" = "로그아웃하시겠어요?";
 "settings.logout_failed" = "로그아웃하지 못했어요. 잠시 후 다시 시도해 주세요.";
@@ -223,8 +227,8 @@
 "soomsil.cancel" = "취소";
 "soomsil.account" = "계정";
 "soomsil.agreements" = "약관";
-"soomsil.version_info" = "버전정보";
-"soomsil.app_version" = "v%1$@";
+"soomsil.version_info" = "버전 정보";
+"soomsil.app_version" = "v %1$@";
 "soomsil.logout_title" = "정말 로그아웃할까요?";
 "soomsil.logout_message" = "다시 로그인하려면\n학번을 입력해야 해요";
 "soomsil.no_chapel_title" = "채플 수료 완료";

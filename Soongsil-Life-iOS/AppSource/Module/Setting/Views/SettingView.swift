@@ -1,17 +1,31 @@
 import SwiftUI
 
 struct SettingView: View {
-    @State var viewModel: SettingViewModel
+    @State private var viewModel: SettingViewModel
+    @State private var navigationPath: [SettingDestination] = []
+    private let onNavigationDepthChanged: (Bool) -> Void
+
+    init(
+        viewModel: SettingViewModel,
+        onNavigationDepthChanged: @escaping (Bool) -> Void = { _ in }
+    ) {
+        _viewModel = State(initialValue: viewModel)
+        self.onNavigationDepthChanged = onNavigationDepthChanged
+    }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             VStack(spacing: 0) {
                 Text(L10n.Common.my)
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.pretendard(20, weight: .semibold))
                     .foregroundStyle(.black000)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 18)
-                    .padding(.bottom, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .frame(height: 48)
+
+                Rectangle()
+                    .fill(.serviceGray200)
+                    .frame(height: 1)
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
@@ -26,6 +40,16 @@ struct SettingView: View {
                             }
                         }
 
+                        if AppFeatureAvailability.showsNotificationSettings {
+                            SettingSection(title: L10n.Settings.notifications) {
+                                SettingNavigationRow(
+                                    title: L10n.Settings.notificationSettings,
+                                    destination: .notifications
+                                )
+                                SettingDivider()
+                            }
+                        }
+
                         SettingSection(title: L10n.Soomsil.agreements) {
                             SettingNavigationRow(
                                 title: L10n.Settings.terms,
@@ -37,13 +61,9 @@ struct SettingView: View {
                                 destination: .legal(.privacy)
                             )
                             SettingDivider()
-                            SettingNavigationRow(
-                                title: L10n.Settings.openSource,
-                                destination: .openSource
-                            )
                         }
 
-                        SettingSection(title: L10n.Soomsil.versionInfo) {
+                        SettingSection(title: L10n.Settings.version) {
                             SettingActionRow(
                                 title: L10n.Soomsil.versionInfo,
                                 accessory: .text(
@@ -53,7 +73,7 @@ struct SettingView: View {
                             )
                         }
                     }
-                    .padding(.bottom, 24)
+                    .padding(.bottom, 32)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -62,11 +82,17 @@ struct SettingView: View {
             .navigationDestination(for: SettingDestination.self) { destination in
                 switch destination {
                 case let .legal(kind):
-                    LegalDocumentView(document: kind.document)
+                    LegalWebView(kind: kind)
                 case .openSource:
                     OpenSourceLicenseView()
+                case .notifications:
+                    NotificationSettingsView()
                 }
             }
+        }
+        .tint(.black000)
+        .onChange(of: navigationPath) { _, path in
+            onNavigationDepthChanged(!path.isEmpty)
         }
     }
 }
@@ -78,25 +104,26 @@ struct LogoutDialogView: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.35)
+            Rectangle()
+                .fill(.realBlack.opacity(0.35))
                 .ignoresSafeArea()
                 .onTapGesture(perform: cancel)
 
             VStack(spacing: 26) {
                 VStack(spacing: 9) {
                     Text(L10n.Soomsil.logoutTitle)
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.pretendard(18, weight: .bold))
                         .foregroundStyle(.black000)
 
                     Text(L10n.Soomsil.logoutMessage)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.pretendard(14, weight: .medium))
                         .foregroundStyle(.gray600)
                         .multilineTextAlignment(.center)
                         .lineSpacing(3)
 
                     if let errorMessage {
                         Text(errorMessage)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.pretendard(13, weight: .semibold))
                             .foregroundStyle(.warningRed500)
                             .multilineTextAlignment(.center)
                             .padding(.top, 4)
@@ -106,7 +133,7 @@ struct LogoutDialogView: View {
                 HStack(spacing: 12) {
                     Button(action: cancel) {
                         Text(L10n.Soomsil.cancel)
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.pretendard(15, weight: .bold))
                             .foregroundStyle(.black000)
                             .frame(maxWidth: .infinity)
                             .frame(height: 48)
@@ -117,11 +144,11 @@ struct LogoutDialogView: View {
 
                     Button(action: confirm) {
                         Text(L10n.Settings.logout)
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(.white)
+                            .font(.pretendard(15, weight: .bold))
+                            .foregroundStyle(.white000)
                             .frame(maxWidth: .infinity)
                             .frame(height: 48)
-                            .background(.pointColor600)
+                            .background(.serviceBlue600)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)
@@ -147,28 +174,25 @@ private struct SettingSection<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.gray600)
-                .padding(.horizontal, 2)
+                .font(.pretendard(16, weight: .semibold))
+                .foregroundStyle(.black000)
 
             VStack(spacing: 0) {
                 content
             }
-            .soomsilCard(cornerRadius: 10)
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 18)
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
     }
 }
 
 private struct SettingDivider: View {
     var body: some View {
         Rectangle()
-            .fill(.gray100)
+            .fill(.serviceGray200)
             .frame(height: 1)
-            .padding(.horizontal, 16)
     }
 }
 
@@ -193,13 +217,13 @@ private struct SettingActionRow: View {
                 rowContent
             }
         }
-        .frame(height: 58)
+        .frame(height: 60)
     }
 
     private var rowContent: some View {
         HStack(spacing: 12) {
             Text(title)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.pretendard(16, weight: .medium))
                 .foregroundStyle(.black000)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -207,14 +231,13 @@ private struct SettingActionRow: View {
             case .chevron:
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.gray600)
+                    .foregroundStyle(.black000)
             case let .text(value):
                 Text(value)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.gray600)
+                    .font(.pretendard(14, weight: .medium))
+                    .foregroundStyle(.serviceGray500)
             }
         }
-        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
     }
@@ -228,19 +251,18 @@ private struct SettingNavigationRow: View {
         NavigationLink(value: destination) {
             HStack(spacing: 12) {
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.pretendard(16, weight: .medium))
                     .foregroundStyle(.black000)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.gray600)
+                    .foregroundStyle(.black000)
             }
-            .padding(.horizontal, 16)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
         }
-        .frame(height: 58)
+        .frame(height: 60)
         .buttonStyle(SettingRowButtonStyle())
     }
 }
@@ -248,6 +270,7 @@ private struct SettingNavigationRow: View {
 private enum SettingDestination: Hashable {
     case legal(LegalDocumentKind)
     case openSource
+    case notifications
 }
 
 private struct SettingRowButtonStyle: ButtonStyle {
