@@ -78,7 +78,7 @@ enum TimetableWeekday: Int, CaseIterable, Hashable, Sendable {
 }
 
 struct TimetableCourseBlock: Identifiable, Sendable {
-    let id: UUID
+    let id: String
     let weekday: TimetableWeekday
     let period: Int
     let startMinutes: Int
@@ -124,13 +124,12 @@ struct TimetableSchedule: Sendable {
 
         let courses = data.items.compactMap { item -> ParsedCourse? in
             guard let weekday = TimetableWeekday(serverName: item.dayOfWeek),
-                  let period = Int(item.period.components(separatedBy: .decimalDigits.inverted).joined())
+                  let period = Self.periodNumber(from: item.period),
+                  let range = Self.timeRange(
+                      from: item.periodTime.isEmpty ? item.time : item.periodTime,
+                      period: period
+                  )
             else { return nil }
-
-            let range = Self.timeRange(
-                from: item.periodTime.isEmpty ? item.time : item.periodTime,
-                period: period
-            )
             return ParsedCourse(
                 weekday: weekday,
                 period: period,
@@ -225,7 +224,9 @@ struct TimetableSchedule: Sendable {
         Dictionary(grouping: courses, by: \.key)
             .values
             .flatMap { group -> [TimetableCourseBlock] in
-                let sorted = group.sorted { $0.period < $1.period }
+                let sorted = group.sorted {
+                    ($0.period, $0.startMinutes) < ($1.period, $1.startMinutes)
+                }
                 guard var first = sorted.first else { return [] }
 
                 var lastPeriod = first.period
@@ -235,7 +236,15 @@ struct TimetableSchedule: Sendable {
                 func appendCurrent() {
                     result.append(
                         TimetableCourseBlock(
-                            id: UUID(),
+                            id: [
+                                String(first.weekday.rawValue),
+                                String(first.period),
+                                String(first.startMinutes),
+                                String(endMinutes),
+                                first.subject,
+                                first.professor,
+                                first.classroom
+                            ].joined(separator: "|"),
                             weekday: first.weekday,
                             period: first.period,
                             startMinutes: first.startMinutes,
@@ -249,7 +258,9 @@ struct TimetableSchedule: Sendable {
                 }
 
                 for course in sorted.dropFirst() {
-                    if course.period == lastPeriod + 1 {
+                    if course.period == lastPeriod {
+                        endMinutes = max(endMinutes, course.endMinutes)
+                    } else if course.period == lastPeriod + 1 {
                         lastPeriod = course.period
                         endMinutes = max(endMinutes, course.endMinutes)
                     } else {
@@ -270,10 +281,20 @@ struct TimetableSchedule: Sendable {
             }
     }
 
+    private static func periodNumber(from value: String) -> Int? {
+        guard let token = value
+            .split(whereSeparator: { !$0.isNumber })
+            .first,
+              let period = Int(token),
+              (1...30).contains(period)
+        else { return nil }
+        return period
+    }
+
     private static func timeRange(
         from value: String,
         period: Int
-    ) -> (start: Int, end: Int) {
+    ) -> (start: Int, end: Int)? {
         let expression = try? NSRegularExpression(pattern: #"(\d{1,2}):(\d{2})"#)
         let range = NSRange(value.startIndex..<value.endIndex, in: value)
         let minutes = expression?
@@ -283,15 +304,21 @@ struct TimetableSchedule: Sendable {
                       let hourRange = Range(match.range(at: 1), in: value),
                       let minuteRange = Range(match.range(at: 2), in: value),
                       let hour = Int(value[hourRange]),
-                      let minute = Int(value[minuteRange])
+                      let minute = Int(value[minuteRange]),
+                      (0...24).contains(hour),
+                      (0...59).contains(minute),
+                      hour < 24 || minute == 0
                 else { return nil }
                 return hour * 60 + minute
             } ?? []
 
-        if minutes.count >= 2, minutes[1] > minutes[0] {
+        if minutes.count >= 2,
+           minutes[0] < 24 * 60,
+           minutes[1] > minutes[0] {
             return (minutes[0], minutes[1])
         }
 
+        guard (1...16).contains(period) else { return nil }
         let fallbackStart = 8 * 60 + max(period - 1, 0) * 60
         return (fallbackStart, fallbackStart + 50)
     }
