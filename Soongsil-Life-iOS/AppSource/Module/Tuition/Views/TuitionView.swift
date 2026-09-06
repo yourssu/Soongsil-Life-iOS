@@ -4,51 +4,24 @@ struct TuitionView: View {
     @State var viewModel: TuitionViewModel
 
     var body: some View {
-        VStack(spacing: 0) {
-            if (viewModel.output.isLoadingSelectedTab || !viewModel.output.hasLoaded)
-                && !viewModel.output.hasLoadedSelectedTab {
-                ProgressView()
-                    .tint(.serviceBlue600)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let errorMessage = viewModel.output.errorMessage,
-                      !viewModel.output.hasLoadedSelectedTab {
-                ContentUnavailableView {
-                    Label(
-                        L10n.Tuition.loadFailed,
-                        systemImage: "wifi.exclamationmark"
-                    )
-                } description: {
-                    Text(errorMessage)
-                } actions: {
-                    Button(L10n.Common.retry) {
-                        Task {
-                            await viewModel.transform(input: .load(force: true))
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 0) {
-                        segmentedControl
+        ScrollView(showsIndicators: false) {
+            LazyVStack(spacing: 0) {
+                segmentedControl
 
-                        content
-                            .id(viewModel.output.selectedTab)
-                            .transition(.opacity)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 4)
-                    .padding(.bottom, 32)
-                    .animation(
-                        .easeInOut(duration: 0.18),
-                        value: viewModel.output.selectedTab
-                    )
-                }
-                .refreshable {
-                    await viewModel.transform(input: .load(force: true))
-                }
+                content
+                    .id(viewModel.output.selectedTab)
+                    .transition(.opacity)
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 4)
+            .padding(.bottom, 32)
+            .animation(
+                .easeInOut(duration: 0.18),
+                value: viewModel.output.selectedTab
+            )
+        }
+        .refreshable {
+            await viewModel.transform(input: .load(force: true))
         }
         .background(.white000)
         .navigationTitle("")
@@ -132,28 +105,30 @@ struct TuitionView: View {
 
     @ViewBuilder
     private var content: some View {
-        switch viewModel.output.selectedTab {
-        case .tuition:
-            if viewModel.output.isLoadingSelectedTab
-                && !viewModel.output.hasLoadedSelectedTab {
-                loadingState
-            } else if viewModel.output.tuitionRecords.isEmpty {
-                emptyState(L10n.Tuition.noTuitionRecords)
-            } else {
-                ForEach(viewModel.output.tuitionRecords) { record in
-                    TuitionRecordRow(record: record)
+        if viewModel.output.isLoadingSelectedTab
+            && !viewModel.output.hasLoadedSelectedTab {
+            loadingState
+        } else if let errorMessage = viewModel.output.errorMessage,
+                  !viewModel.output.hasLoadedSelectedTab {
+            failureState(errorMessage)
+        } else {
+            switch viewModel.output.selectedTab {
+            case .tuition:
+                if viewModel.output.tuitionRecords.isEmpty {
+                    emptyState(L10n.Tuition.noTuitionRecords)
+                } else {
+                    ForEach(viewModel.output.tuitionRecords) { record in
+                        TuitionRecordRow(record: record)
+                    }
                 }
-            }
 
-        case .scholarship:
-            if viewModel.output.isLoadingSelectedTab
-                && !viewModel.output.hasLoadedSelectedTab {
-                loadingState
-            } else if viewModel.output.scholarshipRecords.isEmpty {
-                emptyState(L10n.Tuition.noScholarshipRecords)
-            } else {
-                ForEach(viewModel.output.scholarshipRecords) { record in
-                    ScholarshipRecordRow(record: record)
+            case .scholarship:
+                if viewModel.output.scholarshipRecords.isEmpty {
+                    emptyState(L10n.Tuition.noScholarshipRecords)
+                } else {
+                    ForEach(viewModel.output.scholarshipRecords) { record in
+                        ScholarshipRecordRow(record: record)
+                    }
                 }
             }
         }
@@ -163,6 +138,25 @@ struct TuitionView: View {
         ProgressView()
             .tint(.serviceBlue600)
             .frame(maxWidth: .infinity, minHeight: 240)
+    }
+
+    private func failureState(_ message: String) -> some View {
+        ContentUnavailableView {
+            Label(
+                L10n.Tuition.loadFailed,
+                systemImage: "wifi.exclamationmark"
+            )
+        } description: {
+            Text(message)
+        } actions: {
+            Button(L10n.Common.retry) {
+                Task {
+                    await viewModel.transform(input: .load(force: true))
+                }
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity, minHeight: 240)
     }
 
     private func emptyState(_ message: String) -> some View {

@@ -41,12 +41,14 @@ final class TuitionViewModel: BaseViewModel {
 
         var isLoadingSelectedTab: Bool {
             loadingTabs.contains(selectedTab)
+                || (isLoading && !loadedTabs.contains(selectedTab))
         }
     }
     
     private(set) var output = Output() // 밖에서 수정 불가
     private let repository: TuitionRepositoryProtocol
     private let loadFlight = AsyncSingleFlight()
+    private var pendingTab: Tab?
 
     init(repository: TuitionRepositoryProtocol) {
         self.repository = repository
@@ -65,14 +67,25 @@ final class TuitionViewModel: BaseViewModel {
             guard force || !output.loadedTabs.contains(selectedTab) else {
                 return output
             }
+            guard !output.isLoading else {
+                pendingTab = selectedTab
+                return output
+            }
             await loadSelectedTab(selectedTab, force: force)
+            await loadPendingTabIfNeeded()
 
         case let .selectTab(tab):
-            guard !output.isLoading else { return output }
             selectTab(tab)
-            if !output.loadedTabs.contains(tab) {
-                await loadSelectedTab(tab, force: false)
+            guard !output.loadedTabs.contains(tab) else {
+                pendingTab = nil
+                return output
             }
+            guard !output.isLoading else {
+                pendingTab = tab
+                return output
+            }
+            await loadSelectedTab(tab, force: false)
+            await loadPendingTabIfNeeded()
 
         case .errorDismissed:
             output.errorMessage = nil
@@ -92,6 +105,16 @@ final class TuitionViewModel: BaseViewModel {
             // 처음에는 현재 탭만 요청하고, 다른 탭은 실제 선택 시 불러옵니다.
             // 사용하지 않는 WebDynpro 화면 조회가 다음 사용자 동작을 막지 않습니다.
             _ = await load(tab: tab, force: force)
+        }
+    }
+
+    private func loadPendingTabIfNeeded() async {
+        while let tab = pendingTab {
+            pendingTab = nil
+            guard output.selectedTab == tab,
+                  !output.loadedTabs.contains(tab)
+            else { continue }
+            await loadSelectedTab(tab, force: false)
         }
     }
 
