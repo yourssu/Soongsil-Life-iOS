@@ -439,7 +439,9 @@ struct HomeView: View {
         // 요청을 겹치지 않으면서도 화면은 요약 응답 직후 사용할 수 있습니다.
         await loadDashboard(force: force)
         guard !Task.isCancelled else { return }
-        await loadChapel(force: force)
+        // 저장된 현재 학기 데이터는 즉시 표시하되, 앱을 다시 열 때마다 서버 값을
+        // 뒤에서 갱신해 출석 상태 변경만 화면에 반영합니다.
+        await loadChapel(force: true)
     }
 
     @MainActor

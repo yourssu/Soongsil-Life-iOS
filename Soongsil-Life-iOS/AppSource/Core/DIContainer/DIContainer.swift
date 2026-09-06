@@ -46,15 +46,21 @@ struct DIContainer {
         let gradeService = GradeService()
         let gradeRepository = GradeRepository(service: gradeService)
         let chapelService = ChapelService()
+        let chapelCacheStore = UserDefaultsChapelCacheStore()
 
         return DIContainer(
             authenticationRepository: AuthenticationRepository(
                 service: authenticationService,
-                credentialsStore: KeychainLoginCredentialsStore()
+                credentialsStore: KeychainLoginCredentialsStore(),
+                activateAccountCache: chapelCacheStore.activateAccount,
+                deactivateAccountCache: chapelCacheStore.deactivateAccount
             ),
             homeRepository: HomeRepository(gradeRepository: gradeRepository),
             gradeRepository: gradeRepository,
-            chapelRepository: ChapelRepository(service: chapelService),
+            chapelRepository: ChapelRepository(
+                service: chapelService,
+                cacheStore: chapelCacheStore
+            ),
             graduationAuditRepository: GraduationAuditRepository(
                 service: GraduationAuditService()
             ),
@@ -78,15 +84,22 @@ struct DIContainer {
         )
         let gradeRepository = GradeRepository(service: gradeService)
         let chapelService = MockChapelService(delay: delay)
+        let chapelCacheStore = InMemoryChapelCacheStore()
+        chapelCacheStore.activateAccount(studentID: "mock-preview")
 
         return DIContainer(
             authenticationRepository: AuthenticationRepository(
                 service: authenticationService,
-                credentialsStore: InMemoryLoginCredentialsStore()
+                credentialsStore: InMemoryLoginCredentialsStore(),
+                activateAccountCache: chapelCacheStore.activateAccount,
+                deactivateAccountCache: chapelCacheStore.deactivateAccount
             ),
             homeRepository: HomeRepository(gradeRepository: gradeRepository),
             gradeRepository: gradeRepository,
-            chapelRepository: ChapelRepository(service: chapelService),
+            chapelRepository: ChapelRepository(
+                service: chapelService,
+                cacheStore: chapelCacheStore
+            ),
             graduationAuditRepository: GraduationAuditRepository(
                 service: MockGraduationAuditService(
                     delay: delay

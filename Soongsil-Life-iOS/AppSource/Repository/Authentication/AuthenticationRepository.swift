@@ -3,13 +3,19 @@ import Foundation
 final class AuthenticationRepository: AuthenticationRepositoryProtocol {
     private let service: AuthenticationServiceProtocol
     private let credentialsStore: LoginCredentialsStoreProtocol
+    private let activateAccountCache: (String) -> Void
+    private let deactivateAccountCache: () -> Void
 
     init(
         service: AuthenticationServiceProtocol,
-        credentialsStore: LoginCredentialsStoreProtocol = KeychainLoginCredentialsStore()
+        credentialsStore: LoginCredentialsStoreProtocol = KeychainLoginCredentialsStore(),
+        activateAccountCache: @escaping (String) -> Void = { _ in },
+        deactivateAccountCache: @escaping () -> Void = {}
     ) {
         self.service = service
         self.credentialsStore = credentialsStore
+        self.activateAccountCache = activateAccountCache
+        self.deactivateAccountCache = deactivateAccountCache
     }
 
     var isLoggedIn: Bool {
@@ -26,6 +32,7 @@ final class AuthenticationRepository: AuthenticationRepositoryProtocol {
 
     func login(id: String, password: String) async throws {
         try await service.login(id: id, password: password)
+        activateAccountCache(id)
 
         do {
             try credentialsStore.save(
@@ -46,6 +53,7 @@ final class AuthenticationRepository: AuthenticationRepositoryProtocol {
             id: credentials.studentID,
             password: credentials.password
         )
+        activateAccountCache(credentials.studentID)
     }
 
     @discardableResult
@@ -58,6 +66,7 @@ final class AuthenticationRepository: AuthenticationRepositoryProtocol {
         guard await service.logout() else { return false }
 
         try? credentialsStore.clear()
+        deactivateAccountCache()
         return true
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-enum AcademicSemester: String, CaseIterable, Hashable, Sendable {
+enum AcademicSemester: String, CaseIterable, Codable, Hashable, Sendable {
     case first
     case summer
     case second
@@ -132,7 +132,7 @@ struct CourseGrade: Identifiable, Sendable {
     let professor: String
 }
 
-struct ChapelStatus: Sendable {
+struct ChapelStatus: Codable, Sendable {
     let year: String
     let semester: AcademicSemester
     let classGroup: String
@@ -150,7 +150,7 @@ enum ChapelEnrollmentState: Sendable {
     case notEnrolled(completedSemesterCount: Int)
 }
 
-struct ChapelAttendance: Identifiable, Sendable {
+struct ChapelAttendance: Codable, Identifiable, Sendable {
     var id: String { "\(date)-\(classGroup)-\(lectureType)" }
 
     let date: String
@@ -159,7 +159,7 @@ struct ChapelAttendance: Identifiable, Sendable {
     let status: ChapelAttendanceStatus
 }
 
-enum ChapelAttendanceStatus: Equatable, Sendable {
+enum ChapelAttendanceStatus: Codable, Equatable, Sendable {
     case present
     case absent
     case late
