@@ -206,9 +206,6 @@ struct LoginView: View {
 }
 
 struct LoginLoadingView: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var isPulsing = false
-
     var body: some View {
         VStack(spacing: 39) {
             Image("loginLoadingIndicator")
@@ -216,19 +213,6 @@ struct LoginLoadingView: View {
                 .scaledToFit()
                 .frame(width: 112, height: 112)
                 .offset(x: 2)
-                .scaleEffect(
-                    reduceMotion ? 1 : (isPulsing ? 1.04 : 0.96)
-                )
-                .opacity(
-                    reduceMotion ? 1 : (isPulsing ? 1 : 0.82)
-                )
-                .animation(
-                    reduceMotion
-                        ? nil
-                        : .easeInOut(duration: 0.85)
-                            .repeatForever(autoreverses: true),
-                    value: isPulsing
-                )
                 .accessibilityHidden(true)
 
             VStack(spacing: 12) {
@@ -244,12 +228,6 @@ struct LoginLoadingView: View {
         .offset(y: -62)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.white000)
-        .onAppear {
-            isPulsing = !reduceMotion
-        }
-        .onChange(of: reduceMotion) { _, shouldReduceMotion in
-            isPulsing = !shouldReduceMotion
-        }
     }
 }
 

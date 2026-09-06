@@ -1,4 +1,6 @@
+import AVFoundation
 import SwiftUI
+import UIKit
 
 @main
 struct SoongsilLifeApp: App {
@@ -30,6 +32,7 @@ struct SoongsilLifeApp: App {
                 case .restoringSession:
                     SessionRestoreView(
                         isLoading: appFlow.output.isRestoringSession,
+                        isRetrying: appFlow.output.isRetryingSession,
                         isChangingAccount: appFlow.output.isChangingAccount,
                         errorMessage: appFlow.output.restoreErrorMessage,
                         retry: {
@@ -114,6 +117,7 @@ final class AppFlowViewModel: BaseViewModel {
     struct Output {
         var state: State
         var isRestoringSession = false
+        var isRetryingSession = false
         var isChangingAccount = false
         var restoreErrorMessage: String?
     }
@@ -159,6 +163,7 @@ final class AppFlowViewModel: BaseViewModel {
             let needsSessionReset = output.restoreErrorMessage != nil
             restoreAttemptID = attemptID
             output.isRestoringSession = true
+            output.isRetryingSession = needsSessionReset
             output.restoreErrorMessage = nil
 
             if needsSessionReset {
@@ -172,6 +177,7 @@ final class AppFlowViewModel: BaseViewModel {
                 guard didResetSession else {
                     restoreAttemptID = nil
                     output.isRestoringSession = false
+                    output.isRetryingSession = false
                     output.restoreErrorMessage = L10n.Error.requestTimedOut
                     return output
                 }
@@ -197,6 +203,7 @@ final class AppFlowViewModel: BaseViewModel {
             if restoreAttemptID == attemptID {
                 restoreAttemptID = nil
                 output.isRestoringSession = false
+                output.isRetryingSession = false
             }
 
         case .useAnotherAccount:
@@ -209,6 +216,7 @@ final class AppFlowViewModel: BaseViewModel {
 
             restoreAttemptID = nil
             output.isChangingAccount = true
+            output.isRetryingSession = false
             let didLogout = await repository.logout()
             output.isRestoringSession = false
             output.isChangingAccount = false
@@ -280,13 +288,16 @@ final class AppFlowViewModel: BaseViewModel {
 
 private struct SessionRestoreView: View {
     let isLoading: Bool
+    let isRetrying: Bool
     let isChangingAccount: Bool
     let errorMessage: String?
     let retry: () -> Void
     let useAnotherAccount: () -> Void
 
     var body: some View {
-        if !isChangingAccount, isLoading || errorMessage == nil {
+        if isRetrying, isLoading, !isChangingAccount {
+            LoginLoadingView()
+        } else if !isChangingAccount, isLoading || errorMessage == nil {
             SessionSplashView()
         } else {
             sessionRecoveryContent
@@ -370,32 +381,104 @@ private struct SessionRestoreView: View {
 }
 
 private struct SessionSplashView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var videoURL: URL? {
+        Bundle.main.url(forResource: "logoAni", withExtension: "mp4")
+    }
+
     var body: some View {
         ZStack {
             Rectangle()
                 .fill(.white000)
                 .ignoresSafeArea()
 
-            ZStack(alignment: .leading) {
-                Circle()
-                    .fill(.splashViolet)
-                    .frame(width: 90, height: 90)
-                    .offset(x: 55)
+            staticLogo
 
-                Circle()
-                    .fill(.white000)
-                    .frame(width: 102, height: 102)
-                    .offset(x: -6)
-
-                Circle()
-                    .fill(.splashIndigo)
-                    .frame(width: 90, height: 90)
+            if !reduceMotion, let videoURL {
+                LoopingLogoVideoView(url: videoURL)
+                    .frame(width: 350, height: 350)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
             }
-            .frame(width: 145, height: 90, alignment: .leading)
-            .offset(x: 75)
-            .accessibilityHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
+    }
+
+    private var staticLogo: some View {
+        Image("soomsilLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 99, height: 48)
+            .accessibilityHidden(true)
+    }
+}
+
+private struct LoopingLogoVideoView: UIViewRepresentable {
+    let url: URL
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(url: url)
+    }
+
+    func makeUIView(context: Context) -> PlayerView {
+        let view = PlayerView()
+        view.playerLayer.player = context.coordinator.player
+        context.coordinator.player.play()
+        return view
+    }
+
+    func updateUIView(_ uiView: PlayerView, context: Context) {
+        guard context.coordinator.player.timeControlStatus != .playing else {
+            return
+        }
+        context.coordinator.player.play()
+    }
+
+    static func dismantleUIView(
+        _ uiView: PlayerView,
+        coordinator: Coordinator
+    ) {
+        coordinator.player.pause()
+        uiView.playerLayer.player = nil
+    }
+
+    final class Coordinator {
+        let player: AVQueuePlayer
+        private let looper: AVPlayerLooper
+
+        init(url: URL) {
+            let player = AVQueuePlayer()
+            player.isMuted = true
+            player.actionAtItemEnd = .none
+            self.player = player
+            looper = AVPlayerLooper(
+                player: player,
+                templateItem: AVPlayerItem(url: url)
+            )
+        }
+    }
+
+    final class PlayerView: UIView {
+        override class var layerClass: AnyClass {
+            AVPlayerLayer.self
+        }
+
+        var playerLayer: AVPlayerLayer {
+            layer as! AVPlayerLayer
+        }
+
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            backgroundColor = .clear
+            playerLayer.backgroundColor = UIColor.clear.cgColor
+            playerLayer.videoGravity = .resizeAspect
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) {
+            nil
+        }
     }
 }
