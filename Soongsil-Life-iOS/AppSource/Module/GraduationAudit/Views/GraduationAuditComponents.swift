@@ -43,7 +43,7 @@ struct GraduationAuditSummaryView: View {
             .font(.system(size: 14, weight: .bold))
             .foregroundStyle(
                 audit.isGraduatable
-                    ? .logoIndigo
+                    ? .serviceBlue500
                     : .warningRed500
             )
         }
@@ -93,7 +93,7 @@ struct GraduationAuditRequirementSectionView: View {
         VStack(alignment: .leading, spacing: 9) {
             Text(section.classification.localizedName)
                 .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(.pointColor500)
+                .foregroundStyle(.serviceBlue500)
                 .fixedSize(horizontal: false, vertical: true)
 
             ForEach(section.items) { item in
@@ -233,7 +233,7 @@ private struct GraduationAuditStatusBadge: View {
 struct GraduationAuditLoadingStateView: View {
     var body: some View {
         ProgressView(L10n.GraduationAudit.loading)
-            .tint(.pointColor600)
+            .tint(.serviceBlue600)
             .foregroundStyle(.gray600)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -388,7 +388,7 @@ private extension GraduationAuditStatus {
     var foregroundColor: Color {
         switch self {
         case .satisfied:
-            .logoIndigo
+            .serviceBlue500
         case .insufficient:
             .warningRed500
         }
@@ -397,7 +397,7 @@ private extension GraduationAuditStatus {
     var backgroundColor: Color {
         switch self {
         case .satisfied:
-            .pointColor050
+            .serviceBlue500.opacity(0.10)
         case .insufficient:
             .warningRed050
         }
