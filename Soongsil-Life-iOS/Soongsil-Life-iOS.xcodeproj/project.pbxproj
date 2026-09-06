@@ -43,6 +43,11 @@
 			path = "Soongsil-Life-iOS/Resource/Assets Catalog";
 			sourceTree = "<group>";
 		};
+		C20000000000000000000001 /* Soongsil-Life-iOS/Resource/Font */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Soongsil-Life-iOS/Resource/Font";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +74,7 @@
 			children = (
 				2D5A8D733017714B0044D85C /* AppSource */,
 				C10000000000000000000001 /* Soongsil-Life-iOS/Resource/Assets Catalog */,
+				C20000000000000000000001 /* Soongsil-Life-iOS/Resource/Font */,
 				2D5A8D723017714B0044D85C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -100,6 +106,7 @@
 			fileSystemSynchronizedGroups = (
 				2D5A8D733017714B0044D85C /* AppSource */,
 				C10000000000000000000001 /* Soongsil-Life-iOS/Resource/Assets Catalog */,
+				C20000000000000000000001 /* Soongsil-Life-iOS/Resource/Font */,
 			);
 			name = "Soongsil-Life-iOS";
 			packageProductDependencies = (
@@ -124,6 +131,7 @@
 			fileSystemSynchronizedGroups = (
 				2D5A8D733017714B0044D85C /* AppSource */,
 				C10000000000000000000001 /* Soongsil-Life-iOS/Resource/Assets Catalog */,
+				C20000000000000000000001 /* Soongsil-Life-iOS/Resource/Font */,
 			);
 			name = "Soongsil-Life-iOS-Preview";
 			packageProductDependencies = (
