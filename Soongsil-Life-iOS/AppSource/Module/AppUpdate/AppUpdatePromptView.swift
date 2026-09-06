@@ -10,7 +10,8 @@ struct AppUpdatePromptView: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.45)
+            Rectangle()
+                .fill(.realBlack.opacity(0.45))
                 .ignoresSafeArea()
 
             VStack(spacing: 20) {
