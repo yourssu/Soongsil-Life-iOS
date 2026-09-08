@@ -124,16 +124,18 @@ struct SemesterListView: View {
             VStack(spacing: 18) {
                 gradeMetric(
                     title: L10n.Soomsil.earnedCredits,
-                    primaryValue: formattedNumber(cumulativeEarnedCredits),
+                    primaryValue: formattedNumber(
+                        viewModel.output.certificateEarnedCredits
+                    ),
                     secondaryValue: "\(graduationCredits)"
                 )
                 gradeMetric(
                     title: "학기별 석차",
-                    rank: semester.semesterRank
+                    rank: semester.validSemesterRank ?? "-"
                 )
                 gradeMetric(
                     title: "전체 석차",
-                    rank: semester.totalRank
+                    rank: semester.validTotalRank ?? "-"
                 )
             }
         }
@@ -218,12 +220,9 @@ struct SemesterListView: View {
             }
     }
 
-    private var cumulativeEarnedCredits: Double {
-        viewModel.output.semesters.reduce(0) { $0 + $1.earnedCredits }
-    }
-
-    private func formattedNumber(_ value: Double) -> String {
-        value.rounded() == value
+    private func formattedNumber(_ value: Double?) -> String {
+        guard let value else { return "-" }
+        return value.rounded() == value
             ? String(format: "%.0f", value)
             : String(format: "%.1f", value)
     }
@@ -254,6 +253,7 @@ struct SemesterListView: View {
             viewModel: SemesterViewModel(
                 repository: container.gradeRepository,
                 semesters: MockLMSFixtures.semesters,
+                certificateEarnedCredits: MockLMSFixtures.dashboard.cumulativeEarnedCredits,
                 initialCourses: MockLMSFixtures.courses
             )
         )

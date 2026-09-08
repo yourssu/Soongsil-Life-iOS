@@ -4,7 +4,7 @@ import LmsApi
 final class GradeService: GradeServiceProtocol {
     private let api = LmsApi.shared
 
-    func fetchSemesters() async throws -> [SemesterGrade] {
+    func fetchGradeSummary() async throws -> GradeSummary {
         try await LMSCallbackBridge.call { completion in
             api.getSemesterGradeSummaryTable { result in
                 guard result.success, let table = result.summaryTable else {
@@ -16,30 +16,49 @@ final class GradeService: GradeServiceProtocol {
                     )
                     return
                 }
+                let semesters: [SemesterGrade] = table.items.compactMap {
+                    guard let semester = self.academicSemester($0.semester) else {
+                        return nil
+                    }
+                    return SemesterGrade(
+                        year: $0.year,
+                        semester: semester,
+                        attemptedCredits: Double($0.attemptedCredits) ?? 0,
+                        gpa: Double($0.gpa) ?? 0,
+                        earnedCredits: Double($0.earnedCredits) ?? 0,
+                        passFailCredits: Double($0.pfCredits) ?? 0,
+                        gradePointSum: Double($0.gpaSum) ?? 0,
+                        arithmeticMean: Double($0.arithmeticMean) ?? 0,
+                        semesterRank: $0.semesterRank,
+                        totalRank: $0.totalRank,
+                        academicWarning: $0.academicWarning,
+                        consultationStatus: $0.consultationStatus,
+                        failedYearStatus: $0.failedYearStatus
+                    )
+                }
                 completion(
-                    .success(table.items.compactMap {
-                        guard let semester = self.academicSemester($0.semester) else {
-                            return nil
-                        }
-                        return SemesterGrade(
-                            year: $0.year,
-                            semester: semester,
-                            attemptedCredits: Double($0.attemptedCredits) ?? 0,
-                            gpa: Double($0.gpa) ?? 0,
-                            earnedCredits: Double($0.earnedCredits) ?? 0,
-                            passFailCredits: Double($0.pfCredits) ?? 0,
-                            gradePointSum: Double($0.gpaSum) ?? 0,
-                            arithmeticMean: Double($0.arithmeticMean) ?? 0,
-                            semesterRank: $0.semesterRank,
-                            totalRank: $0.totalRank,
-                            academicWarning: $0.academicWarning,
-                            consultationStatus: $0.consultationStatus,
-                            failedYearStatus: $0.failedYearStatus
+                    .success(GradeSummary(
+                        semesters: semesters,
+                        totals: GradeTotals(
+                            academicRecordGPA: self.decimal(table.academicRecordGpa),
+                            certificateGPA: self.decimal(table.certificateGpa),
+                            certificateEarnedCredits: self.decimal(
+                                table.certificateEarnedCredits
+                            )
                         )
-                    })
+                    ))
                 )
             }
         }
+    }
+
+    private func decimal(_ value: String?) -> Double? {
+        guard let value else { return nil }
+        let normalized = value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: ",", with: "")
+        guard !normalized.isEmpty else { return nil }
+        return Double(normalized)
     }
 
     func fetchCourses(

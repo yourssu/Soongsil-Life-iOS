@@ -4011,12 +4011,15 @@ __attribute__((swift_name("SemesterGradeSummaryCell.Companion")))
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("SemesterGradeSummaryTable")))
 @interface LmsApiSemesterGradeSummaryTable : LmsApiBase
-- (instancetype)initWithItems:(NSArray<LmsApiSemesterGradeSummaryCell *> *)items __attribute__((swift_name("init(items:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithItems:(NSArray<LmsApiSemesterGradeSummaryCell *> *)items academicRecordGpa:(NSString *)academicRecordGpa certificateGpa:(NSString *)certificateGpa certificateEarnedCredits:(NSString *)certificateEarnedCredits __attribute__((swift_name("init(items:academicRecordGpa:certificateGpa:certificateEarnedCredits:)"))) __attribute__((objc_designated_initializer));
 @property (class, readonly, getter=companion) LmsApiSemesterGradeSummaryTableCompanion *companion __attribute__((swift_name("companion")));
-- (LmsApiSemesterGradeSummaryTable *)doCopyItems:(NSArray<LmsApiSemesterGradeSummaryCell *> *)items __attribute__((swift_name("doCopy(items:)")));
+- (LmsApiSemesterGradeSummaryTable *)doCopyItems:(NSArray<LmsApiSemesterGradeSummaryCell *> *)items academicRecordGpa:(NSString *)academicRecordGpa certificateGpa:(NSString *)certificateGpa certificateEarnedCredits:(NSString *)certificateEarnedCredits __attribute__((swift_name("doCopy(items:academicRecordGpa:certificateGpa:certificateEarnedCredits:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString *academicRecordGpa __attribute__((swift_name("academicRecordGpa")));
+@property (readonly) NSString *certificateEarnedCredits __attribute__((swift_name("certificateEarnedCredits")));
+@property (readonly) NSString *certificateGpa __attribute__((swift_name("certificateGpa")));
 @property (readonly) NSArray<LmsApiSemesterGradeSummaryCell *> *items __attribute__((swift_name("items")));
 @end
 

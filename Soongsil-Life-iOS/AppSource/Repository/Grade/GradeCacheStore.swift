@@ -16,17 +16,17 @@ protocol GradeCacheStoreProtocol: AnyObject {
     func deactivateAccount()
     func makeWriteContext() -> GradeCacheWriteContext?
 
-    func cachedSemesters() -> GradeCacheValue<[SemesterGrade]>?
+    func cachedGradeSummary() -> GradeCacheValue<GradeSummary>?
     func cachedCourses(
         year: String,
         semester: AcademicSemester
     ) -> GradeCacheValue<[CourseGrade]>?
 
-    func saveSemesters(
-        _ semesters: [SemesterGrade],
+    func saveGradeSummary(
+        _ summary: GradeSummary,
         savedAt: Date,
         using context: GradeCacheWriteContext
-    ) -> [SemesterGrade]?
+    ) -> GradeSummary?
     func saveCourses(
         _ courses: [CourseGrade],
         year: String,
@@ -48,6 +48,7 @@ final class FileGradeCacheStore: GradeCacheStoreProtocol {
         let schemaVersion: Int
         let accountKey: String
         var semesters: Entry<[SemesterGrade]>?
+        var gradeTotals: Entry<GradeTotals>?
         var coursesBySemester: [String: Entry<[CourseGrade]>]
     }
 
@@ -86,6 +87,7 @@ final class FileGradeCacheStore: GradeCacheStoreProtocol {
                     schemaVersion: Self.schemaVersion,
                     accountKey: accountKey,
                     semesters: nil,
+                    gradeTotals: nil,
                     coursesBySemester: [:]
                 )
         }
@@ -112,10 +114,24 @@ final class FileGradeCacheStore: GradeCacheStoreProtocol {
         }
     }
 
-    func cachedSemesters() -> GradeCacheValue<[SemesterGrade]>? {
+    func cachedGradeSummary() -> GradeCacheValue<GradeSummary>? {
         lock.withLock {
-            guard let entry = currentEnvelope()?.semesters else { return nil }
-            return GradeCacheValue(value: entry.value, savedAt: entry.savedAt)
+            guard let envelope = currentEnvelope(),
+                  let semesterEntry = envelope.semesters
+            else {
+                return nil
+            }
+            let totalsEntry = envelope.gradeTotals
+            return GradeCacheValue(
+                value: GradeSummary(
+                    semesters: semesterEntry.value,
+                    totals: totalsEntry?.value
+                ),
+                savedAt: min(
+                    semesterEntry.savedAt,
+                    totalsEntry?.savedAt ?? semesterEntry.savedAt
+                )
+            )
         }
     }
 
@@ -133,11 +149,11 @@ final class FileGradeCacheStore: GradeCacheStoreProtocol {
         }
     }
 
-    func saveSemesters(
-        _ semesters: [SemesterGrade],
+    func saveGradeSummary(
+        _ summary: GradeSummary,
         savedAt: Date,
         using context: GradeCacheWriteContext
-    ) -> [SemesterGrade]? {
+    ) -> GradeSummary? {
         lock.withLock {
             guard isCurrent(context), var envelope = currentEnvelope() else {
                 return nil
@@ -146,19 +162,37 @@ final class FileGradeCacheStore: GradeCacheStoreProtocol {
             // 정상 빈 응답은 그대로 저장하되, 일부 학기만 내려오는 응답에서는
             // 이미 확인한 과거 학기를 보존합니다.
             let merged: [SemesterGrade]
-            if semesters.isEmpty {
+            if summary.semesters.isEmpty {
                 merged = []
             } else {
                 var mergedByID = Dictionary(
                     uniqueKeysWithValues: (envelope.semesters?.value ?? []).map { ($0.id, $0) }
                 )
-                semesters.forEach { mergedByID[$0.id] = $0 }
+                summary.semesters.forEach { mergedByID[$0.id] = $0 }
                 merged = mergedByID.values.sorted(by: Self.isEarlierSemester)
             }
 
             envelope.semesters = Entry(savedAt: savedAt, value: merged)
+            if let freshTotals = summary.totals {
+                let mergedTotals = freshTotals.fillingMissingValues(
+                    from: envelope.gradeTotals?.value
+                )
+                // 학기 행은 왔는데 요약 control만 비어 있는 부분 응답이면 기존
+                // 증명 값을 지우거나 갱신 시각을 연장하지 않고 다음 접근에 재시도합니다.
+                if freshTotals.hasAnyValue || summary.semesters.isEmpty {
+                    envelope.gradeTotals = Entry(
+                        savedAt: freshTotals.hasCompleteCertificateSummary
+                            ? savedAt
+                            : envelope.gradeTotals?.savedAt ?? savedAt,
+                        value: mergedTotals
+                    )
+                }
+            }
             guard persist(envelope, using: context) else { return nil }
-            return merged
+            return GradeSummary(
+                semesters: merged,
+                totals: envelope.gradeTotals?.value
+            )
         }
     }
 
@@ -279,6 +313,7 @@ final class InMemoryGradeCacheStore: GradeCacheStoreProtocol {
     private var activeAccountKey: String?
     private var epoch: UInt64 = 0
     private var semesterEntry: Entry<[SemesterGrade]>?
+    private var totalsEntry: Entry<GradeTotals>?
     private var courseEntries: [String: Entry<[CourseGrade]>] = [:]
 
     init(activeStudentID: String? = "in-memory") {
@@ -290,6 +325,7 @@ final class InMemoryGradeCacheStore: GradeCacheStoreProtocol {
             advanceEpoch()
             if activeAccountKey != studentID {
                 semesterEntry = nil
+                totalsEntry = nil
                 courseEntries = [:]
             }
             activeAccountKey = studentID
@@ -301,6 +337,7 @@ final class InMemoryGradeCacheStore: GradeCacheStoreProtocol {
             advanceEpoch()
             activeAccountKey = nil
             semesterEntry = nil
+            totalsEntry = nil
             courseEntries = [:]
         }
     }
@@ -312,10 +349,19 @@ final class InMemoryGradeCacheStore: GradeCacheStoreProtocol {
         }
     }
 
-    func cachedSemesters() -> GradeCacheValue<[SemesterGrade]>? {
+    func cachedGradeSummary() -> GradeCacheValue<GradeSummary>? {
         lock.withLock {
             guard activeAccountKey != nil, let semesterEntry else { return nil }
-            return GradeCacheValue(value: semesterEntry.value, savedAt: semesterEntry.savedAt)
+            return GradeCacheValue(
+                value: GradeSummary(
+                    semesters: semesterEntry.value,
+                    totals: totalsEntry?.value
+                ),
+                savedAt: min(
+                    semesterEntry.savedAt,
+                    totalsEntry?.savedAt ?? semesterEntry.savedAt
+                )
+            )
         }
     }
 
@@ -333,27 +379,43 @@ final class InMemoryGradeCacheStore: GradeCacheStoreProtocol {
         }
     }
 
-    func saveSemesters(
-        _ semesters: [SemesterGrade],
+    func saveGradeSummary(
+        _ summary: GradeSummary,
         savedAt: Date,
         using context: GradeCacheWriteContext
-    ) -> [SemesterGrade]? {
+    ) -> GradeSummary? {
         lock.withLock {
             guard isCurrent(context) else { return nil }
             let merged: [SemesterGrade]
-            if semesters.isEmpty {
+            if summary.semesters.isEmpty {
                 merged = []
             } else {
                 var mergedByID = Dictionary(
                     uniqueKeysWithValues: (semesterEntry?.value ?? []).map { ($0.id, $0) }
                 )
-                semesters.forEach { mergedByID[$0.id] = $0 }
+                summary.semesters.forEach { mergedByID[$0.id] = $0 }
                 merged = mergedByID.values.sorted(
                     by: FileGradeCacheStore.isEarlierSemester
                 )
             }
             semesterEntry = Entry(savedAt: savedAt, value: merged)
-            return merged
+            if let freshTotals = summary.totals {
+                let mergedTotals = freshTotals.fillingMissingValues(
+                    from: totalsEntry?.value
+                )
+                if freshTotals.hasAnyValue || summary.semesters.isEmpty {
+                    totalsEntry = Entry(
+                        savedAt: freshTotals.hasCompleteCertificateSummary
+                            ? savedAt
+                            : totalsEntry?.savedAt ?? savedAt,
+                        value: mergedTotals
+                    )
+                }
+            }
+            return GradeSummary(
+                semesters: merged,
+                totals: totalsEntry?.value
+            )
         }
     }
 

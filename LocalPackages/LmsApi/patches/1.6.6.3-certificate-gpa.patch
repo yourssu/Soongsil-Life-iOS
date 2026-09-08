@@ -1,0 +1,93 @@
+--- a/library/src/commonMain/kotlin/io/github/chlwhdtn03/data/Lms/GradeTable.kt
++++ b/library/src/commonMain/kotlin/io/github/chlwhdtn03/data/Lms/GradeTable.kt
+@@ -42,2 +42,5 @@ data class SemesterGradeSummaryTable(
+-    val items: List<SemesterGradeSummaryCell>
++    val items: List<SemesterGradeSummaryCell>,
++    val academicRecordGpa: String = "",   // 학적부평점평균
++    val certificateGpa: String = "",      // 증명평점평균
++    val certificateEarnedCredits: String = "" // 증명취득학점
+ )
+--- a/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/GradeService.kt
++++ b/library/src/commonMain/kotlin/io/github/chlwhdtn03/internal/GradeService.kt
+@@ -168,3 +168,9 @@
+         }
+-        return SemesterGradeSummaryTable(items = merged.values.toList())
++        return SemesterGradeSummaryTable(
++            items = merged.values.toList(),
++            academicRecordGpa = first.academicRecordGpa.ifBlank { second.academicRecordGpa },
++            certificateGpa = first.certificateGpa.ifBlank { second.certificateGpa },
++            certificateEarnedCredits = first.certificateEarnedCredits
++                .ifBlank { second.certificateEarnedCredits },
++        )
+     }
+@@ -201,3 +207,17 @@
+         }
+-        return SemesterGradeSummaryTable(items = result)
++        return SemesterGradeSummaryTable(
++            items = result,
++            academicRecordGpa = findControlValue(html, "학적부평점평균")
++                ?.decodeHtmlEntities()
++                ?.trim()
++                .orEmpty(),
++            certificateGpa = findControlValue(html, "증명평점평균")
++                ?.decodeHtmlEntities()
++                ?.trim()
++                .orEmpty(),
++            certificateEarnedCredits = findControlValue(html, "증명취득학점")
++                ?.decodeHtmlEntities()
++                ?.trim()
++                .orEmpty(),
++        )
+     }
+--- a/library/src/commonTest/kotlin/io/github/chlwhdtn03/SemesterGradeSummaryParserTest.kt
++++ b/library/src/commonTest/kotlin/io/github/chlwhdtn03/SemesterGradeSummaryParserTest.kt
+@@ -37,2 +37,21 @@
+     @Test
++    fun parsesAcademicRecordAndCertificateGpasFromLabeledControls() {
++        val html = """
++            <label id="WD0174-label" for="WD0174"><span>학적부평점평균</span></label>
++            <input id="WD0174" type="text" value="3.54">
++            <label id="WD0175-label" for="WD0175"><span>증명평점평균</span></label>
++            <input id="WD0175" type="text" value="3.69">
++            <label id="WD0176-label" for="WD0176"><span>증명취득학점</span></label>
++            <input id="WD0176" type="text" value="131.0">
++            <table>${semesterRow("2026", "1학기")}</table>
++        """.trimIndent()
++
++        val result = LmsApi.parseSemesterGradeSummaryTable(html)
++
++        assertEquals("3.54", result.academicRecordGpa)
++        assertEquals("3.69", result.certificateGpa)
++        assertEquals("131.0", result.certificateEarnedCredits)
++    }
++
++    @Test
+     fun findsSummaryTableControlId() {
+@@ -53,3 +72,7 @@
+         val first = LmsApi.parseSemesterGradeSummaryTable(
+-            "<table>${semesterRow("2023", "1학기")}${semesterRow("2022", "2학기")}</table>",
++            """
++                <label for="ACADEMIC"><span>학적부평점평균</span></label>
++                <input id="ACADEMIC" value="3.54">
++                <table>${semesterRow("2023", "1학기")}${semesterRow("2022", "2학기")}</table>
++            """.trimIndent(),
+         )
+@@ -56,3 +79,11 @@
+         val second = LmsApi.parseSemesterGradeSummaryTable(
+-            "<table>${semesterRow("2022", "2학기")}${semesterRow("2022", "1학기")}</table>",
++            """
++                <label for="ACADEMIC"><span>학적부평점평균</span></label>
++                <input id="ACADEMIC" value="4.00">
++                <label for="CERTIFICATE"><span>증명평점평균</span></label>
++                <input id="CERTIFICATE" value="3.69">
++                <label for="CERTIFICATE_CREDITS"><span>증명취득학점</span></label>
++                <input id="CERTIFICATE_CREDITS" value="131.0">
++                <table>${semesterRow("2022", "2학기")}${semesterRow("2022", "1학기")}</table>
++            """.trimIndent(),
+         )
+@@ -62,2 +93,5 @@
+         assertEquals(listOf("2023-1학기", "2022-2학기", "2022-1학기"), result.items.map { "${it.year}-${it.semester?.nameKor}" })
++        assertEquals("3.54", result.academicRecordGpa)
++        assertEquals("3.69", result.certificateGpa)
++        assertEquals("131.0", result.certificateEarnedCredits)
+     }
