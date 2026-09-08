@@ -1,7 +1,28 @@
 {
-  "latestVersion": "1.0.0",
+  "enabled": true,
+  "revision": 1,
+  "latestVersion": "1.0.1",
   "minimumVersion": "1.0.0",
+  "forceMajorMinorUpdates": true,
   "title": "새로운 버전이 출시되었어요",
-  "message": "안정적인 서비스 이용을 위해 최신 버전으로 업데이트해 주세요.",
-  "appStoreURL": null
+  "message": "더 안정적이고 편리한 이용을 위해 최신 버전으로 업데이트해 주세요.",
+  "appStoreURL": "https://apps.apple.com/kr/app/%EC%8A%AC%EA%B8%B0%EB%A1%9C%EC%9A%B4-%EC%88%AD%EC%8B%A4%EC%83%9D%ED%99%9C/id6805227169",
+  "requiredPrompt": {
+    "title": "업데이트가 필요해요",
+    "message": "계속 이용하려면 최신 버전으로 업데이트해 주세요.",
+    "highlights": [
+      "중요한 오류를 수정하고 안정성을 개선했어요."
+    ],
+    "updateButtonTitle": "업데이트하러 가기"
+  },
+  "optionalPrompt": {
+    "title": "새로운 버전이 나왔어요",
+    "message": "더 편리해진 슬기로운 숭실생활을 만나보세요.",
+    "highlights": [
+      "성적·채플·시간표 정보를 더 빠르게 확인할 수 있어요.",
+      "앱 전반의 디자인과 사용성을 개선했어요."
+    ],
+    "updateButtonTitle": "업데이트하기",
+    "postponeButtonTitle": "다음에 하기"
+  }
 }
