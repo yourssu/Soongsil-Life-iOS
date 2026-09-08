@@ -533,6 +533,11 @@ private struct LoopingLogoVideoView: UIViewRepresentable {
         private let looper: AVPlayerLooper
 
         init(url: URL) {
+            try? AVAudioSession.sharedInstance().setCategory(
+                .ambient,
+                mode: .default
+            )
+
             let player = AVQueuePlayer()
             player.isMuted = true
             player.actionAtItemEnd = .none
