@@ -174,7 +174,7 @@ struct StudentInfoCard: View {
 
 struct GradeOverviewCard: View {
     let cumulativeGPA: Double?
-    let earnedCredits: Double
+    let earnedCredits: Double?
     let semesterRank: String
     let totalRank: String
 
@@ -213,6 +213,7 @@ struct GradeOverviewCard: View {
     }
 
     private var formattedCredits: String {
+        guard let earnedCredits else { return "-" }
         if earnedCredits.rounded() == earnedCredits {
             return String(Int(earnedCredits))
         }
@@ -834,8 +835,8 @@ struct SoomsilLoadingOverlay: View {
             GradeOverviewCard(
                 cumulativeGPA: MockLMSFixtures.dashboard.cumulativeGPA,
                 earnedCredits: MockLMSFixtures.dashboard.cumulativeEarnedCredits,
-                semesterRank: MockLMSFixtures.semesters.last?.semesterRank ?? "-",
-                totalRank: MockLMSFixtures.semesters.last?.totalRank ?? "-"
+                semesterRank: MockLMSFixtures.dashboard.latestRankedSemester?.validSemesterRank ?? "-",
+                totalRank: MockLMSFixtures.dashboard.latestRankedSemester?.validTotalRank ?? "-"
             )
             GPATrendCard(semesters: MockLMSFixtures.semesters)
             ChapelAttendanceCard(

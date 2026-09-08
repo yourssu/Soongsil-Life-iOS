@@ -16,6 +16,7 @@ final class SemesterViewModel: BaseViewModel {
 
     struct Output {
         let semesters: [SemesterGrade]
+        let certificateEarnedCredits: Double?
         var selectedSemesterID: SemesterGrade.ID?
         var coursesBySemester: [SemesterGrade.ID: [CourseGrade]]
         var loadingSemesterIDs: Set<SemesterGrade.ID> = []
@@ -44,6 +45,7 @@ final class SemesterViewModel: BaseViewModel {
     init(
         repository: GradeRepositoryProtocol,
         semesters: [SemesterGrade],
+        certificateEarnedCredits: Double? = nil,
         initialCourses: [CourseGrade]? = nil
     ) {
         let sortedSemesters = semesters.sorted {
@@ -68,6 +70,7 @@ final class SemesterViewModel: BaseViewModel {
         self.repository = repository
         output = Output(
             semesters: sortedSemesters,
+            certificateEarnedCredits: certificateEarnedCredits,
             selectedSemesterID: latestSemesterID,
             coursesBySemester: initialCoursesBySemester
         )

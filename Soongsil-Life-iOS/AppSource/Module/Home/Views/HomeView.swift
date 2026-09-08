@@ -102,8 +102,8 @@ struct HomeView: View {
                 GradeOverviewCard(
                     cumulativeGPA: dashboard.cumulativeGPA,
                     earnedCredits: dashboard.cumulativeEarnedCredits,
-                    semesterRank: dashboard.latestSemester?.semesterRank ?? "-",
-                    totalRank: dashboard.latestSemester?.totalRank ?? "-"
+                    semesterRank: dashboard.latestRankedSemester?.validSemesterRank ?? "-",
+                    totalRank: dashboard.latestRankedSemester?.validTotalRank ?? "-"
                 )
             }
             .buttonStyle(.plain)
@@ -207,6 +207,7 @@ struct HomeView: View {
                     viewModel: SemesterViewModel(
                         repository: gradeRepository,
                         semesters: dashboard.semesters,
+                        certificateEarnedCredits: dashboard.cumulativeEarnedCredits,
                         initialCourses: viewModel.output.hasLoadedCurrentCourses
                             ? dashboard.currentCourses
                             : nil
@@ -417,8 +418,8 @@ struct HomeView: View {
         // 요청을 겹치지 않으면서도 화면은 요약 응답 직후 사용할 수 있습니다.
         await loadDashboard(force: force)
         guard !Task.isCancelled else { return }
-        // 저장된 현재 학기 데이터는 즉시 표시하고 하루가 지난 경우에만 뒤에서
-        // 갱신합니다. 새로고침 제스처는 force로 이 정책을 우회합니다.
+        // 저장된 현재 학기 데이터는 즉시 표시하고, 앱 세션의 첫 조회와 상태별
+        // 만료 시점에 뒤에서 갱신합니다. 새로고침 제스처는 이 정책을 우회합니다.
         await loadChapel(force: force)
     }
 

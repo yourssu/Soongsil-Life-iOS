@@ -8,18 +8,18 @@ final class HomeRepository: HomeRepositoryProtocol {
     }
 
     func cachedDashboardSummary() -> Dashboard? {
-        guard let semesters = gradeRepository.cachedSemesters() else {
+        guard let summary = gradeRepository.cachedGradeSummary() else {
             return nil
         }
-        return makeDashboard(semesters: semesters)
+        return makeDashboard(summary: summary)
     }
 
     func fetchDashboardSummary(forceRefresh: Bool) async throws -> Dashboard {
-        let semesters = try await gradeRepository.fetchSemesters(
+        let summary = try await gradeRepository.fetchGradeSummary(
             forceRefresh: forceRefresh
         )
 
-        return makeDashboard(semesters: semesters)
+        return makeDashboard(summary: summary)
     }
 
     func cachedCourses(
@@ -42,10 +42,11 @@ final class HomeRepository: HomeRepositoryProtocol {
         )
     }
 
-    private func makeDashboard(semesters: [SemesterGrade]) -> Dashboard {
+    private func makeDashboard(summary: GradeSummary) -> Dashboard {
         Dashboard(
             profile: nil,
-            semesters: semesters,
+            semesters: summary.semesters,
+            gradeTotals: summary.totals,
             currentCourses: [],
             chapelEnrollmentState: nil,
             chapelErrorMessage: nil

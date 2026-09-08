@@ -95,6 +95,7 @@ private extension Dashboard {
         Dashboard(
             profile: profile,
             semesters: semesters,
+            gradeTotals: gradeTotals,
             currentCourses: courses,
             chapelEnrollmentState: chapelEnrollmentState,
             chapelErrorMessage: chapelErrorMessage

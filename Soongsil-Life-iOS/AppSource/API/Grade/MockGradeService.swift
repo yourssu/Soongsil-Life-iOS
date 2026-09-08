@@ -7,9 +7,9 @@ final class MockGradeService: GradeServiceProtocol {
         self.delay = delay
     }
 
-    func fetchSemesters() async throws -> [SemesterGrade] {
+    func fetchGradeSummary() async throws -> GradeSummary {
         try await MockDelay.wait(delay)
-        return MockLMSFixtures.semesters
+        return MockLMSFixtures.gradeSummary
     }
 
     func fetchCourses(

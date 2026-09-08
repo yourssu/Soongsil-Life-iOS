@@ -175,7 +175,7 @@ final class FileChapelCacheStore: ChapelCacheStoreProtocol {
                case let .enrolled(cachedChapel) = envelope.state,
                cachedChapel.academicTerm == freshChapel.academicTerm {
                 valueToSave = .enrolled(
-                    cachedChapel.updatingAttendance(from: freshChapel)
+                    cachedChapel.merging(with: freshChapel)
                 )
             } else {
                 // 학기가 달라졌거나 수료/미수강 상태가 바뀌면 전체 상태를 교체합니다.
@@ -359,7 +359,7 @@ final class InMemoryChapelCacheStore: ChapelCacheStoreProtocol {
                case let .enrolled(cachedChapel)? = current,
                cachedChapel.academicTerm == freshChapel.academicTerm {
                 current = .enrolled(
-                    cachedChapel.updatingAttendance(from: freshChapel)
+                    cachedChapel.merging(with: freshChapel)
                 )
             } else {
                 current = state
@@ -403,17 +403,27 @@ private extension ChapelStatus {
         "\(year.trimmingCharacters(in: .whitespacesAndNewlines))-\(semester.rawValue)"
     }
 
-    func updatingAttendance(from fresh: ChapelStatus) -> ChapelStatus {
+    func merging(with fresh: ChapelStatus) -> ChapelStatus {
         ChapelStatus(
             year: year,
             semester: semester,
-            classGroup: classGroup,
-            timetable: timetable,
-            seat: seat,
-            classroom: classroom,
+            classGroup: fresh.classGroup.fallingBack(to: classGroup),
+            timetable: fresh.timetable.fallingBack(to: timetable),
+            seat: fresh.seat.fallingBack(to: seat),
+            classroom: fresh.classroom.fallingBack(to: classroom),
             absenceCount: fresh.absenceCount,
             gradeResult: fresh.gradeResult,
             attendance: fresh.attendance
         )
+    }
+}
+
+private extension String {
+    func fallingBack(to cachedValue: String) -> String {
+        let normalized = trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty, normalized != "-", normalized != "미배정" else {
+            return cachedValue
+        }
+        return self
     }
 }

@@ -1,8 +1,8 @@
 import Foundation
 
 protocol GradeRepositoryProtocol: AnyObject {
-    func cachedSemesters() -> [SemesterGrade]?
-    func fetchSemesters(forceRefresh: Bool) async throws -> [SemesterGrade]
+    func cachedGradeSummary() -> GradeSummary?
+    func fetchGradeSummary(forceRefresh: Bool) async throws -> GradeSummary
 
     func cachedCourses(
         year: String,
@@ -16,6 +16,14 @@ protocol GradeRepositoryProtocol: AnyObject {
 }
 
 extension GradeRepositoryProtocol {
+    func cachedSemesters() -> [SemesterGrade]? {
+        cachedGradeSummary()?.semesters
+    }
+
+    func fetchSemesters(forceRefresh: Bool) async throws -> [SemesterGrade] {
+        try await fetchGradeSummary(forceRefresh: forceRefresh).semesters
+    }
+
     func fetchSemesters() async throws -> [SemesterGrade] {
         try await fetchSemesters(forceRefresh: false)
     }

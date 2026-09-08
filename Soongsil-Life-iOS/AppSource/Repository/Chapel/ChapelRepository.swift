@@ -4,17 +4,20 @@ final class ChapelRepository: ChapelRepositoryProtocol {
     private let service: ChapelServiceProtocol
     private let cacheStore: ChapelCacheStoreProtocol
     private let refreshInterval: TimeInterval
+    private let pendingAssignmentRefreshInterval: TimeInterval
     private let now: @Sendable () -> Date
 
     init(
         service: ChapelServiceProtocol,
         cacheStore: ChapelCacheStoreProtocol = InMemoryChapelCacheStore(),
         refreshInterval: TimeInterval = 24 * 60 * 60,
+        pendingAssignmentRefreshInterval: TimeInterval = 15 * 60,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.service = service
         self.cacheStore = cacheStore
         self.refreshInterval = refreshInterval
+        self.pendingAssignmentRefreshInterval = pendingAssignmentRefreshInterval
         self.now = now
     }
 
@@ -23,11 +26,26 @@ final class ChapelRepository: ChapelRepositoryProtocol {
     }
 
     var isCachedChapelFresh: Bool {
-        guard let refreshedAt = cacheStore.currentChapelRefreshedAt else {
+        guard let cachedState = cacheStore.currentEnrollmentState,
+              let refreshedAt = cacheStore.currentChapelRefreshedAt
+        else {
             return false
         }
+
+        let freshnessInterval: TimeInterval
+        switch cachedState {
+        case let .enrolled(chapel):
+            freshnessInterval = Self.hasPublishedSeat(chapel)
+                ? refreshInterval
+                : pendingAssignmentRefreshInterval
+        case .notEnrolled:
+            freshnessInterval = pendingAssignmentRefreshInterval
+        case .completed:
+            freshnessInterval = refreshInterval
+        }
+
         let age = now().timeIntervalSince(refreshedAt)
-        return age >= 0 && age < refreshInterval
+        return age >= 0 && age < freshnessInterval
     }
 
     func fetchChapelEnrollmentState() async throws -> ChapelEnrollmentState {
@@ -48,5 +66,10 @@ final class ChapelRepository: ChapelRepositoryProtocol {
             throw CancellationError()
         }
         return displayedState
+    }
+
+    private static func hasPublishedSeat(_ chapel: ChapelStatus) -> Bool {
+        let seat = chapel.seat.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !seat.isEmpty && seat != "-" && seat != "미배정"
     }
 }

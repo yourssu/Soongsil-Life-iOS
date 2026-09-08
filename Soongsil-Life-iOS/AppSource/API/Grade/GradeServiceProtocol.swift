@@ -1,7 +1,7 @@
 import Foundation
 
 protocol GradeServiceProtocol: AnyObject {
-    func fetchSemesters() async throws -> [SemesterGrade]
+    func fetchGradeSummary() async throws -> GradeSummary
     func fetchCourses(
         year: String,
         semester: AcademicSemester

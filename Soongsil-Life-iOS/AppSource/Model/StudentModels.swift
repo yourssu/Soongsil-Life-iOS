@@ -118,6 +118,68 @@ struct SemesterGrade: Codable, Equatable, Identifiable, Sendable {
         }
         return 0
     }
+
+    /// U-Saint는 석차가 산정되지 않은 계절학기/P/F 학기에 `0/0`을 내려줍니다.
+    /// 홈에서는 실제로 산정된 값만 노출할 수 있도록 유효한 석차만 반환합니다.
+    var validSemesterRank: String? {
+        Self.validatedRank(semesterRank)
+    }
+
+    var validTotalRank: String? {
+        Self.validatedRank(totalRank)
+    }
+
+    private static func validatedRank(_ value: String) -> String? {
+        let components = value
+            .replacingOccurrences(of: ",", with: "")
+            .split(separator: "/", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        guard components.count == 2,
+              let rank = Int(components[0]),
+              let total = Int(components[1]),
+              rank > 0,
+              total > 0,
+              rank <= total else {
+            return nil
+        }
+
+        return "\(rank)/\(total)"
+    }
+}
+
+/// U-Saint가 학기별 성적 표와 별도로 제공하는 누적 평점입니다.
+/// 두 값은 재수강 이전 성적의 증명서 표기 여부 때문에 서로 다를 수 있습니다.
+struct GradeTotals: Codable, Equatable, Sendable {
+    let academicRecordGPA: Double?
+    let certificateGPA: Double?
+    let certificateEarnedCredits: Double?
+
+    var hasAnyValue: Bool {
+        academicRecordGPA != nil
+            || certificateGPA != nil
+            || certificateEarnedCredits != nil
+    }
+
+    var hasCompleteCertificateSummary: Bool {
+        certificateGPA != nil && certificateEarnedCredits != nil
+    }
+
+    func fillingMissingValues(from cached: GradeTotals?) -> GradeTotals {
+        GradeTotals(
+            academicRecordGPA: academicRecordGPA ?? cached?.academicRecordGPA,
+            certificateGPA: certificateGPA ?? cached?.certificateGPA,
+            certificateEarnedCredits: certificateEarnedCredits
+                ?? cached?.certificateEarnedCredits
+        )
+    }
+}
+
+struct GradeSummary: Equatable, Sendable {
+    let semesters: [SemesterGrade]
+    /// `nil`이면 이 필드를 지원하기 전 캐시입니다. 최신 응답에서 값 파싱에
+    /// 실패한 경우에는 각 속성이 nil인 `GradeTotals`가 저장됩니다.
+    let totals: GradeTotals?
 }
 
 struct CourseGrade: Codable, Equatable, Identifiable, Sendable {
@@ -207,6 +269,7 @@ struct Dashboard: Sendable {
     /// 프로필이 다시 필요한 화면에서만 별도 조회해 초기 홈 로딩을 막지 않습니다.
     let profile: StudentProfile?
     let semesters: [SemesterGrade]
+    let gradeTotals: GradeTotals?
     let currentCourses: [CourseGrade]
     let chapelEnrollmentState: ChapelEnrollmentState?
     let chapelErrorMessage: String?
@@ -226,14 +289,33 @@ struct Dashboard: Sendable {
         }
     }
 
-    var cumulativeGPA: Double {
-        let gradePointSum = semesters.reduce(0) { $0 + $1.gradePointSum }
-        let gradedCredits = semesters.reduce(0) { $0 + $1.gradedCredits }
-        guard gradedCredits > 0 else { return 0 }
-        return gradePointSum / gradedCredits
+    /// 계절학기 P/F 성적의 `0/0`이 최근 석차를 덮지 않도록, 석차가 실제로
+    /// 산정된 가장 최근 정규학기를 홈 요약에 사용합니다.
+    var latestRankedSemester: SemesterGrade? {
+        semesters
+            .filter { semester in
+                guard Int(semester.year) != nil,
+                      semester.semester == .first || semester.semester == .second else {
+                    return false
+                }
+                return semester.validSemesterRank != nil || semester.validTotalRank != nil
+            }
+            .max {
+                let lhs = (Int($0.year) ?? 0, $0.semester.sortOrder)
+                let rhs = (Int($1.year) ?? 0, $1.semester.sortOrder)
+                return lhs < rhs
+            }
     }
 
-    var cumulativeEarnedCredits: Double {
-        semesters.reduce(0) { $0 + $1.earnedCredits }
+    /// 홈의 전체 평균은 외부 제출용 성적증명서와 동일한 값을 표시합니다.
+    /// 학기별 학적부 성적으로 다시 계산하면 재수강 이전 성적까지 포함되므로
+    /// 증명평점과 달라질 수 있어 대체 계산을 하지 않습니다.
+    var cumulativeGPA: Double? {
+        gradeTotals?.certificateGPA
+    }
+
+    /// 재수강 이전 취득학점을 중복 합산하지 않도록 증명취득학점을 사용합니다.
+    var cumulativeEarnedCredits: Double? {
+        gradeTotals?.certificateEarnedCredits
     }
 }

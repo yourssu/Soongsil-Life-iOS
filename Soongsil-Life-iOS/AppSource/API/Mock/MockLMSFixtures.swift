@@ -84,6 +84,15 @@ enum MockLMSFixtures {
         )
     ]
 
+    static let gradeSummary = GradeSummary(
+        semesters: semesters,
+        totals: GradeTotals(
+            academicRecordGPA: 3.54,
+            certificateGPA: 3.69,
+            certificateEarnedCredits: 131
+        )
+    )
+
     static let courses = [
         CourseGrade(courseCode: "CHAPEL", title: "비전채플", classification: "교양필수", credits: 0.5, grade: "P", gradePoint: "0", professor: "박영수"),
         CourseGrade(courseCode: "GM001", title: "디지털미디어원리", classification: "전공기초", credits: 3, grade: "A+", gradePoint: "4.5", professor: "김서연"),
@@ -214,6 +223,7 @@ enum MockLMSFixtures {
     static let dashboard = Dashboard(
         profile: profile,
         semesters: semesters,
+        gradeTotals: gradeSummary.totals,
         currentCourses: courses,
         chapelEnrollmentState: .enrolled(chapel),
         chapelErrorMessage: nil

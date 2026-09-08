@@ -34,6 +34,7 @@ final class ChapelViewModel: BaseViewModel {
     private(set) var output = Output()
     private let repository: ChapelRepositoryProtocol
     private let loadFlight = AsyncSingleFlight()
+    private var hasAttemptedSessionRefresh = false
 
     init(repository: ChapelRepositoryProtocol) {
         self.repository = repository
@@ -46,13 +47,17 @@ final class ChapelViewModel: BaseViewModel {
     func transform(input: Input) async -> Output {
         switch input {
         case let .load(force):
-            // 저장된 화면은 즉시 사용하고, 하루가 지난 경우에만 뒤에서 갱신합니다.
+            // 저장된 화면은 즉시 사용하되, 앱 세션의 첫 조회는 캐시가 최신이어도
+            // 백그라운드에서 재검증합니다. 이후에는 상태별 만료 주기를 따릅니다.
+            let requiresSessionRefresh = !hasAttemptedSessionRefresh
             guard force
+                    || requiresSessionRefresh
                     || !output.loadState.hasResolvedContent
                     || !repository.isCachedChapelFresh
             else {
                 return output
             }
+            hasAttemptedSessionRefresh = true
 
             await loadFlight.run { [self] in
                 let previousState = output.loadState

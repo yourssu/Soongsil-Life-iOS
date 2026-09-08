@@ -18,7 +18,7 @@ final class GradeRepository: GradeRepositoryProtocol {
     private let refreshInterval: TimeInterval
     private let now: @Sendable () -> Date
     private let onSummaryChanged: (() -> Void)?
-    private var semesterRequest: Request<[SemesterGrade]>?
+    private var summaryRequest: Request<GradeSummary>?
     private var courseRequests: [CourseKey: Request<[CourseGrade]>] = [:]
 
     init(
@@ -35,54 +35,56 @@ final class GradeRepository: GradeRepositoryProtocol {
         self.onSummaryChanged = onSummaryChanged
     }
 
-    func cachedSemesters() -> [SemesterGrade]? {
-        cacheStore.cachedSemesters()?.value
+    func cachedGradeSummary() -> GradeSummary? {
+        cacheStore.cachedGradeSummary()?.value
     }
 
-    func fetchSemesters(forceRefresh: Bool) async throws -> [SemesterGrade] {
+    func fetchGradeSummary(forceRefresh: Bool) async throws -> GradeSummary {
         if !forceRefresh,
-           let cached = cacheStore.cachedSemesters(),
+           let cached = cacheStore.cachedGradeSummary(),
+           cached.value.semesters.isEmpty
+            || cached.value.totals?.hasCompleteCertificateSummary == true,
            isFresh(cached.savedAt) {
             return cached.value
         }
 
         let writeContext = cacheStore.makeWriteContext()
-        if let request = semesterRequest,
+        if let request = summaryRequest,
            let writeContext,
            request.writeContext == writeContext {
             return try await request.task.value
         }
 
-        let previousSemesters = cacheStore.cachedSemesters()?.value
+        let previousSummary = cacheStore.cachedGradeSummary()?.value
         let request = Request(
             id: UUID(),
             writeContext: writeContext,
-            task: Task { try await service.fetchSemesters() }
+            task: Task { try await service.fetchGradeSummary() }
         )
-        semesterRequest = request
+        summaryRequest = request
 
         do {
-            let semesters = try await request.task.value
-            if semesterRequest?.id == request.id {
-                semesterRequest = nil
+            let summary = try await request.task.value
+            if summaryRequest?.id == request.id {
+                summaryRequest = nil
             }
             guard let writeContext,
-                  let savedSemesters = cacheStore.saveSemesters(
-                      semesters,
+                  let savedSummary = cacheStore.saveGradeSummary(
+                      summary,
                       savedAt: now(),
                       using: writeContext
                   )
             else {
-                return semesters
+                return summary
             }
-            if let previousSemesters,
-               previousSemesters != savedSemesters {
+            if let previousSummary,
+               previousSummary != savedSummary {
                 onSummaryChanged?()
             }
-            return savedSemesters
+            return savedSummary
         } catch {
-            if semesterRequest?.id == request.id {
-                semesterRequest = nil
+            if summaryRequest?.id == request.id {
+                summaryRequest = nil
             }
             throw error
         }
@@ -156,7 +158,7 @@ final class GradeRepository: GradeRepositoryProtocol {
         year: String,
         semester: AcademicSemester
     ) -> Bool {
-        guard let latestSemester = cacheStore.cachedSemesters()?.value.last else {
+        guard let latestSemester = cacheStore.cachedGradeSummary()?.value.semesters.last else {
             return isFresh(cached.savedAt)
         }
         let requestedID = "\(year)-\(semester.rawValue)"
