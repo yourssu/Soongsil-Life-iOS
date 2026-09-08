@@ -4,6 +4,7 @@ import UIKit
 
 @main
 struct SoongsilLifeApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var appFlow: AppFlowViewModel
     @State private var loginViewModel: LoginViewModel
     @State private var appUpdate = AppUpdateViewModel()
@@ -79,14 +80,22 @@ struct SoongsilLifeApp: App {
                     await appUpdate.checkIfNeeded()
                 }
             }
+            .allowsHitTesting(!isPresentingUpdatePrompt)
+            .accessibilityHidden(isPresentingUpdatePrompt)
             .overlay {
                 if canPresentUpdatePrompt,
                    let prompt = appUpdate.prompt {
                     AppUpdatePromptView(
                         prompt: prompt,
                         postpone: appUpdate.postpone,
-                        continueAfterStoreOpenFailure: appUpdate.continueAfterStoreOpenFailure
+                        didOpenStore: appUpdate.didOpenStore
                     )
+                }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active else { return }
+                Task {
+                    await appUpdate.checkIfNeeded()
                 }
             }
         }
@@ -102,6 +111,10 @@ struct SoongsilLifeApp: App {
         return output.restoreErrorMessage != nil
             && !output.isRestoringSession
             && !output.isChangingAccount
+    }
+
+    private var isPresentingUpdatePrompt: Bool {
+        canPresentUpdatePrompt && appUpdate.prompt != nil
     }
 
 }

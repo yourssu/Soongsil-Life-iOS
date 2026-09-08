@@ -5,6 +5,8 @@ protocol AppUpdateServiceProtocol: Sendable {
 }
 
 struct AppUpdateService: AppUpdateServiceProtocol {
+    private static let maximumResponseSize = 32 * 1_024
+
     private let configurationURL: URL
     private let session: URLSession
 
@@ -20,6 +22,8 @@ struct AppUpdateService: AppUpdateServiceProtocol {
         var request = URLRequest(url: configurationURL)
         request.cachePolicy = .reloadIgnoringLocalCacheData
         request.timeoutInterval = 5
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
 
         let (data, response) = try await session.data(for: request)
         guard let response = response as? HTTPURLResponse,
@@ -27,6 +31,23 @@ struct AppUpdateService: AppUpdateServiceProtocol {
         else {
             throw URLError(.badServerResponse)
         }
-        return try JSONDecoder().decode(AppUpdateConfiguration.self, from: data)
+
+        guard data.count <= Self.maximumResponseSize else {
+            throw AppUpdateServiceError.responseTooLarge
+        }
+
+        let configuration = try JSONDecoder().decode(
+            AppUpdateConfiguration.self,
+            from: data
+        )
+        guard configuration.isValid else {
+            throw AppUpdateServiceError.invalidConfiguration
+        }
+        return configuration
     }
+}
+
+private enum AppUpdateServiceError: Error {
+    case responseTooLarge
+    case invalidConfiguration
 }

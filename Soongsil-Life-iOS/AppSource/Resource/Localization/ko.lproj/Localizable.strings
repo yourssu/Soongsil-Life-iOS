@@ -33,6 +33,11 @@
 "agreement.complete_description" = "장학금, 수강신청, 성적 정보를 한 곳에서";
 "agreement.start" = "유세인트 시작하기";
 
+"app_update.update" = "업데이트하기";
+"app_update.postpone" = "다음에 하기";
+"app_update.store_open_failed_title" = "App Store를 열 수 없어요";
+"app_update.store_open_failed_message" = "네트워크와 기기 설정을 확인한 뒤 다시 시도해 주세요.";
+
 "session.restoring_title" = "자동 로그인 중이에요";
 "session.restoring_description" = "저장된 로그인 정보를 확인하고 있어요.";
 "session.restore_failed_title" = "자동 로그인에 실패했어요";

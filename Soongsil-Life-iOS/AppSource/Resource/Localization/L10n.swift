@@ -42,6 +42,13 @@ enum L10n {
         static let start = text("agreement.start")
     }
 
+    enum AppUpdate {
+        static let update = text("app_update.update")
+        static let postpone = text("app_update.postpone")
+        static let storeOpenFailedTitle = text("app_update.store_open_failed_title")
+        static let storeOpenFailedMessage = text("app_update.store_open_failed_message")
+    }
+
     enum Session {
         static let restoringTitle = text("session.restoring_title")
         static let restoringDescription = text("session.restoring_description")
